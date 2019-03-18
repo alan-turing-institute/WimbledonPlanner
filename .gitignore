@@ -121,3 +121,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Pycharm
+.idea/
+
+# Misc
+.DS_Store
+.Rhistory
