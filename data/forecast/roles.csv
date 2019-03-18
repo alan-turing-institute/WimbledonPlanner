@@ -1,0 +1,11 @@
+id,harvest_role_id,name,person_ids,placeholder_ids
+170095,450792,Research Data Scientist,"[408178, 408184, 408188, 417332, 428845, 458587, 458589, 460554]",[]
+170096,450793,Senior Research Software Engineer,"[408179, 408186, 408187, 408189, 408190, 428846]",[]
+170097,450794,Senior Research Data Scientist,"[408180, 408181, 432681]",[]
+170099,450796,Principal Research Data Scientist,[408182],[]
+170100,450797,Director of Research Engineering,[408183],[]
+170104,450798,Principal Research Software Engineer,[408185],[]
+177204,463110,Research Software Engineer,"[399979, 428847, 432682, 452139, 458588]",[]
+194820,493301,Project Manager,[],[]
+194821,493302,Research Project Manager,[450110],[]
+195815,495088,example,[],[]
