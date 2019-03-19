@@ -19,7 +19,7 @@ Ideally, the team would like an easy way to regularly view and track work, time 
 
 ***Key requirements***
 
-Output should be a spreadsheet
+Output should be a spreadsheet. 
 Items collected in initial stages should be: 
 * team member
 * project
