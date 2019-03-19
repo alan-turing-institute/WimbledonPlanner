@@ -1,0 +1,88 @@
+* Overview of Harvest/Forecast services, as used by REG 
+
+** Harvest
+*** What we use it for?
+We use this tool to capture the time people actually spend on
+projects.  This is for our team's *internal* consumption (e.g. are
+some tasks taking longer than expected?  How much time do we actually
+tend to spend on project work vs other stuff?)  Secondarily, it might
+serve as a defensible process for justifying the amount that we bill
+projects, although this process isn't entirely clear to me (for
+example, who would check? how close to the allocation should we aim to
+be before we are worried or decide to bill something else?)
+
+*** Important data (for us)
+
+- Client
+- Project name
+- Project code (although not clear which this should be, if not a new
+  one)
+- Task within the project
+- Time recorded
+- REG team member
+
+- Explicitly not required: billable amount.
+
+- Only REG team members need use it.
+
+Having a way of minting codes ourselves could be useful (given the
+internal-facing nature of it).  Having a means of translating these
+into other codes (finance, hut23 github issue number, dynamics) would
+then be needed.  It is likely that finance codes are somewhat too
+broad to uniquely identify a "project" for us (e.g. LRF-001), but we
+should probably try to maintain a many-to-one mapping from REG codes
+to finance codes.
+
+*** Assessment
+
+We are not using the formal review process yet.
+
+Other than this, it seems to be meeting our needs: it is always
+more-or-less clear what to record time against, who should be doing it
+and how much.
+
+** Forecast
+*** What we use it for?
+
+Status of the data on there is unclear, but may be nearly complete and
+accurate.
+
+The aim for the short term is to have this be the canonical source of
+this data.
+
+*** Important data (for us)
+
+- Assigned individuals, which can include REG, other Turing staff
+  (e.g. RAs) and non-Turing staff.
+
+- *Project* start and end dates
+
+- *Effort* start and end dates (for an individual), and hr/wk
+  allocation
+
+- Explicit representation of required time, when this:
+  - is allocated to a (named) individual
+  - *cannot* be allocated to anyone ("cannot resource")
+  - is to be allocated from a pool of individuals (e.g. a delivery
+    partner placeholder).
+  - is allocated to an *unknown* individual ("resource required"), and
+    that it has not been deemed unable to resource
+
+*** Assessment
+
+Forecast is able to represent at least some of the above types of
+allocation with placeholders.  Due to limits on the number of
+placeholders (1 for every 4 paid-for users?), this may be somewhat
+inconvenient.
+
+We may wish to represent pools of individuals more generally than is
+available on there (e.g. that it could be one of three particular
+members of REG - would this be useful to anyone?)
+
+Visualization/interactivity is lacking (spreadsheet undoubtedly better
+for this).
+
+If we can produce a better visualization and database, then we are not
+far from just replacing the whole thing.  Could still use
+Harvest/other sources as needed (which might still be our definitive
+list of projects).
