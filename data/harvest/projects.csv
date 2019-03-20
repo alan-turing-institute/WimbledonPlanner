@@ -1,82 +1,83 @@
-,bill_by,budget,budget_by,budget_is_monthly,client.currency,client.id,client.name,code,cost_budget,cost_budget_include_expenses,created_at,ends_on,fee,hourly_rate,id,is_active,is_billable,is_fixed_fee,name,notes,notify_when_over_budget,over_budget_notification_date,over_budget_notification_percentage,show_budget_to_all,starts_on,updated_at
-0,none,,none,False,GBP,7394384,Data-centric engineering,,,False,2019-03-12T15:54:37Z,2020-03-31,,,20463792,True,True,False,Uncertainty in Government Modelling,,False,,80.0,False,2019-04-01,2019-03-12T15:54:37Z
-1,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T17:05:53Z,2019-12-31,,,20431477,True,True,False,Urban systems resilience,,False,,80.0,False,2019-10-01,2019-03-08T17:05:53Z
-2,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T17:04:39Z,2021-03-21,,,20431462,True,True,False,Urban observatory spatial sampling,,False,,80.0,False,2019-04-01,2019-03-08T17:04:39Z
-3,none,,none,False,GBP,7444895,SPF,,,False,2019-03-08T17:02:37Z,2019-03-31,,,20431444,True,True,False,Turing ML toolbox,,False,,80.0,False,2018-12-01,2019-03-08T17:02:37Z
-4,none,,none,False,GBP,7444895,SPF,,,False,2019-03-08T16:59:58Z,,,,20431406,True,True,False,Synthetic data,,False,,80.0,False,,2019-03-08T16:59:58Z
-5,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T16:57:31Z,2019-10-31,,,20431367,True,True,False,Streaming healthcare analytics,,False,,80.0,False,2019-04-01,2019-03-08T16:57:31Z
-6,none,,none,False,GBP,7394384,Data-centric engineering,,,False,2019-03-08T16:49:17Z,2019-10-31,,,20431266,True,True,False,Retinopathy,,False,,80.0,False,2019-04-01,2019-03-08T16:49:17Z
-7,none,,none,False,GBP,7444895,SPF,,,False,2019-03-08T16:44:45Z,,,,20431197,True,True,False,NHS Digital (Do Not Attend),,False,,80.0,False,,2019-03-08T16:44:45Z
-8,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T16:34:36Z,2020-04-30,,,20431088,True,True,False,Machine learning for cancer,,False,,80.0,False,2019-10-01,2019-03-08T16:34:36Z
-9,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T16:27:00Z,2019-07-31,,,20430963,True,True,False,Micro-location analytics,,False,,80.0,False,2019-04-01,2019-03-08T16:27:00Z
-10,none,,none,False,GBP,7394382,Health,,,False,2019-03-08T15:29:21Z,2020-03-31,,,20430001,True,True,False,Longitudinal time series,,False,,80.0,False,2019-09-01,2019-03-08T15:29:21Z
-11,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T15:27:38Z,2020-09-30,,,20429979,True,True,False,"Leeds: Lomax, Malleson, Heppenstall",,False,,80.0,False,2019-04-01,2019-03-08T15:27:38Z
-12,none,,none,False,GBP,7444895,SPF,,,False,2019-03-08T14:39:11Z,2019-12-31,,,20429276,True,True,False,Justice,,False,,80.0,False,2018-12-01,2019-03-08T14:39:11Z
-13,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T14:37:18Z,2019-12-31,,,20429253,True,True,False,Interpretable AI for health,,False,,80.0,False,2019-10-01,2019-03-08T14:37:18Z
-14,none,,none,False,GBP,7394384,Data-centric engineering,,,False,2019-03-08T14:31:16Z,2020-03-31,,,20429175,True,True,False,Fusion modelling- IDEA,,False,,80.0,False,2019-04-01,2019-03-08T14:31:16Z
-15,none,,none,False,GBP,7889179,Wellcome Trust,,,False,2019-03-08T14:27:38Z,2021-08-31,,,20429132,True,True,False,Early dementia diagnosis,,False,,80.0,False,2019-09-01,2019-03-08T14:27:38Z
-16,none,,none,False,GBP,7343534,Seed,,,False,2019-03-08T14:25:37Z,,,,20429107,True,True,False,CT dead pixel,,False,,80.0,False,,2019-03-08T14:25:37Z
-17,none,,none,False,GBP,7444895,SPF,,,False,2019-03-08T14:18:43Z,2020-03-31,,,20429023,True,True,False,Biobank algorithm,,False,,80.0,False,2018-11-01,2019-03-08T14:18:43Z
-18,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-08T14:11:55Z,,,,20428941,True,True,False,Auto DL,,False,,80.0,False,,2019-03-08T14:11:55Z
-19,none,,none,False,GBP,7889179,Wellcome Trust,,,False,2019-03-08T14:07:05Z,,,,20428882,True,True,False,All in One Cancer imaging optimisation,,False,,80.0,False,,2019-03-08T14:07:05Z
-20,none,,none,False,GBP,7889179,Wellcome Trust,,,False,2019-03-08T14:05:46Z,,,,20428867,True,True,False,AI assisted diagnosis of children,,False,,80.0,False,,2019-03-08T14:05:46Z
-21,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-03-07T14:39:30Z,,,,20416281,True,True,False,AIDA Wrangling,https://github.com,False,,80.0,False,,2019-03-07T14:39:30Z
-22,none,,none,False,GBP,7343536,External,,,False,2019-02-04T09:49:17Z,,,,20024590,True,True,False,Language Models - Leiden,,False,,80.0,False,,2019-02-04T09:49:17Z
-23,none,,none,False,GBP,7738296,TIL,,,False,2019-01-30T11:47:34Z,,,,19964414,True,True,False,TIL,,False,,80.0,False,,2019-01-30T11:47:34Z
-24,none,,none,False,GBP,7236211,Hut 23,,,False,2019-01-30T11:44:51Z,,,,19964397,True,True,False,Proposals and strategy,,False,,80.0,False,,2019-01-30T11:44:51Z
-25,none,,none,False,GBP,7236234,Research Support,,,False,2019-01-30T11:43:03Z,,,,19964384,True,True,False,Support,,False,,80.0,False,,2019-01-30T11:43:03Z
-26,none,,none,False,GBP,7738175,Leeds,,,False,2019-01-30T10:58:47Z,,,,19964019,True,True,False,Leeds TF Projects,,False,,80.0,False,,2019-01-30T10:58:47Z
-27,none,,none,False,GBP,7394384,Data-centric engineering,,,False,2019-01-28T09:32:53Z,,,,19930508,True,True,False,Clean Air,,False,,80.0,False,,2019-01-28T09:32:53Z
-28,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2019-01-18T13:09:01Z,,,,19829138,True,True,False,UQBB,,False,,80.0,False,,2019-01-18T13:09:01Z
-29,none,,none,False,GBP,7236211,Hut 23,,,False,2019-01-17T18:47:10Z,,,,19819550,True,True,False,44 days,,False,,80.0,False,,2019-01-17T18:47:10Z
-30,none,1670.0,project,False,GBP,7515887,Alan Turing Institute,,,False,2019-01-15T16:09:07Z,2019-12-31,,,19786410,True,True,False,DS for Sustainable Development,"Turing Fellow Project - Gavin Shaddick (Exeter)
-Dynamics code HWB/10004",False,,80.0,False,2019-01-01,2019-02-06T18:23:01Z
-31,none,,none,False,GBP,7394383,Finance and economics,,,False,2018-12-21T16:59:09Z,,,,19557380,True,True,False,Knowledge Flows,,False,,80.0,False,,2018-12-21T16:59:09Z
-32,none,,none,False,GBP,7515887,Alan Turing Institute,,,False,2018-12-13T15:30:34Z,,,,19471496,True,True,False,UQM^3,,False,,80.0,False,,2018-12-13T15:30:34Z
-33,none,293.0,project,False,GBP,7444895,SPF,,,False,2018-12-12T16:09:33Z,2019-04-30,,,19459531,True,True,True,ALOGIT Python,,False,,80.0,False,2018-12-01,2019-02-06T11:46:56Z
-34,none,586.0,project,False,GBP,7343534,Seed,,,False,2018-12-05T10:35:10Z,2019-11-30,,,19378642,True,True,True,Bayesian Performance Tuning,,False,,80.0,False,2019-02-01,2019-02-06T11:06:48Z
-35,none,235.0,project,False,GBP,7444895,SPF,,,False,2018-12-05T10:25:19Z,2019-03-31,,,19378569,True,True,True,Data Science Benchmarking,,False,,80.0,False,2018-12-01,2019-02-06T11:00:36Z
-36,none,,none,False,GBP,7394382,Health,,,False,2018-11-28T18:45:58Z,,,,19297699,True,True,False,Parallel Monte Carlo,https://github.com/alan-turing-institute/Hut23/issues/306,False,,80.0,False,,2018-11-28T18:45:58Z
-37,none,587.0,project,False,GBP,7394382,Health,,,False,2018-11-27T18:34:28Z,,,,19279774,True,False,False,Fitbit classification,https://github.com/alan-turing-institute/Hut23/issues/291,False,,80.0,False,,2018-11-27T18:34:28Z
-38,none,,none,False,GBP,7444895,SPF,,,False,2018-11-26T11:24:27Z,,,,19257743,True,False,False,The Turing Way,,False,,80.0,True,,2018-11-26T11:24:27Z
-39,none,,none,False,GBP,7236234,Research Support,,,False,2018-11-15T14:41:12Z,2018-12-31,,,19174247,True,False,False,esig_builder,,False,,80.0,False,2018-05-01,2018-11-15T14:41:12Z
-40,none,,none,False,GBP,7236234,Research Support,,,False,2018-11-15T10:56:36Z,,,,19171979,True,False,False,LearnR Tutorial,,False,,80.0,False,,2018-11-15T10:56:36Z
-41,People,,none,False,GBP,7273629,Trac days,,,False,2018-11-09T16:40:42Z,,,,19119330,True,True,False,Time off in lieu (TOIL),,False,,80.0,False,,2018-11-09T16:53:38Z
-42,People,,none,False,GBP,7236234,Research Support,,,False,2018-11-09T16:39:58Z,,,,19119316,True,True,False,Giving training and talks,,False,,80.0,False,,2018-11-09T16:39:58Z
-43,People,,none,False,GBP,7236234,Research Support,,,False,2018-11-09T16:39:14Z,,,,19119306,True,True,False,DSG support,,False,,80.0,False,,2018-11-09T16:39:14Z
-44,People,,none,False,GBP,7236234,Research Support,,,False,2018-11-09T16:38:24Z,,,,19119295,True,True,False,Ad hoc support,,False,,80.0,False,,2018-11-09T16:38:24Z
-45,People,,none,False,GBP,7236234,Research Support,,,False,2018-11-09T16:37:49Z,,,,19119287,True,True,False,Programme support,,False,,80.0,False,,2018-11-09T16:37:49Z
-46,People,,none,False,GBP,7394488,"Tools, Practices, and Systems",,,False,2018-11-09T16:32:07Z,,,,19119208,True,True,False,"Programme Management: Tools, Practices, and Systems",,False,,80.0,False,,2018-11-09T16:32:07Z
-47,People,0.0,none,False,GBP,7236211,Hut 23,,,False,2018-11-09T16:00:30Z,,,,19118768,True,True,False,Team management,,False,,80.0,False,,2018-11-09T16:00:30Z
-48,People,420.0,person,False,GBP,7394488,"Tools, Practices, and Systems",,,False,2018-11-05T16:53:40Z,2019-03-29,,,19058649,True,True,False,Nocell,,False,,80.0,False,2018-11-05,2018-11-09T16:29:32Z
-49,none,,none,False,GBP,7394380,Data science for science and the humanities,,,False,2018-10-25T12:16:38Z,,,,18946339,True,True,False,Chronotopic Cartographies,,False,,80.0,False,,2018-11-09T15:48:26Z
-50,none,640.0,project,False,GBP,7343534,Seed,,,False,2018-10-25T12:11:36Z,,,,18946275,True,True,False,Misinformation,,False,,80.0,False,,2019-02-06T16:35:59Z
-51,none,938.0,project,False,GBP,7265152,Defence and security,,,False,2018-10-25T12:07:30Z,,,,18946219,True,True,False,AIDA-Lloyds,,False,,80.0,False,,2019-02-06T11:27:08Z
-52,none,200.0,project,False,GBP,7265152,Defence and security,R-DST-DDI,,False,2018-10-25T12:06:52Z,,,,18946216,True,True,False,Domain Discovery,,False,,80.0,False,,2019-02-06T16:34:44Z
-53,none,,none,False,GBP,7394488,"Tools, Practices, and Systems",,,False,2018-10-25T12:04:50Z,,,,18946199,True,True,False,Safe Haven,,False,,80.0,False,,2018-11-09T16:06:15Z
-54,none,,none,False,GBP,7394380,Data science for science and the humanities,,,False,2018-10-25T12:02:56Z,,,,18946187,True,True,False,Living With Machines,,False,,80.0,False,,2018-11-09T16:29:53Z
-55,none,313.6,project,False,GBP,7343536,External,R-SAM-001,,False,2018-10-25T12:01:41Z,,,,18946181,True,True,False,Samsung,,False,,80.0,False,,2019-02-06T16:45:48Z
-56,none,16.0,project,False,GBP,7343536,External,,,False,2018-10-25T12:00:47Z,,,,18946172,True,True,False,Coram,,False,,80.0,False,,2019-02-06T16:43:28Z
-57,none,,none,False,GBP,7394384,Data-centric engineering,,,False,2018-10-25T11:59:20Z,,,,18946167,True,True,False,Probabilistic FEM,,False,,80.0,False,,2018-11-09T16:07:32Z
-58,none,80.0,project,False,GBP,7394384,Data-centric engineering,R-LRF-001,,False,2018-10-25T11:28:50Z,,,,18945950,True,True,False,MCGPU,,False,,80.0,False,,2019-02-06T16:39:37Z
-59,none,,none,False,GBP,7343534,Seed,R-SIS-003,,False,2018-10-25T11:26:27Z,,,,18945931,True,True,False,Network Comparison,,False,,80.0,False,,2018-10-25T11:26:27Z
-60,none,702.4,project,False,GBP,7394384,Data-centric engineering,,,False,2018-10-25T11:25:23Z,,,,18945918,True,True,False,BLUE,,False,,80.0,False,,2019-02-06T16:33:04Z
-61,none,434.4,project,False,GBP,7394384,Data-centric engineering,,,False,2018-10-25T11:05:07Z,,,,18945780,True,True,False,ARC,,False,,80.0,False,,2019-02-06T16:13:28Z
-62,none,0.0,project,False,GBP,7265152,Defence and security,R-DST-TDA,,False,2018-10-25T10:58:36Z,,,,18945741,True,True,False,Parallel TDA,,False,,80.0,False,,2019-02-06T16:41:41Z
-63,none,1902.4,project,False,GBP,7394384,Data-centric engineering,R-IAG-001,,False,2018-10-25T10:54:54Z,,,,18945702,True,True,False,BA (IAG),,False,,80.0,False,,2019-02-06T16:12:25Z
-64,none,491.2,project,False,GBP,7265152,Defence and security,R-DST-GUA,,False,2018-10-25T10:46:23Z,,,,18945641,True,True,False,GUARD,,False,,80.0,False,,2019-02-06T16:06:35Z
-65,none,2606.4,project,False,GBP,7394384,Data-centric engineering,R-NATS-001,,False,2018-10-09T14:27:15Z,2019-12-01,,,18793805,True,True,False,NATS,,False,,80.0,False,2018-10-01,2019-02-06T16:38:26Z
-66,none,,none,False,GBP,7273629,Trac days,,,False,2018-10-04T12:34:32Z,,,,18753173,True,False,False,Leave,,False,,80.0,False,,2018-11-29T09:55:14Z
-67,none,,none,False,GBP,7273629,Trac days,,,False,2018-10-04T12:33:37Z,,,,18753163,True,False,False,Sickness,,False,,80.0,False,,2019-02-25T12:49:52Z
-68,none,888.0,project,False,GBP,7265152,Defence and security,R-DST-MAR,,False,2018-10-02T14:03:07Z,2019-03-31,,,18725372,True,True,False,Maru,,False,,80.0,False,2018-04-01,2019-02-06T16:04:39Z
-69,none,710.4,project,False,GBP,7394386,Data science at scale,R-INT-001,,False,2018-09-26T08:43:40Z,2018-12-31,,,18658281,True,True,False,Crypto Federated Learning (SHEEP),,False,,80.0,False,,2019-02-06T16:22:36Z
-70,none,,none,False,GBP,7394382,Health,,,False,2018-09-26T08:32:04Z,,,,18658196,True,True,False,PDQ,,False,,80.0,False,,2018-11-09T15:50:04Z
-71,none,,none,False,GBP,7236211,Hut 23,,,False,2018-09-25T16:56:25Z,,,,18650735,True,False,False,Professional development,,False,,80.0,False,,2018-11-09T15:54:27Z
-72,none,,none,False,GBP,7236234,Research Support,,,False,2018-09-25T16:53:44Z,,,,18650700,True,False,False,Compute / Platform support,,False,,80.0,False,,2018-11-09T16:08:19Z
-73,none,,none,False,GBP,7236211,Hut 23,,,False,2018-09-25T16:51:37Z,,,,18650675,True,False,False,Hut 23 team,,False,,80.0,False,,2018-11-09T15:59:40Z
-74,none,619.2,project,False,GBP,7343534,Seed,,,False,2018-09-25T09:16:33Z,,,,18644962,True,True,False,Reproducible Research,,False,,80.0,False,2018-05-01,2019-02-06T16:10:22Z
-75,none,1448.0,project,False,GBP,7394377,Urban analytics,R-TMF-001,,False,2018-09-25T08:45:08Z,2019-10-31,,,18644680,True,True,False,AI for City Planning,,False,,80.0,False,2018-07-01,2019-02-06T16:52:07Z
-76,none,1647.2,project,False,GBP,7394383,Finance and economics,R-HSB-001,,False,2018-09-25T08:41:52Z,,,,18644656,True,True,False,HSBC EDS,,False,,80.0,False,,2019-02-06T16:49:46Z
-77,none,322.0,project,False,GBP,7343534,Seed,,,False,2018-09-25T08:41:24Z,2019-02-28,,,18644652,True,True,False,DetectorChecker,,False,,80.0,False,2018-08-20,2019-02-06T10:54:08Z
-78,none,2220.0,project,False,GBP,7265152,Defence and security,,,False,2018-09-25T07:56:16Z,,,,18644291,True,True,False,AIDA,,False,,80.0,False,,2019-02-06T11:15:57Z
-79,none,652.0,project,False,GBP,7394386,Data science at scale,R-INT-001,,False,2018-08-16T10:57:43Z,,,,18266019,True,True,False,Sargasso (Intel Sparse),,False,,80.0,False,,2019-02-06T16:15:35Z
+,bill_by,budget,budget_by,budget_is_monthly,code,cost_budget,cost_budget_include_expenses,created_at,ends_on,fee,hourly_rate,id,is_active,is_billable,is_fixed_fee,name,notes,notify_when_over_budget,over_budget_notification_date,over_budget_notification_percentage,show_budget_to_all,starts_on,updated_at,client.address,client.created_at,client.currency,client.id,client.is_active,client.name,client.updated_at
+0,none,,none,False,,,False,2019-03-15T18:39:38Z,,,,20508323,True,True,False,Mini-bridge support,,False,,80.0,False,,2019-03-15T18:39:38Z,,,GBP,7394384,,Data-centric engineering,
+1,none,,none,False,,,False,2019-03-12T15:54:37Z,2020-03-31,,,20463792,True,True,False,Uncertainty in Government Modelling,,False,,80.0,False,2019-04-01,2019-03-12T15:54:37Z,,,GBP,7394384,,Data-centric engineering,
+2,none,,none,False,,,False,2019-03-08T17:05:53Z,2019-12-31,,,20431477,True,True,False,Urban systems resilience,,False,,80.0,False,2019-10-01,2019-03-08T17:05:53Z,,,GBP,7515887,,Alan Turing Institute,
+3,none,,none,False,,,False,2019-03-08T17:04:39Z,2021-03-21,,,20431462,True,True,False,Urban observatory spatial sampling,,False,,80.0,False,2019-04-01,2019-03-08T17:04:39Z,,,GBP,7515887,,Alan Turing Institute,
+4,none,,none,False,,,False,2019-03-08T17:02:37Z,2019-03-31,,,20431444,True,True,False,Turing ML toolbox,,False,,80.0,False,2018-12-01,2019-03-08T17:02:37Z,,,GBP,7444895,,SPF,
+5,none,,none,False,,,False,2019-03-08T16:59:58Z,,,,20431406,True,True,False,Synthetic data,,False,,80.0,False,,2019-03-08T16:59:58Z,,,GBP,7444895,,SPF,
+6,none,,none,False,,,False,2019-03-08T16:57:31Z,2019-10-31,,,20431367,True,True,False,Streaming healthcare analytics,,False,,80.0,False,2019-04-01,2019-03-08T16:57:31Z,,,GBP,7515887,,Alan Turing Institute,
+7,none,,none,False,,,False,2019-03-08T16:49:17Z,2019-10-31,,,20431266,True,True,False,Retinopathy,,False,,80.0,False,2019-04-01,2019-03-08T16:49:17Z,,,GBP,7394384,,Data-centric engineering,
+8,none,,none,False,,,False,2019-03-08T16:44:45Z,,,,20431197,True,True,False,NHS Digital (Do Not Attend),,False,,80.0,False,,2019-03-08T16:44:45Z,,,GBP,7444895,,SPF,
+9,none,,none,False,,,False,2019-03-08T16:34:36Z,2020-04-30,,,20431088,True,True,False,Machine learning for cancer,,False,,80.0,False,2019-10-01,2019-03-08T16:34:36Z,,,GBP,7515887,,Alan Turing Institute,
+10,none,,none,False,,,False,2019-03-08T16:27:00Z,2019-07-31,,,20430963,True,True,False,Micro-location analytics,,False,,80.0,False,2019-04-01,2019-03-08T16:27:00Z,,,GBP,7515887,,Alan Turing Institute,
+11,none,,none,False,,,False,2019-03-08T15:29:21Z,2020-03-31,,,20430001,True,True,False,Longitudinal time series,,False,,80.0,False,2019-09-01,2019-03-08T15:29:21Z,,,GBP,7394382,,Health,
+12,none,,none,False,,,False,2019-03-08T15:27:38Z,2020-09-30,,,20429979,True,True,False,"Leeds: Lomax, Malleson, Heppenstall",,False,,80.0,False,2019-04-01,2019-03-08T15:27:38Z,,,GBP,7515887,,Alan Turing Institute,
+13,none,,none,False,,,False,2019-03-08T14:39:11Z,2019-12-31,,,20429276,True,True,False,Justice,,False,,80.0,False,2018-12-01,2019-03-08T14:39:11Z,,,GBP,7444895,,SPF,
+14,none,,none,False,,,False,2019-03-08T14:37:18Z,2019-12-31,,,20429253,True,True,False,Interpretable AI for health,,False,,80.0,False,2019-10-01,2019-03-08T14:37:18Z,,,GBP,7515887,,Alan Turing Institute,
+15,none,,none,False,,,False,2019-03-08T14:31:16Z,2020-03-31,,,20429175,True,True,False,Fusion modelling- IDEA,,False,,80.0,False,2019-04-01,2019-03-08T14:31:16Z,,,GBP,7394384,,Data-centric engineering,
+16,none,,none,False,,,False,2019-03-08T14:27:38Z,2021-08-31,,,20429132,True,True,False,Early dementia diagnosis,,False,,80.0,False,2019-09-01,2019-03-08T14:27:38Z,,,GBP,7889179,,Wellcome Trust,
+17,none,,none,False,,,False,2019-03-08T14:25:37Z,,,,20429107,True,True,False,CT dead pixel,,False,,80.0,False,,2019-03-08T14:25:37Z,,,GBP,7343534,,Seed,
+18,none,,none,False,,,False,2019-03-08T14:18:43Z,2020-03-31,,,20429023,True,True,False,Biobank algorithm,,False,,80.0,False,2018-11-01,2019-03-08T14:18:43Z,,,GBP,7444895,,SPF,
+19,none,,none,False,,,False,2019-03-08T14:11:55Z,,,,20428941,True,True,False,Auto DL,,False,,80.0,False,,2019-03-08T14:11:55Z,,,GBP,7515887,,Alan Turing Institute,
+20,none,,none,False,,,False,2019-03-08T14:07:05Z,,,,20428882,True,True,False,All in One Cancer imaging optimisation,,False,,80.0,False,,2019-03-08T14:07:05Z,,,GBP,7889179,,Wellcome Trust,
+21,none,,none,False,,,False,2019-03-08T14:05:46Z,,,,20428867,True,True,False,AI assisted diagnosis of children,,False,,80.0,False,,2019-03-08T14:05:46Z,,,GBP,7889179,,Wellcome Trust,
+22,none,,none,False,,,False,2019-03-07T14:39:30Z,,,,20416281,True,True,False,AIDA Wrangling,https://github.com,False,,80.0,False,,2019-03-07T14:39:30Z,,,GBP,7515887,,Alan Turing Institute,
+23,none,,none,False,,,False,2019-02-04T09:49:17Z,,,,20024590,True,True,False,Language Models - Leiden,,False,,80.0,False,,2019-02-04T09:49:17Z,,,GBP,7343536,,External,
+24,none,,none,False,,,False,2019-01-30T11:47:34Z,,,,19964414,True,True,False,TIL,,False,,80.0,False,,2019-01-30T11:47:34Z,,,GBP,7738296,,TIL,
+25,none,,none,False,,,False,2019-01-30T11:44:51Z,,,,19964397,True,True,False,Proposals and strategy,,False,,80.0,False,,2019-01-30T11:44:51Z,,,GBP,7236211,,Hut 23,
+26,none,,none,False,,,False,2019-01-30T11:43:03Z,,,,19964384,True,True,False,Support,,False,,80.0,False,,2019-01-30T11:43:03Z,,,GBP,7236234,,Research Support,
+27,none,,none,False,,,False,2019-01-30T10:58:47Z,,,,19964019,True,True,False,Leeds TF Projects,,False,,80.0,False,,2019-01-30T10:58:47Z,,,GBP,7738175,,Leeds,
+28,none,,none,False,,,False,2019-01-28T09:32:53Z,,,,19930508,True,True,False,Clean Air,,False,,80.0,False,,2019-01-28T09:32:53Z,,,GBP,7394384,,Data-centric engineering,
+29,none,,none,False,,,False,2019-01-18T13:09:01Z,,,,19829138,True,True,False,UQBB,,False,,80.0,False,,2019-01-18T13:09:01Z,,,GBP,7515887,,Alan Turing Institute,
+30,none,,none,False,,,False,2019-01-17T18:47:10Z,,,,19819550,True,True,False,44 days,,False,,80.0,False,,2019-01-17T18:47:10Z,,,GBP,7236211,,Hut 23,
+31,none,1670.0,project,False,,,False,2019-01-15T16:09:07Z,2019-12-31,,,19786410,True,True,False,DS for Sustainable Development,"Turing Fellow Project - Gavin Shaddick (Exeter)
+Dynamics code HWB/10004",False,,80.0,False,2019-01-01,2019-02-06T18:23:01Z,,,GBP,7515887,,Alan Turing Institute,
+32,none,,none,False,,,False,2018-12-21T16:59:09Z,,,,19557380,True,True,False,Knowledge Flows,,False,,80.0,False,,2018-12-21T16:59:09Z,,,GBP,7394383,,Finance and economics,
+33,none,,none,False,,,False,2018-12-13T15:30:34Z,,,,19471496,True,True,False,UQM^3,,False,,80.0,False,,2018-12-13T15:30:34Z,,,GBP,7515887,,Alan Turing Institute,
+34,none,293.0,project,False,,,False,2018-12-12T16:09:33Z,2019-04-30,,,19459531,True,True,True,ALOGIT Python,,False,,80.0,False,2018-12-01,2019-02-06T11:46:56Z,,,GBP,7444895,,SPF,
+35,none,586.0,project,False,,,False,2018-12-05T10:35:10Z,2019-11-30,,,19378642,True,True,True,Bayesian Performance Tuning,,False,,80.0,False,2019-02-01,2019-02-06T11:06:48Z,,,GBP,7343534,,Seed,
+36,none,235.0,project,False,,,False,2018-12-05T10:25:19Z,2019-03-31,,,19378569,True,True,True,Data Science Benchmarking,,False,,80.0,False,2018-12-01,2019-02-06T11:00:36Z,,,GBP,7444895,,SPF,
+37,none,,none,False,,,False,2018-11-28T18:45:58Z,,,,19297699,True,True,False,Parallel Monte Carlo,https://github.com/alan-turing-institute/Hut23/issues/306,False,,80.0,False,,2018-11-28T18:45:58Z,,,GBP,7394382,,Health,
+38,none,587.0,project,False,,,False,2018-11-27T18:34:28Z,,,,19279774,True,False,False,Fitbit classification,https://github.com/alan-turing-institute/Hut23/issues/291,False,,80.0,False,,2018-11-27T18:34:28Z,,,GBP,7394382,,Health,
+39,none,,none,False,,,False,2018-11-26T11:24:27Z,,,,19257743,True,False,False,The Turing Way,,False,,80.0,True,,2018-11-26T11:24:27Z,,,GBP,7444895,,SPF,
+40,none,,none,False,,,False,2018-11-15T14:41:12Z,2018-12-31,,,19174247,True,False,False,esig_builder,,False,,80.0,False,2018-05-01,2018-11-15T14:41:12Z,,,GBP,7236234,,Research Support,
+41,none,,none,False,,,False,2018-11-15T10:56:36Z,,,,19171979,True,False,False,LearnR Tutorial,,False,,80.0,False,,2018-11-15T10:56:36Z,,,GBP,7236234,,Research Support,
+42,People,,none,False,,,False,2018-11-09T16:40:42Z,,,,19119330,True,True,False,Time off in lieu (TOIL),,False,,80.0,False,,2018-11-09T16:53:38Z,,,GBP,7273629,,Trac days,
+43,People,,none,False,,,False,2018-11-09T16:39:58Z,,,,19119316,True,True,False,Giving training and talks,,False,,80.0,False,,2018-11-09T16:39:58Z,,,GBP,7236234,,Research Support,
+44,People,,none,False,,,False,2018-11-09T16:39:14Z,,,,19119306,True,True,False,DSG support,,False,,80.0,False,,2018-11-09T16:39:14Z,,,GBP,7236234,,Research Support,
+45,People,,none,False,,,False,2018-11-09T16:38:24Z,,,,19119295,True,True,False,Ad hoc support,,False,,80.0,False,,2018-11-09T16:38:24Z,,,GBP,7236234,,Research Support,
+46,People,,none,False,,,False,2018-11-09T16:37:49Z,,,,19119287,True,True,False,Programme support,,False,,80.0,False,,2018-11-09T16:37:49Z,,,GBP,7236234,,Research Support,
+47,People,,none,False,,,False,2018-11-09T16:32:07Z,,,,19119208,True,True,False,"Programme Management: Tools, Practices, and Systems",,False,,80.0,False,,2018-11-09T16:32:07Z,,,GBP,7394488,,"Tools, Practices, and Systems",
+48,People,0.0,none,False,,,False,2018-11-09T16:00:30Z,,,,19118768,True,True,False,Team management,,False,,80.0,False,,2018-11-09T16:00:30Z,,,GBP,7236211,,Hut 23,
+49,People,420.0,person,False,,,False,2018-11-05T16:53:40Z,2019-03-29,,,19058649,True,True,False,Nocell,,False,,80.0,False,2018-11-05,2018-11-09T16:29:32Z,,,GBP,7394488,,"Tools, Practices, and Systems",
+50,none,,none,False,,,False,2018-10-25T12:16:38Z,,,,18946339,True,True,False,Chronotopic Cartographies,,False,,80.0,False,,2018-11-09T15:48:26Z,,,GBP,7394380,,Data science for science and the humanities,
+51,none,640.0,project,False,,,False,2018-10-25T12:11:36Z,,,,18946275,True,True,False,Misinformation,,False,,80.0,False,,2019-02-06T16:35:59Z,,,GBP,7343534,,Seed,
+52,none,938.0,project,False,,,False,2018-10-25T12:07:30Z,,,,18946219,True,True,False,AIDA-Lloyds,,False,,80.0,False,,2019-02-06T11:27:08Z,,,GBP,7265152,,Defence and security,
+53,none,200.0,project,False,R-DST-DDI,,False,2018-10-25T12:06:52Z,,,,18946216,True,True,False,Domain Discovery,,False,,80.0,False,,2019-02-06T16:34:44Z,,,GBP,7265152,,Defence and security,
+54,none,,none,False,,,False,2018-10-25T12:04:50Z,,,,18946199,True,True,False,Safe Haven,,False,,80.0,False,,2018-11-09T16:06:15Z,,,GBP,7394488,,"Tools, Practices, and Systems",
+55,none,,none,False,,,False,2018-10-25T12:02:56Z,,,,18946187,True,True,False,Living With Machines,,False,,80.0,False,,2018-11-09T16:29:53Z,,,GBP,7394380,,Data science for science and the humanities,
+56,none,313.6,project,False,R-SAM-001,,False,2018-10-25T12:01:41Z,,,,18946181,True,True,False,Samsung,,False,,80.0,False,,2019-02-06T16:45:48Z,,,GBP,7343536,,External,
+57,none,16.0,project,False,,,False,2018-10-25T12:00:47Z,,,,18946172,True,True,False,Coram,,False,,80.0,False,,2019-02-06T16:43:28Z,,,GBP,7343536,,External,
+58,none,,none,False,,,False,2018-10-25T11:59:20Z,,,,18946167,True,True,False,Probabilistic FEM,,False,,80.0,False,,2018-11-09T16:07:32Z,,,GBP,7394384,,Data-centric engineering,
+59,none,80.0,project,False,R-LRF-001,,False,2018-10-25T11:28:50Z,,,,18945950,True,True,False,MCGPU,,False,,80.0,False,,2019-02-06T16:39:37Z,,,GBP,7394384,,Data-centric engineering,
+60,none,,none,False,R-SIS-003,,False,2018-10-25T11:26:27Z,,,,18945931,True,True,False,Network Comparison,,False,,80.0,False,,2018-10-25T11:26:27Z,,,GBP,7343534,,Seed,
+61,none,702.4,project,False,,,False,2018-10-25T11:25:23Z,,,,18945918,True,True,False,BLUE,,False,,80.0,False,,2019-02-06T16:33:04Z,,,GBP,7394384,,Data-centric engineering,
+62,none,434.4,project,False,,,False,2018-10-25T11:05:07Z,,,,18945780,True,True,False,ARC,,False,,80.0,False,,2019-02-06T16:13:28Z,,,GBP,7394384,,Data-centric engineering,
+63,none,0.0,project,False,R-DST-TDA,,False,2018-10-25T10:58:36Z,,,,18945741,True,True,False,Parallel TDA,,False,,80.0,False,,2019-02-06T16:41:41Z,,,GBP,7265152,,Defence and security,
+64,none,1902.4,project,False,R-IAG-001,,False,2018-10-25T10:54:54Z,,,,18945702,True,True,False,BA (IAG),,False,,80.0,False,,2019-02-06T16:12:25Z,,,GBP,7394384,,Data-centric engineering,
+65,none,491.2,project,False,R-DST-GUA,,False,2018-10-25T10:46:23Z,,,,18945641,True,True,False,GUARD,,False,,80.0,False,,2019-02-06T16:06:35Z,,,GBP,7265152,,Defence and security,
+66,none,2606.4,project,False,R-NATS-001,,False,2018-10-09T14:27:15Z,2019-12-01,,,18793805,True,True,False,NATS,,False,,80.0,False,2018-10-01,2019-02-06T16:38:26Z,,,GBP,7394384,,Data-centric engineering,
+67,none,,none,False,,,False,2018-10-04T12:34:32Z,,,,18753173,True,False,False,Leave,,False,,80.0,False,,2018-11-29T09:55:14Z,,,GBP,7273629,,Trac days,
+68,none,,none,False,,,False,2018-10-04T12:33:37Z,,,,18753163,True,False,False,Sickness,,False,,80.0,False,,2019-02-25T12:49:52Z,,,GBP,7273629,,Trac days,
+69,none,888.0,project,False,R-DST-MAR,,False,2018-10-02T14:03:07Z,2019-03-31,,,18725372,True,True,False,Maru,,False,,80.0,False,2018-04-01,2019-02-06T16:04:39Z,,,GBP,7265152,,Defence and security,
+70,none,710.4,project,False,R-INT-001,,False,2018-09-26T08:43:40Z,2018-12-31,,,18658281,True,True,False,Crypto Federated Learning (SHEEP),,False,,80.0,False,,2019-02-06T16:22:36Z,,,GBP,7394386,,Data science at scale,
+71,none,,none,False,,,False,2018-09-26T08:32:04Z,,,,18658196,True,True,False,PDQ,,False,,80.0,False,,2018-11-09T15:50:04Z,,,GBP,7394382,,Health,
+72,none,,none,False,,,False,2018-09-25T16:56:25Z,,,,18650735,True,False,False,Professional development,,False,,80.0,False,,2018-11-09T15:54:27Z,,,GBP,7236211,,Hut 23,
+73,none,,none,False,,,False,2018-09-25T16:53:44Z,,,,18650700,True,False,False,Compute / Platform support,,False,,80.0,False,,2018-11-09T16:08:19Z,,,GBP,7236234,,Research Support,
+74,none,,none,False,,,False,2018-09-25T16:51:37Z,,,,18650675,True,False,False,Hut 23 team,,False,,80.0,False,,2018-11-09T15:59:40Z,,,GBP,7236211,,Hut 23,
+75,none,619.2,project,False,,,False,2018-09-25T09:16:33Z,,,,18644962,True,True,False,Reproducible Research,,False,,80.0,False,2018-05-01,2019-02-06T16:10:22Z,,,GBP,7343534,,Seed,
+76,none,1448.0,project,False,R-TMF-001,,False,2018-09-25T08:45:08Z,2019-10-31,,,18644680,True,True,False,AI for City Planning,,False,,80.0,False,2018-07-01,2019-02-06T16:52:07Z,,,GBP,7394377,,Urban analytics,
+77,none,1647.2,project,False,R-HSB-001,,False,2018-09-25T08:41:52Z,,,,18644656,True,True,False,HSBC EDS,,False,,80.0,False,,2019-02-06T16:49:46Z,,,GBP,7394383,,Finance and economics,
+78,none,322.0,project,False,,,False,2018-09-25T08:41:24Z,2019-02-28,,,18644652,True,True,False,DetectorChecker,,False,,80.0,False,2018-08-20,2019-02-06T10:54:08Z,,,GBP,7343534,,Seed,
+79,none,2220.0,project,False,,,False,2018-09-25T07:56:16Z,,,,18644291,True,True,False,AIDA,,False,,80.0,False,,2019-02-06T11:15:57Z,,,GBP,7265152,,Defence and security,
+80,none,652.0,project,False,R-INT-001,,False,2018-08-16T10:57:43Z,,,,18266019,True,True,False,Sargasso (Intel Sparse),,False,,80.0,False,,2019-02-06T16:15:35Z,,,GBP,7394386,,Data science at scale,
