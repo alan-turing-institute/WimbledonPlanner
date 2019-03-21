@@ -81,3 +81,6 @@ roles.to_csv('../data/forecast/roles.csv')
 
 connections = response_to_df(api.get_user_connections(), title='CONNECTIONS')
 connections.to_csv('../data/forecast/connections.csv')
+
+placeholders = response_to_df(api.get_placeholders(),title='PLACEHOLDERS')
+placeholders.to_csv('../data/forecast/placeholders.csv')
