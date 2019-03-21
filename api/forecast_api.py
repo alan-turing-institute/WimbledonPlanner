@@ -1,65 +1,83 @@
-import forecast
+"""
+forecast_api.py
+Extract forecast data from its API using the pyforecast package.
 
-import json
+To install pyforecast, run:
+pip install pyforecast
 
-import pandas as pd
-from pandas.io.json import json_normalize
+NB: The forecast API is not public and is undocumented. See:
+https://help.getharvest.com/forecast/faqs/faq-list/api/
+
+The user id, token etc. is taken from the file config.py, which should be in the same directory as this script and
+contain the following dictionary:
+forecast = {'account_id': '<ACCOUNT_ID>',
+            'auth_token': '<AUTH_TOKEN>'}
+
+To get the account id and access token, set up a personal access token here:
+https://id.getharvest.com/developers
+You must choose the Turing Institute Forecast account in the token setup, not the Harvest account.
+"""
 
 import config
+import forecast
+import json
+from pandas.io.json import json_normalize
+
 
 api = forecast.Api(account_id=config.forecast['account_id'],
                    auth_token=config.forecast['auth_token'])
 
-projects = api.get_projects()
-projects = [json.loads(proj.to_json()) for proj in projects]
-projects = json_normalize(projects)
-projects.set_index('id',inplace=True)
+user = api.whoami()
+print()
+print('AUTHENTICATED USER:')
+print(user.first_name, user.last_name, user.email)
+print()
+
+
+def print_df(df, title=''):
+    """Print some information about a data frame."""
+    print()
+    print('=' * 20 + title + '=' * 20)
+    n_rows, n_columns = df.shape
+    print('Number rows:', n_rows)
+    print('Number columns:', n_columns)
+    print('-' * 10 + 'Columns' + '-' * 10)
+    print(df.columns.values)
+    print('-' * 10 + 'First Row' + '-' * 10)
+    print(df.iloc[0])
+    print()
+
+
+def response_to_df(api_response, verbose=True, title=''):
+    """Takes an api response in the pyforecast foremat and converts it into a pandas data frame."""
+    results = [json.loads(result.to_json()) for result in api_response]
+
+    df = json_normalize(results)
+    df.set_index('id', inplace=True)
+
+    if verbose:
+        print_df(df, title=title)
+
+    return df
+
+
+projects = response_to_df(api.get_projects(), title='PROJECTS')
 projects.to_csv('../data/forecast/projects.csv')
 
-people = api.get_people()
-people = [json.loads(pers.to_json()) for pers in people]
-people = json_normalize(people)
-people.set_index('id',inplace=True)
+people = response_to_df(api.get_people(), title='PEOPLE')
 people.to_csv('../data/forecast/people.csv')
 
-clients = api.get_clients()
-clients = [json.loads(cli.to_json()) for cli in clients]
-clients = json_normalize(clients)
-clients.set_index('id',inplace=True)
+clients = response_to_df(api.get_clients(), title='CLIENTS')
 clients.to_csv('../data/forecast/clients.csv')
 
-assignments = api.get_assignments()
-assignments = [json.loads(ass.to_json()) for ass in assignments]
-assignments = json_normalize(assignments)
-assignments.set_index('id',inplace=True)
-# include person and project names in assignments table
-assignments = pd.merge(assignments, people[['first_name','last_name']],
-                       left_on='person_id',right_index=True,how='left')
-
-assignments['person_name'] = assignments['first_name'] + ' ' + assignments['last_name']
-assignments.drop(['first_name','last_name'],axis=1,inplace=True)
-
-assignments = pd.merge(assignments, projects[['name']],
-                       left_on='project_id',right_index=True,how='left')
-
-assignments.rename(columns={'name':'project_name'},inplace=True)
-#
+assignments = response_to_df(api.get_assignments(), title='ASSIGNMENTS')
 assignments.to_csv('../data/forecast/assignments.csv')
 
-milestones = api.get_milestones()
-milestones = [json.loads(mile.to_json()) for mile in milestones]
-milestones = json_normalize(milestones)
-milestones.set_index('id',inplace=True)
+milestones = response_to_df(api.get_milestones(), title='MILESTONES')
 milestones.to_csv('../data/forecast/milestones.csv')
 
-roles = api.get_roles()
-roles = [json.loads(rol.to_json()) for rol in roles]
-roles = json_normalize(roles)
-roles.set_index('id',inplace=True)
+roles = response_to_df(api.get_roles(), title='ROLES')
 roles.to_csv('../data/forecast/roles.csv')
 
-connections = api.get_user_connections()
-connections = [json.loads(con.to_json()) for con in connections]
-connections = json_normalize(connections)
-connections.set_index('id',inplace=True)
+connections = response_to_df(api.get_user_connections(), title='CONNECTIONS')
 connections.to_csv('../data/forecast/connections.csv')

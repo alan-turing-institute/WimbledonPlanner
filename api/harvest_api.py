@@ -5,11 +5,20 @@ Extract harvest data using the python-harvest package.
 The master branch of python-harvest currently seems to be using the v1 version of the api. This version of the API
 is deprecated.
 
-The branvh "v2_dev" of python-harvest works with harvests v2 API but doesn't seem to be fully functioning for
+The branch "v2_dev" of python-harvest works with harvests v2 API but doesn't seem to be fully functioning for
 all tables, most noticeably the time_entries table.
 
 To install the v2_dev branch of python-harvest for this script, run:
 pip install git+https://github.com/lionheart/python-harvest@v2_dev
+
+The user id, token etc. is taken from the file config.py, which should be in the same directory as this script and
+contain the following dictionary:
+harvest = {"account_id": "<ACCOUNT_ID>",
+           "access_token": "<ACCESS_TOKEN>"}
+
+To get the account id and access token, set up a personal access token here:
+https://id.getharvest.com/developers
+You must choose the Turing Institute Harvest account in the token setup, not the Forecast account.
 """
 
 import harvest
@@ -138,4 +147,52 @@ time_entries: Currently fails due to time_entries.cost_rate should be "float" in
 
 client_contacts, invoices, estimates, expenses: Also fail, usually due to some missing field error, but not sure we
 use any of those tables?
+
+Below is my own quick function to extract the time entries data... it's quite slow requiring 30+ queries, but the API
+returns max 100 results at a time so probably not a lot that can be done to improve it.
 '''
+
+import json
+import urllib.request
+import pandas as pd
+from pandas.io.json import json_normalize
+import time
+
+
+def api_to_df(table, headers):
+    """Query all pages of a table in harvest."""
+
+    url = "https://api.harvestapp.com/v2/" + table
+    print('Querying', url)
+    request = urllib.request.Request(url=url, headers=headers)
+    response = urllib.request.urlopen(request, timeout=10)
+    response_body = response.read().decode("utf-8")
+    json_response = json.loads(response_body)
+    df = json_normalize(json_response[table])
+
+    while json_response['links']['next'] is not None:
+        url = json_response['links']['next']
+        print('Querying', url)
+
+        request = urllib.request.Request(url=url, headers=headers)
+        response = urllib.request.urlopen(request, timeout=10)
+        response_body = response.read().decode("utf-8")
+        json_response = json.loads(response_body)
+
+        new_entries = json_normalize(json_response[table])
+        df = df.append(new_entries)
+        # wait a bit to prevent getting throttled (allowed max 100 requests per 15 seconds)
+        time.sleep(0.15)
+
+    return df
+
+
+api_headers = {
+    "User-Agent": "TestApp (Hut23@turing.ac.uk)",
+    "Authorization": "Bearer " + config.harvest['access_token'],
+    "Harvest-Account-ID": config.harvest['account_id']
+}
+time_entries = api_to_df('time_entries', api_headers)
+print_df(time_entries, title='TIME ENTRIES')
+time_entries.to_csv('../data/harvest/time_entries.csv')
+time_entries.head()

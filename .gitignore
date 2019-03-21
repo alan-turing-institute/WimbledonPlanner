@@ -128,3 +128,4 @@ dmypy.json
 # Misc
 .DS_Store
 .Rhistory
+api/config.py
