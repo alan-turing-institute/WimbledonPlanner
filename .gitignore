@@ -129,3 +129,4 @@ dmypy.json
 .DS_Store
 .Rhistory
 api/config.py
+api/forecast_cache.sqlite
