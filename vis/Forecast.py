@@ -105,14 +105,15 @@ class Forecast:
         else:
             raise ValueError('id_type must be person_id, project_id or placeholder_id')
 
-    def select_date_range(self, df, start_date, end_date):
+    def select_date_range(self, df, start_date, end_date, drop_zero_cols=True):
         """Extract a range of dates from a dataframe with a datetime index,
         then remove any columns which are left empty (full of zeros)."""
         mask = (df.index >= start_date) & (df.index <= end_date)
         df_slice = df.loc[mask]
 
-        nonzero_cols = df_slice.columns[df_slice.sum() != 0]
-        df_slice = df_slice[nonzero_cols]
+        if drop_zero_cols:
+            nonzero_cols = df_slice.columns[df_slice.sum() != 0]
+            df_slice = df_slice[nonzero_cols]
 
         return df_slice
 
