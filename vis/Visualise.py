@@ -152,7 +152,8 @@ class Visualise:
             df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
             df.columns.name = self.fc.get_project_name(id_value)
 
-            nominal_allocation = self.fc.project_reqs.loc[(self.fc.project_reqs.index >= start_date) & (self.fc.project_reqs.index <= end_date), id_value]
+            nominal_allocation = self.fc.project_reqs[id_value]
+            nominal_allocation = self.fc.select_date_range(nominal_allocation, start_date, end_date, drop_zero_cols=False)
 
             time_label = 'Time Requirement'
         else:
@@ -168,7 +169,7 @@ class Visualise:
             df.plot.area(ax=ax, linewidth=0)
 
             plt.title(df.columns.name)
-            plt.ylabel('Proportion 6.4hr days')
+            plt.ylabel('Total FTE @ 6.4 hrs/day')
             plt.xticks()
 
             nominal_allocation = nominal_allocation.resample('W-MON').mean()
@@ -176,6 +177,8 @@ class Visualise:
 
             plt.legend(title='', loc='best')
             plt.xlim([start_date, end_date])
+
+            plt.ylim([0, 1.1*max([nominal_allocation.max(), df.max().max()])])
 
             plt.show()
 
@@ -447,6 +450,7 @@ class Visualise:
             print('Nothing to plot.')
 
     def plot_capacity_check(self, start_date=None, end_date=None, figsize=(10, 7)):
+        """Plot of total project requirements, total team allocation and total team capacity over time."""
 
         start_date, end_date, _ = self.get_time_parameters(start_date, end_date)
 
