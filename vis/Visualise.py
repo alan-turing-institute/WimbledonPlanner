@@ -5,14 +5,14 @@ from matplotlib.colors import rgb2hex
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-pd.options.mode.chained_assignment = None  # default='warn' # Gets rid of SettingWithCopy warnings
-pd.options.display.float_format = '{:.1f}'.format # only print one decimal place
-sns.set(font_scale=1.5) # have bigger fonts by default
-
 
 class Visualise:
 
     def __init__(self, start_date=None, end_date=None, freq=None):
+        pd.options.mode.chained_assignment = None  # default='warn' # Gets rid of SettingWithCopy warnings
+        pd.options.display.float_format = '{:.1f}'.format  # only print one decimal place
+        sns.set(font_scale=1.5)  # have bigger fonts by default
+
         self.fc = Forecast()
 
         #  set default time parameters
@@ -43,6 +43,19 @@ class Visualise:
             freq = self.FREQ
 
         return start_date, end_date, freq
+
+    def format_date_index(self, df, freq=None):
+        _, _, freq = self.get_time_parameters(freq=freq)
+
+        # change date format for prettier printing
+        if freq == 'MS':
+            df = pd.DataFrame(df, index=df.index.strftime("%b-%Y"))
+        elif freq == 'W-MON':
+            df = pd.DataFrame(df, index=df.index.strftime("%d-%b-%Y"))
+        else:
+            df = pd.DataFrame(df, index=df.index.strftime("%Y-%m-%d"))
+
+        return df
 
     # Functions to generate some distinct colours, from:
     # https://gist.github.com/adewes/5884820
@@ -158,6 +171,7 @@ class Visualise:
             plt.ylabel('Proportion 6.4hr days')
             plt.xticks()
 
+            nominal_allocation = nominal_allocation.resample('W-MON').mean()
             nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
 
             plt.legend(title='', loc='best')
@@ -259,7 +273,7 @@ class Visualise:
                 apply(highlight_tot)
 
     def table_allocations(self, id_value, id_type,
-                                 start_date=None, end_date=None, freq=None):
+                          start_date=None, end_date=None, freq=None):
         """Display a formatted table of a person's project allocations in a given
         date range, and with a certain date frequency. E.g. if freq='MS' each row
         will correspond to a month. 'D' for days, or 'W-MON' for weeks."""
@@ -272,23 +286,24 @@ class Visualise:
                 # initialise df
                 df = self.fc.people_totals.copy()
 
-                # replace person ids with names
-                df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
-
                 # slice the given date range from the dataframe
                 df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+
+                # replace person ids with names
+                df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
 
             else:
                 # extract the person's allocations, and replace ids with names
                 df = self.fc.people_allocations[id_value].copy()
+
+                # slice the given date range from the dataframe
+                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
                 df.columns.name = self.fc.get_person_name(id_value)
 
                 # add the person's total project assignment to the data frame
                 df['TOTAL'] = self.fc.people_totals[id_value]
-
-                # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
         elif id_type == 'project_id':
 
@@ -296,43 +311,44 @@ class Visualise:
                 # initialise df
                 df = self.fc.project_totals.copy()
 
-                # replace person ids with names
-                # df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-
                 # slice the given date range from the dataframe
                 df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                # replace person ids with names
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
 
             elif id_value == 'ALL_REQUIREMENTS':
                 # initialise df
                 df = self.fc.project_reqs.copy()
 
-                # replace person ids with names
-                # df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-
                 # slice the given date range from the dataframe
                 df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                # replace person ids with names
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
 
             elif id_value == 'ALL_NETALLOC':
                 # initialise df
                 df = self.fc.project_netalloc.copy()
 
-                # replace person ids with names
-                # df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-
                 # slice the given date range from the dataframe
                 df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                # replace person ids with names
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
 
             else:
                 # extract the project's people allocations, and replace ids with names
                 df = self.fc.project_allocations[id_value].copy()
+
+                # slice the given date range from the dataframe
+                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
                 df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
                 df.columns.name = self.fc.get_project_name(id_value)
 
                 # add the project's missing resource allocation
                 df['UNALLOCATED'] = self.fc.project_netalloc[id_value]
-
-                # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
         else:
             return ValueError('id_type must be person_id or project_id')
@@ -343,13 +359,7 @@ class Visualise:
             # resample the rows to the given date frequency
             df = df.resample(freq).mean()
 
-            # change date format for prettier printing
-            if freq == 'MS':
-                df = pd.DataFrame(df, index=df.index.strftime("%b-%Y"))
-            elif freq == 'W-MON':
-                df = pd.DataFrame(df, index=df.index.strftime("%d-%b-%Y"))
-            else:
-                df = pd.DataFrame(df, index=df.index.strftime("%Y-%m-%d"))
+            df = self.format_date_index(df, freq)
 
             return self.highlight_allocations(df)
 
@@ -357,3 +367,107 @@ class Visualise:
             print('Nothing to print.')
             return df
 
+    def heatmap_allocations(self, plot_type,
+                            start_date=None, end_date=None, freq=None,
+                            figsize=(20, 20)):
+        """Display a formatted table of a person's project allocations in a given
+        date range, and with a certain date frequency. E.g. if freq='MS' each row
+        will correspond to a month. 'D' for days, or 'W-MON' for weeks."""
+
+        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+
+        if plot_type == 'people':
+
+            # initialise df
+            df = self.fc.people_totals.copy()
+
+            # slice the given date range from the dataframe
+            df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+
+            # replace person ids with names
+            df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
+
+            title = 'Total Person Allocation (% FTE @ 6.4hrs/day)'
+            fmt = '.0%'
+
+        elif 'project' in plot_type:
+
+            if plot_type == 'project_totals':
+                # initialise df
+                df = self.fc.project_totals.copy()
+
+                title = 'Project Resource Allocation (FTE @ 6.4 hrs/day)'
+                fmt = '.1f'
+
+            elif plot_type == 'project_reqs':
+                # initialise df
+                df = self.fc.project_reqs.copy()
+
+                title = 'Project Resource Requirements (FTE @ 6.4 hrs/day)'
+                fmt = '.1f'
+
+            elif plot_type == 'project_netallocs':
+                # initialise df
+                df = self.fc.project_netalloc.copy()
+
+                title = 'Project Resource Not Yet Allocated (FTE @ 6.4 hrs/day)'
+                fmt = '.1f'
+
+            else:
+                return ValueError('id_type must be people, project_totals, project_reqs or project_netallocs')
+
+            # slice the given date range from the dataframe
+            df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+            # replace person ids with names
+            df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+
+        else:
+            return ValueError('id_type must be people, project_totals, project_reqs or project_netallocs')
+
+        # check there's something to display
+        rows, cols = df.shape
+        if rows > 0 and cols > 0:
+            # resample the rows to the given date frequency
+            df = df.resample(freq).mean()
+
+            # change date format for prettier printing
+            df = self.format_date_index(df, freq)
+
+            plt.figure(figsize=figsize)
+
+            # sort by largest values (proceeding through columns to find differences)
+            sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False), linewidths=1,
+                        cmap='Reds', cbar=False,
+                        annot=True, fmt=fmt, annot_kws={'fontsize': 14})
+
+            plt.title(title)
+
+        else:
+            print('Nothing to plot.')
+
+    def plot_capacity_check(self, start_date=None, end_date=None, figsize=(10, 7)):
+
+        start_date, end_date, _ = self.get_time_parameters(start_date, end_date)
+
+        reqs = self.fc.project_reqs.sum(axis=1)
+        reqs = self.fc.select_date_range(reqs, start_date, end_date, drop_zero_cols=False)
+        reqs = reqs.resample('W-MON').mean()
+
+        alloc = self.fc.project_totals.sum(axis=1)
+        alloc = self.fc.select_date_range(alloc, start_date, end_date, drop_zero_cols=False)
+        alloc = alloc.resample('W-MON').mean()
+
+        # Weekly capacity just a constant based on number of people for now -
+        # no way to know e.g. when people started/stopped in REG in current data
+        team100 = self.fc.people['weekly_capacity'].sum()
+
+        ax = plt.figure(figsize=figsize).gca()
+
+        reqs.plot(ax=ax, label='Project Required')
+        alloc.plot(ax=ax, label='Team Allocated')
+        xlim = plt.xlim()
+        plt.plot(plt.xlim(), [team100, team100], 'k--', label='Team Total')
+        plt.xlim(xlim)
+        plt.legend()
+        plt.ylabel('FTE @ 6.4hrs/day')
