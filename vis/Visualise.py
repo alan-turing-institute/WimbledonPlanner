@@ -107,7 +107,7 @@ class Visualise:
                 return 'background-color: red; color: white; border: 5px solid black'
 
             elif cell in names:
-                return 'background-color: ' + rgb2hex(colors[cell])
+                return 'background-color: ' + rgb2hex(colors[cell]) + '; border: 1px solid black'
 
             else:
                 return 'background-color: white'
