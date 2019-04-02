@@ -130,3 +130,5 @@ dmypy.json
 .Rhistory
 api/config.py
 api/forecast_cache.sqlite
+data/figs/people/individual
+data/figs/projects/individual

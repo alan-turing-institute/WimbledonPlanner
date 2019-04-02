@@ -17,12 +17,12 @@ class Visualise:
 
         #  set default time parameters
         if start_date is None:
-            self.START_DATE = pd.datetime(2019, 1, 1)
+            self.START_DATE = pd.datetime.now()
         else:
             self.START_DATE = start_date
 
         if end_date is None:
-            self.END_DATE = pd.datetime(2019, 12, 31)
+            self.END_DATE = pd.datetime.now() + pd.Timedelta('365 days')
         else:
             self.END_DATE = end_date
 
@@ -112,7 +112,7 @@ class Visualise:
             else:
                 return 'background-color: white'
 
-        styled_df = sheet.style.applymap(highlight_name)
+        styled_df = sheet.style.applymap(highlight_name).set_properties(**{'text-align': 'center'})
 
         return styled_df
 
@@ -221,25 +221,26 @@ class Visualise:
                 time_label = 'Time Requirement'
 
             # plot the data
-            ax = plt.figure(figsize=(15, 5)).gca()
+            fig = plt.figure(figsize=(15, 5))
+            ax = fig.gca()
+
             df.plot.area(ax=ax, linewidth=0)
 
-            plt.title(df.columns.name)
-            plt.ylabel('Total FTE @ 6.4 hrs/day')
-            plt.xticks()
+            ax.set_title(df.columns.name)
+            ax.set_ylabel('Total FTE @ 6.4 hrs/day')
 
             nominal_allocation = nominal_allocation.resample(freq).mean()
             nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
 
-            plt.legend(title='', loc='best')
-            plt.xlim([start_date, end_date])
+            ax.legend(title='', loc='best')
+            ax.set_xlim([start_date, end_date])
+            ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.max().max()])])
 
-            plt.ylim([0, 1.1 * max([nominal_allocation.max(), df.max().max()])])
-
-            plt.show()
+            return fig
 
         except ValueError as e:
             print(e)
+            return None
 
     def highlight_allocations(self, df):
         """Function to conditionally style a data frame:
@@ -394,16 +395,20 @@ class Visualise:
             # change date format for prettier printing
             df = self.format_date_index(df, freq)
 
-            ax = plt.figure(figsize=(df.shape[0], df.shape[1])).gca()
+            fig = plt.figure(figsize=(df.shape[0], df.shape[1]))
+            ax = fig.gca()
             # sort by largest values (proceeding through columns to find differences)
             sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False), linewidths=1,
                         cmap='Reds', cbar=False,
                         annot=True, fmt=fmt, annot_kws={'fontsize': 14}, ax=ax)
 
-            plt.title(title)
+            ax.set_title(title)
+
+            return fig
 
         except ValueError as e:
             print(e)
+            return None
 
     def plot_capacity_check(self, start_date=None, end_date=None, figsize=(10, 7)):
         """Plot of total project requirements, total team allocation and total team capacity over time."""
@@ -422,12 +427,15 @@ class Visualise:
         # no way to know e.g. when people started/stopped in REG in current data
         team100 = self.fc.people['weekly_capacity'].sum()
 
-        ax = plt.figure(figsize=figsize).gca()
+        fig = plt.figure(figsize=figsize)
+        ax = fig.gca()
 
         reqs.plot(ax=ax, label='Project Required')
         alloc.plot(ax=ax, label='Team Allocated')
-        xlim = plt.xlim()
-        plt.plot(plt.xlim(), [team100, team100], 'k--', label='Team Total')
-        plt.xlim(xlim)
-        plt.legend()
-        plt.ylabel('FTE @ 6.4hrs/day')
+        xlim = ax.get_xlim()
+        ax.plot(xlim, [team100, team100], 'k--', label='Team Total')
+        ax.set_xlim(xlim)
+        ax.legend()
+        ax.set_ylabel('FTE @ 6.4hrs/day')
+
+        return fig
