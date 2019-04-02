@@ -1,12 +1,22 @@
 from Visualise import Visualise
 import string
 import matplotlib.pyplot as plt
+import os.path
+
+
+def check_dir(dir):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
 
 def save_fig(fig, save_dir, save_name, dpi=300):
+    check_dir(save_dir)
     fig.savefig(save_dir+'/'+save_name+'.png', dpi=dpi, bbox_inches='tight')
     plt.close(fig)
 
+
 def save_sheet(sheet, save_dir, save_name):
+    check_dir(save_dir)
     sheet.to_excel(save_dir + '/' + save_name + '.xlsx')
     with open(save_dir + '/' + save_name + '.html', 'w') as f:
         f.write(sheet.render())
