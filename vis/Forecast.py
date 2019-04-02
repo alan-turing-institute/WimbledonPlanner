@@ -6,9 +6,9 @@ class Forecast:
     def __init__(self):
         self.people, self.projects, self.placeholders, self.assignments, self.date_range = self.load_data()
 
-        self.people_allocations, self.people_totals = self.get_allocations('person_id')
-        self.project_allocations, self.project_totals = self.get_allocations('project_id')
-        self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder_id')
+        self.people_allocations, self.people_totals = self.get_allocations('person')
+        self.project_allocations, self.project_totals = self.get_allocations('project')
+        self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder')
 
         self.project_reqs, self.project_netalloc = self.get_project_required()
 
@@ -95,15 +95,15 @@ class Forecast:
 
     def get_name(self, id_value, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
-        'person_id', 'project_id' or 'placeholder_id'"""
-        if id_type == 'person_id':
+        'person', 'project' or 'placeholder'"""
+        if id_type == 'person':
             return self.get_person_name(id_value)
-        elif id_type == 'project_id':
+        elif id_type == 'project':
             return self.get_project_name(id_value)
-        elif id_type == 'placeholder_id':
+        elif id_type == 'placeholder':
             return self.get_placeholder_name(id_value)
         else:
-            raise ValueError('id_type must be person_id, project_id or placeholder_id')
+            raise ValueError('id_type must be person, project or placeholder')
 
     def select_date_range(self, df, start_date, end_date, drop_zero_cols=True):
         """Extract a range of dates from a dataframe with a datetime index,
@@ -120,27 +120,27 @@ class Forecast:
     def get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,
         the columns are projects/people/placeholders depending on id_column, and the values are
-        time allocations for that date. id_column can be 'person_id', 'project_id', or 'placeholder_id'."""
-        if id_column == 'person_id':
+        time allocations for that date. id_column can be 'person', 'project', or 'placeholder'."""
+        if id_column == 'person':
             grouped_allocations = self.assignments.groupby(
                 ['person_id', 'project_id', 'start_date', 'end_date']).allocation.sum()
             id_values = self.people.index
             ref_column = 'project_id'
 
-        elif id_column == 'project_id':
+        elif id_column == 'project':
             grouped_allocations = self.assignments.groupby(
                 ['project_id', 'person_id', 'start_date', 'end_date']).allocation.sum()
             id_values = self.projects.index
             ref_column = 'person_id'
 
-        elif id_column == 'placeholder_id':
+        elif id_column == 'placeholder':
             grouped_allocations = self.assignments.groupby(
                 ['placeholder_id', 'project_id', 'start_date', 'end_date']).allocation.sum()
             id_values = self.placeholders.index
             ref_column = 'project_id'
 
         else:
-            raise ValueError('id_column must be person_id, project_id or placeholder_id')
+            raise ValueError('id_column must be person, project or placeholder')
 
         allocations = {}
 
@@ -202,19 +202,19 @@ class Forecast:
         return project_reqs, project_netalloc
 
     def spreadsheet_sheet(self, key_type, start_date, end_date, freq):
-        """Create a spreadsheet style dataframe with the rows being key_type (project_id or person_id), the columns
+        """Create a spreadsheet style dataframe with the rows being key_type (project or person ids), the columns
         dates and the cell values being either a person or project and their time allocation, sorted by time allocation."""
 
-        if key_type == 'project_id':
+        if key_type == 'project':
             data_dict = self.project_allocations
             mask = (self.project_netalloc.index >= start_date) & (self.project_netalloc.index <= end_date)
             resreq = self.project_netalloc.loc[mask]
 
-        elif key_type == 'person_id':
+        elif key_type == 'person':
             data_dict = self.people_allocations
 
         else:
-            return ValueError('key type must be person_id or project_id')
+            return ValueError('key type must be person or project')
 
         sheet = {}
 
@@ -235,17 +235,17 @@ class Forecast:
             if rows > 0 and cols > 0:
 
                 # replace ids with names. for project id: include resource required.
-                if key_type == 'project_id':
+                if key_type == 'project':
                     df.columns = [self.get_person_name(person_id) for person_id in df.columns]
                     df.columns.name = self.get_project_name(key)
                     df['RESOURCE REQUIRED'] = resreq[key]
 
-                elif key_type == 'person_id':
+                elif key_type == 'person':
                     df.columns = [self.get_project_name(project_id) for project_id in df.columns]
                     df.columns.name = self.get_person_name(key)
 
                 else:
-                    return ValueError('key type must be person_id or project_id')
+                    return ValueError('key type must be person or project')
 
                 # update the set of names
                 [names.add(col) for col in df.columns]
