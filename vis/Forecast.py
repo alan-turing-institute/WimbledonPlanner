@@ -263,7 +263,8 @@ class Forecast:
                 [names.add(col) for col in df.columns]
 
                 # resample the data to the given date frequency
-                df = df.resample(freq).mean()
+                if freq != 'D':
+                    df = df.resample(freq).mean()
 
                 # max number items assigned to this key at a time
                 n_columns = (df > 0).sum(axis=1).max()

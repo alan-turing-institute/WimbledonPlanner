@@ -187,7 +187,9 @@ class Visualise:
         # check whether there's anything to plot
         rows, cols = df.shape
         if rows > 0 and cols > 0:
-            df = df.resample(freq).mean()
+            if freq != 'D':
+                df = df.resample(freq).mean()
+
             return df
 
         else:
@@ -229,7 +231,9 @@ class Visualise:
             ax.set_title(df.columns.name)
             ax.set_ylabel('Total FTE @ 6.4 hrs/day')
 
-            nominal_allocation = nominal_allocation.resample(freq).mean()
+            if freq != 'D':
+                nominal_allocation = nominal_allocation.resample(freq).mean()
+
             nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
 
             ax.legend(title='', loc='best')
@@ -345,11 +349,17 @@ class Visualise:
 
             if id_type == 'project' and 'ALL' not in str(id_value):
                 # add the project's missing resource allocation
-                df['UNALLOCATED'] = self.fc.project_netalloc[id_value].resample(freq).mean()
+                if freq == 'D':
+                    df['UNALLOCATED'] = self.fc.project_netalloc[id_value]
+                else:
+                    df['UNALLOCATED'] = self.fc.project_netalloc[id_value].resample(freq).mean()
 
             elif id_type == 'person' and 'ALL' not in str(id_value):
                 # add the person's total project assignment to the data frame
-                df['TOTAL'] = self.fc.people_totals[id_value].resample(freq).mean()
+                if freq == 'D':
+                    df['TOTAL'] = self.fc.people_totals[id_value]
+                else:
+                    df['TOTAL'] = self.fc.people_totals[id_value].resample(freq).mean()
 
             df = self.format_date_index(df, freq)
 
