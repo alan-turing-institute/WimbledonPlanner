@@ -1,4 +1,5 @@
 import pandas as pd
+import holidays
 
 
 class Forecast:
@@ -11,6 +12,19 @@ class Forecast:
         self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder')
 
         self.project_reqs, self.project_netalloc = self.get_project_required()
+
+    def get_business_days(self, start_date, end_date):
+        """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
+
+        date_range = pd.date_range(start=start_date,
+                                   end=end_date,
+                                   freq=pd.tseries.offsets.BDay())
+
+        # remove public holidays
+        pub_hols = holidays.England()
+        date_range = pd.to_datetime([date for date in date_range if date not in pub_hols])
+
+        return date_range
 
     def load_data(self):
         people = pd.read_csv('../data/forecast/people.csv',
@@ -50,10 +64,8 @@ class Forecast:
         # convert assignments in seconds per day to fractions of 6.4 hour days
         assignments['allocation'] = assignments['allocation'] / (6.4 * 60 * 60)
 
-        # Find the earliest and latest date in the data
-        date_range = pd.date_range(start=assignments['start_date'].min(),
-                                   end=assignments['end_date'].max(),
-                                   freq='D')
+        # Find the earliest and latest date in the data, create a range of weekdays between these dates
+        date_range = self.get_business_days(assignments['start_date'].min(), assignments['end_date'].max())
 
         return people, projects, placeholders, assignments, date_range
 
@@ -160,8 +172,8 @@ class Forecast:
 
                 # Loop over each assignment
                 for _, row in id_allocs.iterrows():
-                    # Create the range of dates that this assignment corresponds to, with daily frequency
-                    dates = pd.date_range(start=row['start_date'], end=row['end_date'], freq='D')
+                    # Create the range of business days that this assignment corresponds to
+                    dates = self.get_business_days(row['start_date'], row['end_date'])
 
                     # Add the allocation to the corresponding project for the range of dates.
                     id_alloc_days.loc[dates, row[ref_column]] += row['allocation']

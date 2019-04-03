@@ -345,11 +345,11 @@ class Visualise:
 
             if id_type == 'project' and 'ALL' not in str(id_value):
                 # add the project's missing resource allocation
-                df['UNALLOCATED'] = self.fc.project_netalloc[id_value]
+                df['UNALLOCATED'] = self.fc.project_netalloc[id_value].resample(freq).mean()
 
             elif id_type == 'person' and 'ALL' not in str(id_value):
                 # add the person's total project assignment to the data frame
-                df['TOTAL'] = self.fc.people_totals[id_value]
+                df['TOTAL'] = self.fc.people_totals[id_value].resample(freq).mean()
 
             df = self.format_date_index(df, freq)
 
