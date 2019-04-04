@@ -1,4 +1,4 @@
-from Forecast import Forecast
+import DataHandlers
 import pandas as pd
 import random
 from matplotlib.colors import rgb2hex
@@ -13,7 +13,7 @@ class Visualise:
         pd.options.display.float_format = '{:.1f}'.format  # only print one decimal place
         sns.set(font_scale=1.5)  # have bigger fonts by default
 
-        self.fc = Forecast()
+        self.fc = DataHandlers.Forecast()
 
         #  set default time parameters
         if start_date is None:
@@ -124,7 +124,7 @@ class Visualise:
                 df = self.fc.people_totals.copy()
 
                 # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
 
                 # replace person ids with names
                 df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
@@ -134,7 +134,7 @@ class Visualise:
                 df = self.fc.people_allocations[id_value].copy()
 
                 # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
                 df.columns.name = self.fc.get_person_name(id_value)
@@ -146,7 +146,7 @@ class Visualise:
                 df = self.fc.project_totals.copy()
 
                 # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 # replace person ids with names
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
@@ -156,7 +156,7 @@ class Visualise:
                 df = self.fc.project_reqs.copy()
 
                 # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 # replace person ids with names
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
@@ -166,7 +166,7 @@ class Visualise:
                 df = self.fc.project_netalloc.copy()
 
                 # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 # replace person ids with names
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
@@ -176,7 +176,7 @@ class Visualise:
                 df = self.fc.project_allocations[id_value].copy()
 
                 # slice the given date range from the dataframe
-                df = self.fc.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
                 df.columns.name = self.fc.get_project_name(id_value)
@@ -218,8 +218,8 @@ class Visualise:
             elif id_type == 'project':
                 # get the project's person allocations
                 nominal_allocation = self.fc.project_reqs[id_value]
-                nominal_allocation = self.fc.select_date_range(nominal_allocation, start_date, end_date,
-                                                               drop_zero_cols=False)
+                nominal_allocation = DataHandlers.select_date_range(nominal_allocation, start_date, end_date,
+                                                                drop_zero_cols=False)
                 time_label = 'Time Requirement'
 
             # plot the data
@@ -426,11 +426,11 @@ class Visualise:
         start_date, end_date, _ = self.get_time_parameters(start_date, end_date)
 
         reqs = self.fc.project_reqs.sum(axis=1)
-        reqs = self.fc.select_date_range(reqs, start_date, end_date, drop_zero_cols=False)
+        reqs = DataHandlers.select_date_range(reqs, start_date, end_date, drop_zero_cols=False)
         reqs = reqs.resample('W-MON').mean()
 
         alloc = self.fc.project_totals.sum(axis=1)
-        alloc = self.fc.select_date_range(alloc, start_date, end_date, drop_zero_cols=False)
+        alloc = DataHandlers.select_date_range(alloc, start_date, end_date, drop_zero_cols=False)
         alloc = alloc.resample('W-MON').mean()
 
         # Weekly capacity just a constant based on number of people for now -

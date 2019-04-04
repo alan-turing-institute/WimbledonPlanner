@@ -142,6 +142,9 @@ tasks.to_csv('../data/harvest/tasks.csv')
 roles = get_all_pages(client.roles, title='ROLES')
 roles.to_csv('../data/harvest/roles.csv')
 
+clients = get_all_pages(client.clients, title='CLIENTS')
+clients.to_csv('../data/harvest/clients.csv')
+
 '''
 time_entries: Currently fails due to time_entries.cost_rate should be "float" instead of "NoneType" error
 
