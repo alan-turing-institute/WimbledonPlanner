@@ -451,22 +451,45 @@ class Visualise:
 
         return fig
 
-    def plot_forecast_harvest(self, forecast_id, harvest_id, start_date=None, end_date=None, freq=None):
+    def plot_forecast_harvest(self, forecast_id, harvest_id,
+                              start_date=None, end_date=None, freq='W-MON',
+                              err_bar=True, err_size=0.2,
+                              stack=False):
 
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
-        fc_totals = self.fc.project_totals[forecast_id]
+        fc_totals = 6.4*self.fc.project_totals[forecast_id]
         fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
+        fc_totals = fc_totals.resample(freq).sum().cumsum()
 
-        hv_totals = self.hv.projects_totals[harvest_id]
-        hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
+        if stack:
+            hv_totals = self.hv.projects_people[harvest_id]
+            hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=True)
+            hv_totals.columns = [self.hv.get_person_name(idx) for idx in hv_totals.columns]
+        else:
+            hv_totals = self.hv.projects_totals[harvest_id]
+            hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
+
+        hv_totals = hv_totals.resample(freq).sum().cumsum()
 
         fig = plt.figure(figsize=(10, 10))
         ax = fig.gca()
 
-        (6.4*fc_totals).cumsum().plot(ax=ax, label='Forecast')
-        hv_totals.cumsum().plot(ax=ax, label='Harvest')
+        fc_totals.plot(ax=ax, label='Forecast', linewidth=3, color='k')
 
+        if err_bar:
+            ((1+err_size) * fc_totals).plot(linestyle='--', linewidth=1, color='k',
+                                            label='Forecast +/- {:.0%}'.format(err_size))
+            ((1-err_size) * fc_totals).plot(linestyle='--', linewidth=1, color='k', label='')
+
+        if stack:
+            hv_totals.plot.area(ax=ax)
+        else:
+            hv_totals.plot(ax=ax, label='Harvest', linewidth=3)
+
+        plt.xlim([start_date, end_date])
+        plt.ylabel('Cumulative Hours')
         plt.legend()
+        plt.title(self.fc.get_project_name(forecast_id))
 
         return fig
