@@ -14,6 +14,7 @@ class Visualise:
         sns.set(font_scale=1.5)  # have bigger fonts by default
 
         self.fc = DataHandlers.Forecast()
+        self.hv = DataHandlers.Harvest()
 
         #  set default time parameters
         if start_date is None:
@@ -447,5 +448,25 @@ class Visualise:
         ax.set_xlim(xlim)
         ax.legend()
         ax.set_ylabel('FTE @ 6.4hrs/day')
+
+        return fig
+
+    def plot_forecast_harvest(self, forecast_id, harvest_id, start_date=None, end_date=None, freq=None):
+
+        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+
+        fc_totals = self.fc.project_totals[forecast_id]
+        fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
+
+        hv_totals = self.hv.projects_totals[harvest_id]
+        hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
+
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.gca()
+
+        (6.4*fc_totals).cumsum().plot(ax=ax, label='Forecast')
+        hv_totals.cumsum().plot(ax=ax, label='Harvest')
+
+        plt.legend()
 
         return fig

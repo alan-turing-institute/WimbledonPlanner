@@ -326,10 +326,10 @@ class Harvest:
         self.people_clients = self.get_entries('person', 'client')
 
         # TODO in totals need to be able to deal with leave etc.
-        # self.projects_totals = self.get_entries('project', 'TOTAL')
-        # self.people_totals = self.get_entries('person', 'TOTAL')
-        # self.clients_totals = self.get_entries('client', 'TOTAL')
-        # self.tasks_totals = self.get_entries('task', 'TOTAL')
+        self.projects_totals = self.get_entries('project', 'TOTAL')
+        self.people_totals = self.get_entries('person', 'TOTAL')
+        self.clients_totals = self.get_entries('client', 'TOTAL')
+        self.tasks_totals = self.get_entries('task', 'TOTAL')
 
     def load_data(self):
         time_entries = pd.read_csv('../data/harvest/time_entries.csv',
@@ -374,8 +374,8 @@ class Harvest:
         people.dropna(axis=1, inplace=True)
 
         # Find the earliest and latest date in the data, create a range of weekdays between these dates
-        # TODO: excluding weekends/public holidays causes issues for e.g. annual leave, data imported from spreadsheet allocated to start of month
-        # date_range = get_business_days(time_entries['spent_date'].min(), time_entries['spent_date'].max())
+        # NB: Harvest data needs to include non-working days as there may be time entries on these days, e.g.
+        # leave or block entering data for a month on the 1st of that month.
         date_range = pd.date_range(start=time_entries['spent_date'].min(),
                                    end=time_entries['spent_date'].max(),
                                    freq='D')
@@ -472,8 +472,13 @@ class Harvest:
             ref_column = 'client.id'
         elif ref_column == 'task':
             ref_column = 'task.id'
+        elif ref_column != 'TOTAL':
+            raise ValueError('id_column must be person, project, client, task or TOTAL')
 
-        grouped_entries = self.time_entries.groupby([id_column, ref_column, 'spent_date']).hours.sum()
+        if ref_column == 'TOTAL':
+            grouped_entries = self.time_entries.groupby([id_column, 'spent_date']).hours.sum()
+        else:
+            grouped_entries = self.time_entries.groupby([id_column, ref_column, 'spent_date']).hours.sum()
 
         entries = {}
 
@@ -488,21 +493,35 @@ class Harvest:
                 id_entries = id_entries.reset_index()
 
                 # Initialise dataframe to store results
-                id_entry_days = pd.DataFrame(index=self.date_range, columns=id_entries[ref_column].unique())
+                if ref_column == 'TOTAL':
+                    id_entry_days = pd.Series(index=self.date_range)
+                else:
+                    id_entry_days = pd.DataFrame(index=self.date_range, columns=id_entries[ref_column].unique())
+
                 id_entry_days.fillna(0, inplace=True)
 
                 # Loop over each time entry
                 for _, row in id_entries.iterrows():
-                    id_entry_days.loc[row['spent_date'], row[ref_column]] += row['hours']
+                    if ref_column == 'TOTAL':
+                        id_entry_days.loc[row['spent_date']] += row['hours']
+                    else:
+                        id_entry_days.loc[row['spent_date'], row[ref_column]] += row['hours']
 
             else:
                 # no projects, just make an empty dataframe
-                id_entry_days = pd.DataFrame(index=self.date_range)
+                if ref_column == 'TOTAL':
+                    id_entry_days = pd.Series(index=self.date_range).fillna(0)
+                else:
+                    id_entry_days = pd.DataFrame(index=self.date_range)
 
             # Add the person's name as a label - just nice for printing later.
-            id_entry_days.columns.name = self.get_name(idx, id_column)
+            if ref_column != 'TOTAL':
+                id_entry_days.columns.name = self.get_name(idx, id_column)
 
             entries[idx] = id_entry_days
+
+        if ref_column == 'TOTAL':
+            entries = pd.DataFrame(entries)
 
         return entries
 
