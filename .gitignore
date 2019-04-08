@@ -131,4 +131,5 @@ dmypy.json
 api/config.py
 api/forecast_cache.sqlite
 data/figs/people/individual
+data/figs/harvest
 data/figs/projects/individual

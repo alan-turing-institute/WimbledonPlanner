@@ -4,7 +4,7 @@ import random
 from matplotlib.colors import rgb2hex
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import numpy as np
 
 class Visualise:
 
@@ -462,6 +462,8 @@ class Visualise:
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
         harvest_id = self.fc.get_harvest_id(forecast_id)
+        if np.isnan(harvest_id):
+            raise ValueError('No harvest_id exists for forecast_id '+str(forecast_id))
 
         fc_totals = 6.4*self.fc.project_totals[forecast_id].copy()
         fc_totals = fc_totals.resample(freq).sum().cumsum()
@@ -476,6 +478,9 @@ class Visualise:
             hv_totals = self.hv.projects_totals[harvest_id].copy()
             hv_totals = hv_totals.resample(freq).sum().cumsum()
             hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
+
+        if (fc_totals.sum() == 0) & (hv_totals == 0):
+            raise ValueError('forecast_id '+str(forecast_id)+' no data to plot.')
 
         try:
             fig = plt.figure(figsize=(10, 10))
@@ -501,7 +506,11 @@ class Visualise:
             return fig
 
         except ValueError as e:
-            print('No data to plot.')
+            plt.close(fig)
+            raise ValueError('forecast_id '+str(forecast_id)+' plot failed')
+        except TypeError as e:
+            plt.close(fig)
+            raise TypeError('forecast_id '+str(forecast_id)+' plot failed')
 
     def plot_harvest(self, id_type, group_type, harvest_id=None,
                     start_date=None, end_date=None, freq='MS',
