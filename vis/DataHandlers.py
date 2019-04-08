@@ -112,6 +112,10 @@ class Forecast:
         """Get the id of a project from its name"""
         return self.projects.index[self.projects.name == project_name][0]
 
+    def get_harvest_id(self, forecast_id):
+        """get the harvest id of a forecast project."""
+        return self.projects.loc[forecast_id, 'harvest_id']
+
     def get_placeholder_name(self, placeholder_id):
         """Get the name of a placeholder from its id"""
         return self.placeholders.loc[placeholder_id, 'name']
@@ -437,6 +441,20 @@ class Harvest:
             return self.get_client_name(id_value)
         elif id_type == 'task'  or id_type == 'task.id':
             return self.get_task_name(id_value)
+        else:
+            raise ValueError('id_type must be person, project, client or task')
+
+    def get_id(self, name, name_type):
+        """Get the name of an id based on the type of id it is. id_type can be
+        'person', 'project' 'client', or 'task'."""
+        if name_type == 'person':
+            return self.get_person_id(name.split(' ')[0], ' '.join(name.split(' ')[1:]))
+        elif name_type == 'project':
+            return self.get_project_id(name)
+        elif name_type == 'client':
+            return self.get_client_id(name)
+        elif name_type == 'task':
+            return self.get_task_id(name)
         else:
             raise ValueError('id_type must be person, project, client or task')
 

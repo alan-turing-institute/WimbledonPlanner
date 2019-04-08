@@ -451,45 +451,172 @@ class Visualise:
 
         return fig
 
-    def plot_forecast_harvest(self, forecast_id, harvest_id,
+    def plot_forecast_harvest(self, forecast_id,
                               start_date=None, end_date=None, freq='W-MON',
                               err_bar=True, err_size=0.2,
                               stack=False):
 
+        """compare planned time for a project in forecast to tracked time in harvest.
+        If stack is True: Area plot for harvest data split into each person's contribution.
+        If err_bar is True: Add lines representing forecast projection +/- err_size*100 %"""
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
-        fc_totals = 6.4*self.fc.project_totals[forecast_id]
-        fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
+        harvest_id = self.fc.get_harvest_id(forecast_id)
+
+        fc_totals = 6.4*self.fc.project_totals[forecast_id].copy()
         fc_totals = fc_totals.resample(freq).sum().cumsum()
+        fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
 
         if stack:
-            hv_totals = self.hv.projects_people[harvest_id]
+            hv_totals = self.hv.projects_people[harvest_id].copy()
+            hv_totals = hv_totals.resample(freq).sum().cumsum()
             hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=True)
             hv_totals.columns = [self.hv.get_person_name(idx) for idx in hv_totals.columns]
         else:
-            hv_totals = self.hv.projects_totals[harvest_id]
+            hv_totals = self.hv.projects_totals[harvest_id].copy()
+            hv_totals = hv_totals.resample(freq).sum().cumsum()
             hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
 
-        hv_totals = hv_totals.resample(freq).sum().cumsum()
+        try:
+            fig = plt.figure(figsize=(10, 10))
+            ax = fig.gca()
 
-        fig = plt.figure(figsize=(10, 10))
+            fc_totals.plot(ax=ax, label='Forecast', linewidth=3, color='k')
+
+            if err_bar:
+                ((1+err_size) * fc_totals).plot(linestyle='--', linewidth=1, color='k',
+                                                label='Forecast +/- {:.0%}'.format(err_size))
+                ((1-err_size) * fc_totals).plot(linestyle='--', linewidth=1, color='k', label='')
+
+            if stack:
+                hv_totals.plot.area(ax=ax)
+            else:
+                hv_totals.plot(ax=ax, label='Harvest', linewidth=3, color='r')
+
+            plt.xlim([start_date, end_date])
+            plt.ylabel('Cumulative Hours')
+            plt.legend()
+            plt.title(self.fc.get_project_name(forecast_id))
+
+            return fig
+
+        except ValueError as e:
+            print('No data to plot.')
+
+    def plot_harvest(self, id_type, group_type, harvest_id=None,
+                    start_date=None, end_date=None, freq='MS',
+                    plot_type='bar'):
+        """Bar charts of Harvest time tracking."""
+
+        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+
+        e = ValueError('Invalid id_type, group_type combination. Valid options are: person-project, '
+                       'person-client, person-task, person-TOTAL, project-person, project-task, '
+                       'project-TOTAL, client-TOTAL and task-TOTAL')
+
+        if id_type == 'person':
+            if harvest_id is not None and group_type != 'TOTAL':
+                id_name = self.hv.get_person_name(harvest_id)
+            else:
+                id_name = ''
+
+            if group_type == 'project':
+                df = self.hv.people_projects[harvest_id].copy()
+                df.columns = [self.hv.get_project_name(idx) for idx in df.columns]
+                type_name = 'Project'
+            elif group_type == 'client':
+                df = self.hv.people_clients[harvest_id].copy()
+                df.columns = [self.hv.get_client_name(idx) for idx in df.columns]
+                type_name = 'Client'
+            elif group_type == 'task':
+                df = self.hv.people_tasks[harvest_id].copy()
+                df.columns = [self.hv.get_task_name(idx) for idx in df.columns]
+                type_name = 'Task'
+            elif group_type == 'TOTAL':
+                df = self.hv.people_totals.copy()
+                df.columns = [self.hv.get_person_name(idx) for idx in df.columns]
+                type_name = 'People'
+            else:
+                raise e
+
+        elif id_type == 'project':
+            if harvest_id is not None and group_type != 'TOTAL':
+                id_name = self.hv.get_project_name(harvest_id)
+            else:
+                id_name = ''
+
+            if group_type == 'person':
+                df = self.hv.projects_people[harvest_id].copy()
+                df.columns = [self.hv.get_person_name(idx) for idx in df.columns]
+                type_name = 'People'
+            elif group_type == 'task':
+                df = self.hv.projects_tasks[harvest_id].copy()
+                df.columns = [self.hv.get_task_name(idx) for idx in df.columns]
+                type_name = 'Task'
+            elif group_type == 'TOTAL':
+                df = self.hv.projects_totals.copy()
+                df.columns = [self.hv.get_project_name(idx) for idx in df.columns]
+                type_name = 'Project'
+            else:
+                raise e
+
+        elif id_type == 'client':
+            id_name = ''
+
+            if group_type == 'TOTAL':
+                df = self.hv.clients_totals.copy()
+                df.columns = [self.hv.get_client_name(idx) for idx in df.columns]
+                type_name = 'Client'
+            else:
+                raise e
+
+        elif id_type == 'task':
+            id_name = ''
+
+            if group_type == 'TOTAL':
+                df = self.hv.tasks_totals.copy()
+                df.columns = [self.hv.get_task_name(idx) for idx in df.columns]
+                type_name = 'Task'
+            else:
+                raise e
+
+        else:
+            raise e
+
+        df = DataHandlers.select_date_range(df, start_date, end_date)
+
+        fig = plt.figure(figsize=(10, df.shape[1]))
         ax = fig.gca()
 
-        fc_totals.plot(ax=ax, label='Forecast', linewidth=3, color='k')
+        if plot_type == 'bar':
+            df.sum().sort_values().plot.barh(ax=ax)
+            ax.set_xlabel('Hours')
 
-        if err_bar:
-            ((1+err_size) * fc_totals).plot(linestyle='--', linewidth=1, color='k',
-                                            label='Forecast +/- {:.0%}'.format(err_size))
-            ((1-err_size) * fc_totals).plot(linestyle='--', linewidth=1, color='k', label='')
+        elif plot_type == 'pie':
+            fig = plt.figure(figsize=(10, 10))
+            ax = fig.gca()
 
-        if stack:
-            hv_totals.plot.area(ax=ax)
+            df.sum().sort_values().plot.pie(ax=ax)
+            ax.set_ylabel('')
+            ax.set_xlabel('')
+
+        elif plot_type == 'heatmap':
+            df = df.resample(freq).sum()
+            df = self.format_date_index(df, freq)
+            sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False),
+                        ax=ax, cmap='Reds', annot=True, cbar=False, fmt='.0f')
+
         else:
-            hv_totals.plot(ax=ax, label='Harvest', linewidth=3)
+            raise ValueError('plot_type must be bar or heatmap.')
 
-        plt.xlim([start_date, end_date])
-        plt.ylabel('Cumulative Hours')
-        plt.legend()
-        plt.title(self.fc.get_project_name(forecast_id))
+        title = '{:s} hours from {:s} to {:s}'.format(type_name,
+                                                      start_date.strftime('%d %b %y'),
+                                                      end_date.strftime('%d %b %y'))
+
+        if id_name != '':
+            title = id_name + '\n' + title
+
+        ax.set_title(title)
 
         return fig
+
