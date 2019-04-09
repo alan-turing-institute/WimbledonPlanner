@@ -1,7 +1,7 @@
 import pandas as pd
 # pip install holidays
 import holidays
-
+from copy import deepcopy
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
@@ -42,7 +42,9 @@ class Forecast:
         self.people, self.projects, self.placeholders, self.assignments, self.date_range = self.load_data()
 
         self.people_allocations, self.people_totals = self.get_allocations('person')
+
         self.project_allocations, self.project_totals = self.get_allocations('project')
+
         self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder')
 
         self.project_reqs, self.project_netalloc = self.get_project_required()
@@ -135,7 +137,13 @@ class Forecast:
         """Get the name of an id based on the type of id it is. id_type can be
         'person', 'project' or 'placeholder'"""
         if id_type == 'person':
-            return self.get_person_name(id_value)
+            try:
+                return self.get_person_name(id_value)
+            except KeyError:
+                # if person id search fails check whether it's a placeholder id
+                # to deal with cases where they've been merged together
+                return self.get_name(id_value, 'placeholder')
+
         elif id_type == 'project':
             return self.get_project_name(id_value)
         elif id_type == 'placeholder':
@@ -212,7 +220,7 @@ class Forecast:
         """Get amount of additional resource that needs to be required over time, i.e. difference between
         project requirements and project allocations."""
         # Project requirements = Project assignments + Resource required assignments
-        project_reqs = self.project_totals.copy()
+        project_reqs = self.project_totals.copy(deep=True)
 
         # add resource req info from placeholders
         resource_req_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('resource required')].index
@@ -227,17 +235,37 @@ class Forecast:
 
         return project_reqs, project_netalloc
 
-    def spreadsheet_sheet(self, key_type, start_date, end_date, freq):
+    def spreadsheet_sheet(self, key_type, start_date, end_date, freq, add_placeholders=True):
         """Create a spreadsheet style dataframe with the rows being key_type (project or person ids), the columns
-        dates and the cell values being either a person or project and their time allocation, sorted by time allocation."""
+        dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
+        If add_placeholders=True, non-resource required placeholders will be included on the sheet."""
 
         if key_type == 'project':
-            data_dict = self.project_allocations
+            # copy to prevent overwriting original
+            data_dict = deepcopy(self.project_allocations)
+
             mask = (self.project_netalloc.index >= start_date) & (self.project_netalloc.index <= end_date)
             resreq = self.project_netalloc.loc[mask]
 
+            if add_placeholders:
+                # add placeholders to data_dict, excluding resource required placeholders
+                placeholder_ids = [idx for idx in self.placeholders.index
+                                   if 'resource required' not in self.placeholders.loc[idx, 'name'].lower()]
+
+                for placeholder_id in placeholder_ids:
+                    for project_id in self.placeholder_allocations[placeholder_id].columns:
+                        data_dict[project_id].loc[:, placeholder_id] = self.placeholder_allocations[placeholder_id][project_id]
+
         elif key_type == 'person':
             data_dict = self.people_allocations
+
+            if add_placeholders:
+                # add placeholders to data_dict, excluding resource required placeholders
+                placeholder_ids = [idx for idx in self.placeholders.index
+                                   if 'resource required' not in self.placeholders.loc[idx, 'name'].lower()]
+
+                for idx in placeholder_ids:
+                    data_dict[idx] = self.placeholder_allocations[idx]
 
         else:
             return ValueError('key type must be person or project')
@@ -251,7 +279,7 @@ class Forecast:
         for key in data_dict.keys():
 
             # get the projects's person allocations
-            df = data_dict[key].copy()
+            df = data_dict[key]
 
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
@@ -262,13 +290,13 @@ class Forecast:
 
                 # replace ids with names. for project id: include resource required.
                 if key_type == 'project':
-                    df.columns = [self.get_person_name(person_id) for person_id in df.columns]
-                    df.columns.name = self.get_project_name(key)
+                    df.columns = [self.get_name(person_id, 'person') for person_id in df.columns]
+                    df.columns.name = self.get_name(key, 'project')
                     df['RESOURCE REQUIRED'] = resreq[key]
 
                 elif key_type == 'person':
-                    df.columns = [self.get_project_name(project_id) for project_id in df.columns]
-                    df.columns.name = self.get_person_name(key)
+                    df.columns = [self.get_name(project_id, 'project') for project_id in df.columns]
+                    df.columns.name = self.get_name(key, 'person')
 
                 else:
                     return ValueError('key type must be person or project')
@@ -316,7 +344,10 @@ class Forecast:
                     df_ranked = pd.DataFrame(df_ranked, index=df_ranked.index.strftime("%Y-%m-%d"))
 
                 # store the allocations - transpose to get rows as keys and columns as dates
-                sheet[self.get_name(key, key_type)] = df_ranked.T
+                try:
+                    sheet[self.get_name(key, key_type)] = df_ranked.T
+                except KeyError:
+                    sheet[self.get_name(key, 'placeholder')] = df_ranked.T
 
         # merge everything together into one large dataframe, sorted by key
         sheet = pd.concat(sheet).sort_index()
@@ -336,7 +367,7 @@ class Harvest:
         self.people_tasks = self.get_entries('person', 'task')
         self.people_clients = self.get_entries('person', 'client')
 
-        # TODO in totals need to be able to deal with leave etc.
+        # TODO exclude leave, TOIL, illness etc. from totals?
         self.projects_totals = self.get_entries('project', 'TOTAL')
         self.people_totals = self.get_entries('person', 'TOTAL')
         self.clients_totals = self.get_entries('client', 'TOTAL')

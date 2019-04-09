@@ -5,6 +5,7 @@ from matplotlib.colors import rgb2hex
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from copy import deepcopy
 
 
 class Visualise:
@@ -133,7 +134,7 @@ class Visualise:
 
             else:
                 # extract the person's allocations, and replace ids with names
-                df = self.fc.people_allocations[id_value].copy()
+                df = deepcopy(self.fc.people_allocations[id_value])
 
                 # slice the given date range from the dataframe
                 df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
@@ -175,16 +176,125 @@ class Visualise:
 
             else:
                 # extract the project's people allocations, and replace ids with names
-                df = self.fc.project_allocations[id_value].copy()
+                df = deepcopy(self.fc.project_allocations[id_value])
 
                 # slice the given date range from the dataframe
                 df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
-                df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
+                df.columns = [self.fc.get_name(person_id, 'person') for person_id in df.columns]
                 df.columns.name = self.fc.get_project_name(id_value)
 
+        elif id_type == 'placeholder':
+            if id_value == 'ALL':
+                # initialise df
+                df = self.fc.placeholder_totals.copy()
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+
+                # replace ids with names
+                df.columns = [self.fc.get_placeholder_name(placeholder_id) for placeholder_id in df.columns]
+
+                # remove resource required placeholders
+                cols = [col for col in df.columns if 'resource required' not in col.lower()]
+                df = df[cols]
+
+            else:
+                # extract the person's allocations, and replace ids with names
+                df = self.fc.placeholder_allocations[id_value].copy()
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+                df.columns.name = self.fc.get_placeholder_name(id_value)
+
+        elif id_type == 'institute':
+            # people and placeholders (i.e. including other universities etc.)
+            if id_value == 'ALL_PEOPLE':
+                # initialise df
+
+                df = pd.merge(self.fc.people_totals, self.fc.placeholder_totals,
+                              left_index=True, right_index=True)
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+
+                # replace ids with names
+                df.columns = [self.fc.get_name(person_id, 'person') for person_id in df.columns]
+
+                # remove resource required placeholders
+                cols = [col for col in df.columns if 'resource required' not in col.lower()]
+                df = df[cols]
+
+            elif id_value == 'PROJECT_REQUIREMENTS':
+                # initialise df
+                df = self.fc.project_reqs.copy(deep=True)
+
+                # add resource allocations from placeholders (excl resource required, which have already been included)
+                placeholder_ids = [idx for idx in self.fc.placeholders.index
+                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name'].lower()]
+
+                for idx in placeholder_ids:
+                    allocs = self.fc.placeholder_allocations[idx].copy(deep=True)
+
+                    for col in allocs.columns:
+                        df[col] += allocs[col]
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                # replace ids with names
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+
+            elif id_value == 'PROJECT_TOTALS':
+
+                # initialise df
+                df = self.fc.project_totals.copy(deep=True)
+
+                # add resource allocations from placeholders (excl resource required, which have already been included)
+                placeholder_ids = [idx for idx in self.fc.placeholders.index
+                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name'].lower()]
+
+                for idx in placeholder_ids:
+                    allocs = self.fc.placeholder_allocations[idx].copy(deep=True)
+
+                    for col in allocs.columns:
+                        df[col] += allocs[col]
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                # replace ids with names
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+
+            elif id_value == 'PROJECT_NETALLOC':
+                # net allocation (i.e. resource required flags) same whether partner institutes included or not
+                # so call function again with appropriate arguments that give same desired result
+                df = self.get_allocations('ALL_NETALLOC', 'project', start_date, end_date, freq)
+
+            else:
+                # get person and placeholder allocation for a specific project id
+                # extract the allocations, and replace ids with names
+                df = deepcopy(self.fc.project_allocations[id_value])
+
+                # remove resource required placeholders
+                placeholder_ids = [idx for idx in self.fc.placeholders.index
+                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name']]
+
+                for idx in placeholder_ids:
+                    allocs = self.fc.placeholder_allocations[idx].copy(deep=True)
+                    if id_value in allocs.columns:
+                        df.loc[:, idx] = allocs[id_value]
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                df.columns = [self.fc.get_name(idx, 'person') for idx in df.columns]
+                df.columns.name = self.fc.get_name(id_value, 'project')
+
         else:
-            raise ValueError('id_type must be person or project')
+            raise ValueError('id_type must be person, project or placeholder')
 
         # check whether there's anything to plot
         rows, cols = df.shape
@@ -224,6 +334,25 @@ class Visualise:
                                                                     drop_zero_cols=False)
                 time_label = 'Time Requirement'
 
+            elif id_type == 'institute':
+                nominal_allocation = self.fc.project_reqs[id_value].copy(deep=True)
+
+                # add allocated resources from partner institutes to totals
+                placeholder_ids = [idx for idx in self.fc.placeholders.index
+                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name'].lower()]
+
+                for placeholder_id in placeholder_ids:
+                    if id_value in self.fc.placeholder_allocations[placeholder_id].columns:
+                        nominal_allocation += self.fc.placeholder_allocations[placeholder_id][id_value]
+
+                time_label = 'Time Requirement'
+
+                nominal_allocation = DataHandlers.select_date_range(nominal_allocation, start_date, end_date,
+                                                                    drop_zero_cols=False)
+
+                # don't include resource resource require as stacked area, only via nominal allocation line
+                df = df[[col for col in df.columns if 'resource required' not in col.lower()]]
+
             # plot the data
             fig = plt.figure(figsize=(15, 5))
             ax = fig.gca()
@@ -233,14 +362,19 @@ class Visualise:
             ax.set_title(df.columns.name)
             ax.set_ylabel('Total FTE @ '+str(self.fc.hrs_per_day)+' hrs/day')
 
-            if freq != 'D':
-                nominal_allocation = nominal_allocation.resample(freq).mean()
+            if id_type != 'placeholder':
+                if freq != 'D':
+                    nominal_allocation = nominal_allocation.resample(freq).mean()
 
-            nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
+                nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
+
+                ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.sum(axis=1).max()])])
+
+            else:
+                ax.set_ylim([0, 1.1 * df.sum(axis=1).max()])
 
             ax.legend(title='', loc='best')
             ax.set_xlim([start_date, end_date])
-            ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.max().max()])])
 
             return fig
 
@@ -394,13 +528,33 @@ class Visualise:
 
                 if id_value == 'ALL_TOTALS':
                     title = 'Project Resource Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-
                 elif id_value == 'ALL_REQUIREMENTS':
                     title = 'Project Resource Requirements (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-
                 elif id_value == 'ALL_NETALLOC':
                     title = 'Project Resource Not Yet Allocated (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                else:
+                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
+            elif id_type == 'placeholder':
+                fmt = '.1f'
+
+                if id_value == 'ALL':
+                    title = 'Total Allocation (FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                else:
+                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+
+            elif id_type == 'institute':
+                # people and non-resource required placeholders
+                fmt = '.1f'
+
+                if id_value == 'ALL_PEOPLE':
+                    title = 'Total Institute Allocation (FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                elif id_value == 'PROJECT_REQUIREMENTS':
+                    title = 'Project Resource Requirements (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                elif id_value == 'PROJECT_TOTALS':
+                    title = 'Project Resource Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                elif id_value == 'PROJECT_NETALLOC':
+                    title = 'Project Resource Not Yet Allocated (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
                 else:
                     title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
@@ -415,6 +569,7 @@ class Visualise:
                         annot=True, fmt=fmt, annot_kws={'fontsize': 14}, ax=ax)
 
             ax.set_title(title)
+            ax.set_ylabel('')
 
             return fig
 
