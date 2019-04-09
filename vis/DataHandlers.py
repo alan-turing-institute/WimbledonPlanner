@@ -1,7 +1,7 @@
 import pandas as pd
 # pip install holidays
 import holidays
-
+from copy import deepcopy
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
@@ -42,7 +42,9 @@ class Forecast:
         self.people, self.projects, self.placeholders, self.assignments, self.date_range = self.load_data()
 
         self.people_allocations, self.people_totals = self.get_allocations('person')
+
         self.project_allocations, self.project_totals = self.get_allocations('project')
+
         self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder')
 
         self.project_reqs, self.project_netalloc = self.get_project_required()
@@ -138,6 +140,8 @@ class Forecast:
             try:
                 return self.get_person_name(id_value)
             except KeyError:
+                # if person id search fails check whether it's a placeholder id
+                # to deal with cases where they've been merged together
                 return self.get_name(id_value, 'placeholder')
 
         elif id_type == 'project':
@@ -216,7 +220,7 @@ class Forecast:
         """Get amount of additional resource that needs to be required over time, i.e. difference between
         project requirements and project allocations."""
         # Project requirements = Project assignments + Resource required assignments
-        project_reqs = self.project_totals.copy()
+        project_reqs = self.project_totals.copy(deep=True)
 
         # add resource req info from placeholders
         resource_req_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('resource required')].index
@@ -237,7 +241,9 @@ class Forecast:
         If add_placeholders=True, non-resource required placeholders will be included on the sheet."""
 
         if key_type == 'project':
-            data_dict = self.project_allocations
+            # copy to prevent overwriting original
+            data_dict = deepcopy(self.project_allocations)
+
             mask = (self.project_netalloc.index >= start_date) & (self.project_netalloc.index <= end_date)
             resreq = self.project_netalloc.loc[mask]
 
@@ -273,7 +279,7 @@ class Forecast:
         for key in data_dict.keys():
 
             # get the projects's person allocations
-            df = data_dict[key].copy()
+            df = data_dict[key]
 
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
@@ -361,7 +367,7 @@ class Harvest:
         self.people_tasks = self.get_entries('person', 'task')
         self.people_clients = self.get_entries('person', 'client')
 
-        # TODO in totals need to be able to deal with leave etc.
+        # TODO exclude leave, TOIL, illness etc. from totals?
         self.projects_totals = self.get_entries('project', 'TOTAL')
         self.people_totals = self.get_entries('person', 'TOTAL')
         self.clients_totals = self.get_entries('client', 'TOTAL')
