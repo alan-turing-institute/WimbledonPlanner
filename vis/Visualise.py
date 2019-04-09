@@ -6,14 +6,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+
 class Visualise:
 
-    def __init__(self, start_date=None, end_date=None, freq=None):
+    def __init__(self, start_date=None, end_date=None, freq=None, hrs_per_day=None):
         pd.options.mode.chained_assignment = None  # default='warn' # Gets rid of SettingWithCopy warnings
         pd.options.display.float_format = '{:.1f}'.format  # only print one decimal place
         sns.set(font_scale=1.5)  # have bigger fonts by default
 
-        self.fc = DataHandlers.Forecast()
+        self.fc = DataHandlers.Forecast(hrs_per_day)
         self.hv = DataHandlers.Harvest()
 
         #  set default time parameters
@@ -230,7 +231,7 @@ class Visualise:
             df.plot.area(ax=ax, linewidth=0)
 
             ax.set_title(df.columns.name)
-            ax.set_ylabel('Total FTE @ 6.4 hrs/day')
+            ax.set_ylabel('Total FTE @ '+str(self.fc.hrs_per_day)+' hrs/day')
 
             if freq != 'D':
                 nominal_allocation = nominal_allocation.resample(freq).mean()
@@ -384,24 +385,24 @@ class Visualise:
                 fmt = '.0%'
 
                 if id_value == 'ALL':
-                    title = 'Total Person Allocation (% FTE @ 6.4hrs/day)'
+                    title = 'Total Person Allocation (% FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
                 else:
-                    title = df.columns.name + ' Allocation (% FTE @ 6.4hrs/day)'
+                    title = df.columns.name + ' Allocation (% FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
             elif id_type == 'project':
                 fmt = '.1f'
 
                 if id_value == 'ALL_TOTALS':
-                    title = 'Project Resource Allocation (FTE @ 6.4 hrs/day)'
+                    title = 'Project Resource Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
                 elif id_value == 'ALL_REQUIREMENTS':
-                    title = 'Project Resource Requirements (FTE @ 6.4 hrs/day)'
+                    title = 'Project Resource Requirements (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
                 elif id_value == 'ALL_NETALLOC':
-                    title = 'Project Resource Not Yet Allocated (FTE @ 6.4 hrs/day)'
+                    title = 'Project Resource Not Yet Allocated (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
                 else:
-                    title = df.columns.name + ' Allocation (FTE @ 6.4hrs/day)'
+                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
             # change date format for prettier printing
             df = self.format_date_index(df, freq)
@@ -447,7 +448,7 @@ class Visualise:
         ax.plot(xlim, [team100, team100], 'k--', label='Team Total')
         ax.set_xlim(xlim)
         ax.legend()
-        ax.set_ylabel('FTE @ 6.4hrs/day')
+        ax.set_ylabel('FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day')
 
         return fig
 
@@ -465,7 +466,7 @@ class Visualise:
         if np.isnan(harvest_id):
             raise ValueError('No harvest_id exists for forecast_id '+str(forecast_id))
 
-        fc_totals = 6.4*self.fc.project_totals[forecast_id].copy()
+        fc_totals = self.fc.hrs_per_day * self.fc.project_totals[forecast_id].copy()
         fc_totals = fc_totals.resample(freq).sum().cumsum()
         fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
 

@@ -32,7 +32,13 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
 
 class Forecast:
     """Load and group Forecast data"""
-    def __init__(self):
+    def __init__(self, hrs_per_day=None):
+        # 1 FTE hours per day for projects
+        if hrs_per_day is None:
+            self.hrs_per_day = 6.4
+        else:
+            self.hrs_per_day = hrs_per_day
+
         self.people, self.projects, self.placeholders, self.assignments, self.date_range = self.load_data()
 
         self.people_allocations, self.people_totals = self.get_allocations('person')
@@ -47,16 +53,17 @@ class Forecast:
                              parse_dates=['updated_at'],
                              infer_datetime_format=True)
 
-        # assign missing capacities as 6.4 hour days, 5 days per week
-        people['weekly_capacity'].fillna(6.4 * 5 * 60 * 60, inplace=True)
+        # assign missing capacities as 1 FTE, given by self.hrs_per_day, 5 days per week
+        people['weekly_capacity'].fillna(self.hrs_per_day * 5 * 60 * 60, inplace=True)
 
-        # convert capacity into FTE at 6.4 hrs/day
-        people['weekly_capacity'] = people['weekly_capacity'] / (6.4 * 5 * 60 * 60)
+        # convert capacity into FTE at self.hrs_per_day hours per day
+        people['weekly_capacity'] = people['weekly_capacity'] / (self.hrs_per_day * 5 * 60 * 60)
 
         # remove project managers
         people = people[people.roles != "['Research Project Manager']"]
 
         # manually remove misc cases
+        # TODO: Ideally people should have start and end dates
         people = people[people.first_name != 'Joel']
         people = people[people.first_name != 'Angus']
         people = people[people.first_name != 'Amaani']
@@ -76,8 +83,8 @@ class Forecast:
                                   parse_dates=['start_date', 'end_date', 'updated_at'],
                                   infer_datetime_format=True)
 
-        # convert assignments in seconds per day to fractions of 6.4 hour days
-        assignments['allocation'] = assignments['allocation'] / (6.4 * 60 * 60)
+        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.hrs_per_day)
+        assignments['allocation'] = assignments['allocation'] / (self.hrs_per_day * 60 * 60)
 
         # Find the earliest and latest date in the data, create a range of weekdays between these dates
         date_range = get_business_days(assignments['start_date'].min(), assignments['end_date'].max())
