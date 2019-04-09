@@ -221,7 +221,7 @@ class Visualise:
                 # get the project's person allocations
                 nominal_allocation = self.fc.project_reqs[id_value]
                 nominal_allocation = DataHandlers.select_date_range(nominal_allocation, start_date, end_date,
-                                                                drop_zero_cols=False)
+                                                                    drop_zero_cols=False)
                 time_label = 'Time Requirement'
 
             # plot the data
