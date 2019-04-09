@@ -183,8 +183,33 @@ class Visualise:
                 df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
                 df.columns.name = self.fc.get_project_name(id_value)
 
+        elif id_type == 'placeholder':
+            if id_value == 'ALL':
+                # initialise df
+                df = self.fc.placeholder_totals.copy()
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+
+                # replace ids with names
+                df.columns = [self.fc.get_placeholder_name(placeholder_id) for placeholder_id in df.columns]
+
+                # remove resource required placeholders
+                cols = [col for col in df.columns if 'resource required' not in col.lower()]
+                df = df[cols]
+
+            else:
+                # extract the person's allocations, and replace ids with names
+                df = self.fc.placeholder_allocations[id_value].copy()
+
+                # slice the given date range from the dataframe
+                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+
+                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+                df.columns.name = self.fc.get_placeholder_name(id_value)
+
         else:
-            raise ValueError('id_type must be person or project')
+            raise ValueError('id_type must be person, project or placeholder')
 
         # check whether there's anything to plot
         rows, cols = df.shape
@@ -233,14 +258,18 @@ class Visualise:
             ax.set_title(df.columns.name)
             ax.set_ylabel('Total FTE @ '+str(self.fc.hrs_per_day)+' hrs/day')
 
-            if freq != 'D':
-                nominal_allocation = nominal_allocation.resample(freq).mean()
+            if id_type != 'placeholder':
+                if freq != 'D':
+                    nominal_allocation = nominal_allocation.resample(freq).mean()
 
-            nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
+                nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
+                ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.sum(axis=1).max()])])
+
+            else:
+                ax.set_ylim([0, 1.1 * df.sum(axis=1).max()])
 
             ax.legend(title='', loc='best')
             ax.set_xlim([start_date, end_date])
-            ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.max().max()])])
 
             return fig
 
@@ -401,6 +430,14 @@ class Visualise:
                 elif id_value == 'ALL_NETALLOC':
                     title = 'Project Resource Not Yet Allocated (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
+                else:
+                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+
+            elif id_type == 'placeholder':
+                fmt = '.1f'
+
+                if id_value == 'ALL':
+                    title = 'Total Allocation (FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
                 else:
                     title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
 
