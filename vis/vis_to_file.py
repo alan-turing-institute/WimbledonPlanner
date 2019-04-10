@@ -1,8 +1,13 @@
+# fix matplotlib issue caused by venv with some backends
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
 from Visualise import Visualise
 import string
-import matplotlib.pyplot as plt
 import os.path
 import pandas as pd
+
 
 def check_dir(dir):
     if not os.path.exists(dir):
