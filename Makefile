@@ -18,7 +18,7 @@ projects.csv task_assignments.csv time_entries.csv users.csv
 FORECAST_CSV = $(addprefix data/forecast/,$(FORECAST_CSV_BASE))
 HARVEST_CSV = $(addprefix data/harvest/,$(HARVEST_CSV_BASE))
 
-all: $(FORECAST_CSV) $(HARVEST_CSV) data/figs
+all: $(FORECAST_CSV) $(HARVEST_CSV) data/figs/.timestamp
 
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
@@ -36,7 +36,7 @@ harvest_csv : $(VENV_ACTIVATE)
 
 # generate the plots
 data/figs/.timestamp : $(FORECAST_CSV) $(HARVEST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python vis_to_file.py && touch /data/figs/.timestamp
+	source $(VENV_ACTIVATE) && cd vis && python vis_to_file.py && touch ../data/figs/.timestamp
 
 .PHONY: all
 .INTERMEDIATE: forecast_csv harvest_csv
