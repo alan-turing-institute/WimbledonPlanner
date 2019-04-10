@@ -359,7 +359,13 @@ class Forecast:
 class Harvest:
     """Load and group Harvest data"""
 
-    def __init__(self):
+    def __init__(self, proj_hrs_per_day=None):
+
+        if proj_hrs_per_day is None:
+            self.proj_hrs_per_day = 6.4
+        else:
+            self.proj_hrs_per_day = proj_hrs_per_day
+
         self.time_entries, self.projects, self.tasks, self.clients, self.people, self.date_range = self.load_data()
 
         self.projects_tasks = self.get_entries('project', 'task')

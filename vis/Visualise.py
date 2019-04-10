@@ -621,7 +621,8 @@ class Visualise:
         if np.isnan(harvest_id):
             raise ValueError('No harvest_id exists for forecast_id '+str(forecast_id))
 
-        fc_totals = self.fc.hrs_per_day * self.fc.project_totals[forecast_id].copy()
+        # NB scale forecast fte by using harvest hours per day property (default 6.4)
+        fc_totals = self.hv.proj_hrs_per_day * self.fc.project_totals[forecast_id].copy()
         fc_totals = fc_totals.resample(freq).sum().cumsum()
         fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
 
