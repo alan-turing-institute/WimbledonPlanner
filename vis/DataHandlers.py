@@ -3,6 +3,7 @@ import pandas as pd
 import holidays
 from copy import deepcopy
 
+
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
 
@@ -35,7 +36,7 @@ class Forecast:
     def __init__(self, hrs_per_day=None):
         # 1 FTE hours per day for projects
         if hrs_per_day is None:
-            self.hrs_per_day = 6.4
+            self.hrs_per_day = 8
         else:
             self.hrs_per_day = hrs_per_day
 

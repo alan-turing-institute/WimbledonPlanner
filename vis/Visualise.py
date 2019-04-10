@@ -635,7 +635,7 @@ class Visualise:
             hv_totals = hv_totals.resample(freq).sum().cumsum()
             hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
 
-        if (fc_totals.sum() == 0) & (hv_totals == 0):
+        if (fc_totals == 0).all(axis=None) & (hv_totals == 0).all(axis=None):
             raise ValueError('forecast_id '+str(forecast_id)+' no data to plot.')
 
         try:
@@ -750,10 +750,10 @@ class Visualise:
 
         df = DataHandlers.select_date_range(df, start_date, end_date)
 
-        fig = plt.figure(figsize=(10, df.shape[1]))
-        ax = fig.gca()
-
         if plot_type == 'bar':
+            fig = plt.figure(figsize=(10, df.shape[1]))
+            ax = fig.gca()
+
             df.sum().sort_values().plot.barh(ax=ax)
             ax.set_xlabel('Hours')
 
@@ -766,6 +766,9 @@ class Visualise:
             ax.set_xlabel('')
 
         elif plot_type == 'heatmap':
+            fig = plt.figure(figsize=(10, df.shape[1]))
+            ax = fig.gca()
+
             df = df.resample(freq).sum()
             df = self.format_date_index(df, freq)
             sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False),

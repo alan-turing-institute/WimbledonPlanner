@@ -9,7 +9,7 @@ The branch "v2_dev" of python-harvest works with harvests v2 API but doesn't see
 all tables, most noticeably the time_entries table.
 
 To install the v2_dev branch of python-harvest for this script, run:
-pip install git+https://github.com/lionheart/python-harvest@v2_dev
+pip install "python-harvest-redux==5.0.0b0"
 
 The user id, token etc. is taken from the file config.py, which should be in the same directory as this script and
 contain the following dictionary:
