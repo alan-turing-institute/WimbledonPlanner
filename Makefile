@@ -9,23 +9,23 @@ SHELL := /bin/bash
 # python activate virtual env
 VENV_ACTIVATE = venv/bin/activate
 
-FORECAST_CSV_BASE = assignments.csv clients.csv connections.csv		\
-milestones.csv people.csv placeholders.csv projects.csv roles.csv
+FORECAST_CSV_BASE = assignments.csv connections.csv people.csv projects.csv \
+clients.csv milestones.csv placeholders.csv roles.csv 
 
-HARVEST_CSV_BASE = projects.csv roles.csv task_assignments.csv	\
-tasks.csv time_entries.csv user_assignments.csv users.csv
+HARVEST_CSV_BASE = clients.csv roles.csv tasks.csv user_assignments.csv \
+projects.csv task_assignments.csv time_entries.csv users.csv
 
-FORECAST_CSV = $(addprefix data/forecast,$(FORECAST_CSV_BASE))
-HARVEST_CSV = $(addprefix data/harvest,$(HARVEST_CSV_BASE))
+FORECAST_CSV = $(addprefix data/forecast/,$(FORECAST_CSV_BASE))
+HARVEST_CSV = $(addprefix data/harvest/,$(HARVEST_CSV_BASE))
 
-all: $(FORECAST_CSV) $(HARVEST_CSV)
+all: $(FORECAST_CSV) $(HARVEST_CSV) data/figs
 
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
 	python -m venv ./venv && source $@ && pip install -Ur requirements.txt
 
-$(FORECAST_CSV) : forecast_csv
-$(HARVEST_CSV) : harvest_csv
+$(FORECAST_CSV) : forecast_csv ;
+$(HARVEST_CSV) : harvest_csv ;
 
 # generate the csv data
 forecast_csv : $(VENV_ACTIVATE)
@@ -34,4 +34,9 @@ forecast_csv : $(VENV_ACTIVATE)
 harvest_csv : $(VENV_ACTIVATE)
 	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python harvest_api.py
 
-.PHONY: all forecast_csv harvest_csv
+# generate the plots
+data/figs/.timestamp : $(FORECAST_CSV) $(HARVEST_CSV)
+	source $(VENV_ACTIVATE) && cd vis && python vis_to_file.py && touch /data/figs/.timestamp
+
+.PHONY: all
+.INTERMEDIATE: forecast_csv harvest_csv
