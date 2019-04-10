@@ -22,7 +22,9 @@ import config
 import forecast
 import json
 from pandas.io.json import json_normalize
+import time
 
+start = time.time()
 
 api = forecast.Api(account_id=config.forecast['account_id'],
                    auth_token=config.forecast['auth_token'])
@@ -84,3 +86,6 @@ connections.to_csv('../data/forecast/connections.csv')
 
 placeholders = response_to_df(api.get_placeholders(),title='PLACEHOLDERS')
 placeholders.to_csv('../data/forecast/placeholders.csv')
+
+print('='*50)
+print('DONE! ({:.1f}s)'.format(time.time()-start))

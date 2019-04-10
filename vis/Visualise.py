@@ -10,13 +10,24 @@ from copy import deepcopy
 
 class Visualise:
 
-    def __init__(self, start_date=None, end_date=None, freq=None, hrs_per_day=None):
+    def __init__(self, init_forecast=True, init_harvest=True,
+                 start_date=None, end_date=None, freq=None, hrs_per_day=None):
+
         pd.options.mode.chained_assignment = None  # default='warn' # Gets rid of SettingWithCopy warnings
         pd.options.display.float_format = '{:.1f}'.format  # only print one decimal place
         sns.set(font_scale=1.5)  # have bigger fonts by default
 
-        self.fc = DataHandlers.Forecast(hrs_per_day)
-        self.hv = DataHandlers.Harvest()
+        # only initiate forecast and harvest objects if requested - to have option to be quicker
+        # TODO: Deal with case where hv/fc hasn't been initiated but a function tries to use them.
+        if init_forecast:
+            self.fc = DataHandlers.Forecast(hrs_per_day)
+        else:
+            self.fc = None
+
+        if init_harvest:
+            self.hv = DataHandlers.Harvest()
+        else:
+            self.hv = None
 
         #  set default time parameters
         if start_date is None:

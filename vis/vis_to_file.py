@@ -14,9 +14,9 @@ def check_dir(dir):
         os.makedirs(dir)
 
 
-def save_fig(fig, save_dir, save_name, dpi=300):
+def save_fig(fig, save_dir, save_name):
     check_dir(save_dir)
-    fig.savefig(save_dir+'/'+save_name+'.png', dpi=dpi, bbox_inches='tight')
+    fig.savefig(save_dir+'/'+save_name+'.pdf', bbox_inches='tight')
     plt.close(fig)
 
 

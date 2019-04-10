@@ -1,0 +1,33 @@
+# Makefile for WimbledonPlanner (Turing REG team planning process).
+# Use to produce:
+#  - the raw data from the harvest/forecast api in csv format
+#  - (TODO) a database containing this data
+#  - various figures (including the whiteboard visualization)
+
+SHELL := /bin/bash
+
+# python activate virtual env
+VENV_ACTIVATE = venv/bin/activate
+
+FORECAST_CSV_BASE = assignments.csv connections.csv people.csv projects.csv \
+clients.csv milestones.csv placeholders.csv roles.csv 
+
+FORECAST_CSV = $(addprefix data/forecast/,$(FORECAST_CSV_BASE))
+
+all: $(FORECAST_CSV) data/figs/.timestamp
+
+# set up the python virtual environment
+$(VENV_ACTIVATE): requirements.txt
+	python -m venv ./venv && source $@ && pip install -Ur requirements.txt
+
+$(FORECAST_CSV) : forecast_csv ;
+
+# generate the csv data
+forecast_csv : $(VENV_ACTIVATE)
+	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd api && python forecast_api.py
+
+# generate the plots
+data/figs/.timestamp : $(FORECAST_CSV)
+	source $(VENV_ACTIVATE) && cd vis && python forecast_to_file.py && touch ../data/figs/.timestamp
+
+.PHONY: all
