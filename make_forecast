@@ -1,8 +1,7 @@
-# Makefile for WimbledonPlanner (Turing REG team planning process).
-# Use to produce:
-#  - the raw data from the harvest/forecast api in csv format
-#  - (TODO) a database containing this data
-#  - various figures (including the whiteboard visualization)
+# make_forecast for WimbledonPlanner (Turing REG team planning process).
+# Use to:
+#  - get the latest forecast data
+#  - save summary figures (including whiteboard visualisation)
 
 SHELL := /bin/bash
 
