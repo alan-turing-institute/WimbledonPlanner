@@ -3,10 +3,6 @@
 .Rhistory
 api/secrets.py
 api/forecast_cache.sqlite
-data/figs/people/individual
-data/figs/harvest
-data/figs/projects/individual
-data/figs/.*timestamp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
