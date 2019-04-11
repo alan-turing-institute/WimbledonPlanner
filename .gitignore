@@ -3,6 +3,7 @@
 .Rhistory
 api/secrets.py
 api/forecast_cache.sqlite
+/data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
