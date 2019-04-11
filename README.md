@@ -5,25 +5,26 @@ planning and billing process.
 
 ## Configuration
 
-The file `api/config.py` must be created, containing the API tokens/authorisation info for Harvest and Forecast. It should contain two dictionaries as follows:
+The file `api/secrets.py` must be created, containing the API tokens/authorisation info for Harvest and Forecast.
+This file should contain two dictionaries as follows:
 
 ```python
-forecast = {'account_id': '974183',
-            'auth_token': '<YOUR_FORECAST_TOKEN>'}
-
-
-harvest = {"account_id": "968445",
-           "access_token": "<YOUR_HARVEST_TOKEN>",
-           "email": "<YOUR_EMAIL>"}
+harvest_api_credentials = {
+    "harvest_account_id": "<HARVEST_ACCOUNT_ID>",
+    "forecast_account_id": "<FORECAST_ACCOUNT_ID>",
+    "access_token": "<ACCESS_TOKEN>"
+}
 ```
 
 To get the tokens: 
 1) Go to https://id.getharvest.com/developers and login (ask Oliver about making an account if you don't have one).
 2) Click "Create New Personal Access Token"
-3) Give the token some imaginative name.
-4) Under "Choose Account" select "Forecast - The Alan Turing Institute"
-5) Copy the token into config.py
-5) Repeat steps 2 to 5, this time selecting "Harvest - The Alan Turing Institute" under "Choose Account".
+3) Name the token after the machine you are creating the `secrets.py` file on.
+4) To get the Harvest account key, ensure that you have selected "Harvest - The Alan Turing Institute" under "Choose Account" 
+5) To get the Forecast account key, ensure that you have selected "Forecast - The Alan Turing Institute" under "Choose Account" 
+
+This file **must not be checked into version control** and is listed in the repository's `.gitignore` file to ensure it is not.
+If you rename this file, make sure to update it's entry in the `.gitignore` file.
 
 ## Usage
 
