@@ -22,7 +22,7 @@ HARVEST_CSV = $(addprefix data/harvest/,$(HARVEST_CSV_BASE))
 all: forecast_plots combined_plots 
 
 ## build the summary plots with fresh data
-refresh_forecast: clean_csv forecast_summary
+forecast: clean_csv forecast_summary
 
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
@@ -57,8 +57,8 @@ forecast_plots: data/figs/.forecast_summary_timestamp data/figs/.forecast_indivi
 
 combined_plots: data/figs/.harvest_vs_forecast_timestamp
 
-clean_csv:
+clean:
 	rm -rf $(FORECAST_CSV) $(HARVEST_CSV)
 
-.PHONY: all combined_plots forecast_plots forecast_summary
+.PHONY: all combined_plots forecast_plots forecast_summary forecast clean
 .INTERMEDIATE: forecast_csv harvest_csv 
