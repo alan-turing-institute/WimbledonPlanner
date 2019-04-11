@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from Visualise import Visualise
 import os.path
 
-
 def check_dir(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
