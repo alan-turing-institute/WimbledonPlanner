@@ -42,7 +42,7 @@ Alternatively, to update the Forecast data only, and save summary Forecast figur
 ```bash
 > make forecast 
 ```
-The above is much quicker than `make` (few seconds rather than few minutes), and `make forecast` always triggers the data and figures to be updates (i.e. the initial `make clean` step is not required on subsequent runs.)
+The above is much quicker than `make` (few seconds rather than few minutes), and `make forecast` always triggers the data and figures to be updated (i.e. the initial `make clean` step is not required on subsequent runs.)
 
 
 
