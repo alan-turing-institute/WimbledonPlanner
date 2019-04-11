@@ -20,4 +20,4 @@ Subsequent runs of `make -f make-forecast` will update the Forecast data and fig
 
 ## Interactive Notebooks
 
-The Jupyter notebooks `vis/visualise_forecast.ipynb` and `vis/visualise_harvest.ipynb` load (but don't update) the Harvest/Forecast and displays the visualisations, including some interactive widgets to customise/display plots for individual projects, individual people etc.
+The Jupyter notebooks `vis/visualise_forecast.ipynb` and `vis/visualise_harvest.ipynb` load (but don't update) the Harvest/Forecast data and displays the visualisations, including some interactive widgets to customise/display plots for individual projects, individual people etc.
