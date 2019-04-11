@@ -10,12 +10,16 @@ https://help.getharvest.com/forecast/faqs/faq-list/api/
 
 The user id, token etc. is taken from the file secrets.py, which should be in the same directory as this script and
 contain the following dictionary:
-forecast = {'account_id': '<ACCOUNT_ID>',
-            'auth_token': '<AUTH_TOKEN>'}
+harvest_api_credentials = {
+    "harvest_account_id": "<HARVEST_ACCOUNT_ID>",
+    "forecast_account_id": "<FORECAST_ACCOUNT_ID>",
+    "access_token": "<ACCESS_TOKEN>"
+}
 
 To get the account id and access token, set up a personal access token here:
 https://id.getharvest.com/developers
-You must choose the Turing Institute Forecast account in the token setup, not the Harvest account.
+The access token will be the same for Harvest and Forecast, but you must choose the Turing Institute Harvest account 
+to view the Harvest account ID.
 """
 
 import secrets
@@ -26,8 +30,8 @@ import time
 
 start = time.time()
 
-api = forecast.Api(account_id=secrets.forecast['account_id'],
-                   auth_token=secrets.forecast['auth_token'])
+api = forecast.Api(account_id=secrets.harvest_api_credentials['forecast_account_id'],
+                   auth_token=secrets.harvest_api_credentials['access_token'])
 
 user = api.whoami()
 print()
