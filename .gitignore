@@ -1,7 +1,7 @@
 # Misc
 .DS_Store
 .Rhistory
-api/config.py
+api/secrets.py
 api/forecast_cache.sqlite
 data/figs/people/individual
 data/figs/harvest

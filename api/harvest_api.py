@@ -11,7 +11,7 @@ all tables, most noticeably the time_entries table.
 To install the v2_dev branch of python-harvest for this script, run:
 pip install "python-harvest-redux==5.0.0b0"
 
-The user id, token etc. is taken from the file config.py, which should be in the same directory as this script and
+The user id, token etc. is taken from the file secrets.py, which should be in the same directory as this script and
 contain the following dictionary:
 harvest = {"account_id": "<ACCOUNT_ID>",
            "access_token": "<ACCESS_TOKEN>"}
@@ -22,12 +22,12 @@ You must choose the Turing Institute Harvest account in the token setup, not the
 """
 
 import harvest
-import config
+import secrets
 
 import pandas as pd
 
-token = harvest.PersonalAccessToken(account_id=config.harvest['account_id'],
-                                    access_token=config.harvest['access_token'])
+token = harvest.PersonalAccessToken(account_id=secrets.harvest['account_id'],
+                                    access_token=secrets.harvest['access_token'])
 
 client = harvest.Harvest("https://api.harvestapp.com/api/v2", token)
 
@@ -192,8 +192,8 @@ def api_to_df(table, headers):
 
 api_headers = {
     "User-Agent": "TestApp (Hut23@turing.ac.uk)",
-    "Authorization": "Bearer " + config.harvest['access_token'],
-    "Harvest-Account-ID": config.harvest['account_id']
+    "Authorization": "Bearer " + secrets.harvest['access_token'],
+    "Harvest-Account-ID": secrets.harvest['account_id']
 }
 time_entries = api_to_df('time_entries', api_headers)
 print_df(time_entries, title='TIME ENTRIES')

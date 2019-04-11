@@ -8,7 +8,7 @@ pip install pyforecast
 NB: The forecast API is not public and is undocumented. See:
 https://help.getharvest.com/forecast/faqs/faq-list/api/
 
-The user id, token etc. is taken from the file config.py, which should be in the same directory as this script and
+The user id, token etc. is taken from the file secrets.py, which should be in the same directory as this script and
 contain the following dictionary:
 forecast = {'account_id': '<ACCOUNT_ID>',
             'auth_token': '<AUTH_TOKEN>'}
@@ -18,7 +18,7 @@ https://id.getharvest.com/developers
 You must choose the Turing Institute Forecast account in the token setup, not the Harvest account.
 """
 
-import config
+import secrets
 import forecast
 import json
 from pandas.io.json import json_normalize
@@ -26,8 +26,8 @@ import time
 
 start = time.time()
 
-api = forecast.Api(account_id=config.forecast['account_id'],
-                   auth_token=config.forecast['auth_token'])
+api = forecast.Api(account_id=secrets.forecast['account_id'],
+                   auth_token=secrets.forecast['auth_token'])
 
 user = api.whoami()
 print()
