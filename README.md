@@ -14,7 +14,7 @@ To update the Forecast data only, and save summary Forecast figures only (includ
 ```bash
 > make -f make_forecast 
 ```
-This is much quicker than `make` (few seconds rather than few minutes).
+The above is much quicker than `make` (few seconds rather than few minutes).
 
 Subsequent runs of `make -f make-forecast` will update the Forecast data and figures. Subsequent runs of `make` will not trigger data/figure updates.
 
