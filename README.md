@@ -18,7 +18,7 @@ harvest = {"account_id": "968445",
 ```
 
 To get the tokens: 
-1) Go to https://id.getharvest.com/developers and login (ask Oliver about making an account if you don't already have one).
+1) Go to https://id.getharvest.com/developers and login (ask Oliver about making an account if you don't have one).
 2) Click "Create New Personal Access Token"
 3) Give the token some imaginative name.
 4) Under "Choose Account" select "Forecast - The Alan Turing Institute"
