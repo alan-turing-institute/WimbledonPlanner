@@ -3,7 +3,6 @@ start = time. time()
 
 # fix matplotlib issue caused by venv with some backends
 import matplotlib
-default_backend = matplotlib.get_backend()
 try:
     matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
@@ -14,6 +13,7 @@ except:
 
 from Visualise import Visualise
 import os.path
+
 
 def check_dir(dir):
     if not os.path.exists(dir):

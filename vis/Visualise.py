@@ -111,22 +111,34 @@ class Visualise:
 
         colors = {}
         for key in names:
-            colors[key] = self.generate_new_color(colors.values(), pastel_factor=0.9)
+            colors[key] = self.generate_new_color(colors.values(), pastel_factor=0)
 
         # Assign a different colour to each project
         def highlight_name(cell):
+
             # strip time allocation of format '(x.x)' from cell values
             cell = cell[:-6]
             if 'RESOURCE REQUIRED' in cell:
-                return 'background-color: red; color: white; border: 5px solid black'
+                return 'background-color: red; color: yellow; border: 7px solid black; font-weight: bold'
 
             elif cell in names:
-                return 'background-color: ' + rgb2hex(colors[cell]) + '; border: 1px solid black'
+
+                # decide whether to use black or white font
+                # based on: https://stackoverflow.com/a/3943023
+                r, g, b = colors[cell][0], colors[cell][1], colors[cell][2]
+                if (r*0.299 + g*0.587 + b*0.114) > 0.6:
+                    label_colour = 'black'
+                else:
+                    label_colour = 'white'
+
+                return 'background-color: ' + rgb2hex(colors[cell]) + \
+                       '; border: 1px solid black; color: '+label_colour
 
             else:
                 return 'background-color: white'
 
-        styled_df = sheet.style.applymap(highlight_name).set_properties(**{'text-align': 'center'})
+        styled_df = sheet.style.applymap(highlight_name).set_properties(**{'text-align': 'center',
+                                                                           'height': '75px'})
 
         return styled_df
 
