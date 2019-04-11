@@ -18,7 +18,11 @@ projects.csv task_assignments.csv time_entries.csv users.csv
 FORECAST_CSV = $(addprefix data/forecast/,$(FORECAST_CSV_BASE))
 HARVEST_CSV = $(addprefix data/harvest/,$(HARVEST_CSV_BASE))
 
-all: $(FORECAST_CSV) $(HARVEST_CSV) data/figs/.timestamp
+## default: make all plots, but don't clean
+all: forecast_plots combined_plots 
+
+## build the summary plots with fresh data
+refresh_forecast: clean_csv forecast_summary
 
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
@@ -34,9 +38,27 @@ forecast_csv : $(VENV_ACTIVATE)
 harvest_csv : $(VENV_ACTIVATE)
 	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python harvest_api.py
 
-# generate the plots
-data/figs/.timestamp : $(FORECAST_CSV) $(HARVEST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python vis_to_file.py && touch ../data/figs/.timestamp
+data/figs/.forecast_summary_timestamp : $(FORECAST_CSV)
+	source $(VENV_ACTIVATE) && cd vis && python forecast_summary_to_file.py && \
+	touch ../data/figs/.forecast_summary_timestamp
 
-.PHONY: all
-.INTERMEDIATE: forecast_csv harvest_csv
+data/figs/.forecast_individual_timestamp : $(FORECAST_CSV)
+	source $(VENV_ACTIVATE) && cd vis && python forecast_individual_to_file.py && \
+	touch ../data/figs/.forecast_individual_timestamp
+
+data/figs/.harvest_vs_forecast_timestamp : $(HARVEST_CSV) $(FORECAST_CSV)
+	source $(VENV_ACTIVATE) && cd vis && python harvest_vs_forecast_to_file.py && \
+	touch ../data/figs/.harvest_vs_forecast_timestamp
+
+
+forecast_summary: data/figs/.forecast_summary_timestamp
+
+forecast_plots: data/figs/.forecast_summary_timestamp data/figs/.forecast_individual_timestamp
+
+combined_plots: data/figs/.harvest_vs_forecast_timestamp
+
+clean_csv:
+	rm -rf $(FORECAST_CSV) $(HARVEST_CSV)
+
+.PHONY: all combined_plots forecast_plots forecast_summary
+.INTERMEDIATE: forecast_csv harvest_csv 
