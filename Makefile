@@ -22,7 +22,7 @@ HARVEST_CSV = $(addprefix data/harvest/,$(HARVEST_CSV_BASE))
 all: forecast_plots combined_plots 
 
 ## build the summary plots with fresh data
-forecast: clean_csv forecast_summary
+forecast: clean forecast_summary
 
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
