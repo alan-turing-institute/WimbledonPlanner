@@ -3,11 +3,14 @@ start = time. time()
 
 # fix matplotlib issue caused by venv with some backends
 import matplotlib
+default_backend = matplotlib.get_backend()
 try:
     matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
 except:
     print('TkAgg backend not present.')
-import matplotlib.pyplot as plt
+    matplotlib.use(default_backend)
+    import matplotlib.pyplot as plt
 
 from Visualise import Visualise
 import os.path
