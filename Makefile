@@ -21,6 +21,17 @@ HARVEST_CSV = $(addprefix data/harvest/,$(HARVEST_CSV_BASE))
 ## default: make all plots, but don't clean
 all: forecast_plots combined_plots 
 
+help:
+	@echo 'targets:'
+	@echo 'all (default)    - Generate all plots (slow)'
+	@echo 'forecast         - Fetch latest Forecast csv data and generate Forecast summary plots'
+	@echo 'clean            - Remove csv data'
+	@echo 'forecast_summary - Generate Forecast summary plots using present csv data (quick)'
+	@echo 'forecast_plots   - Generate full set of Forecast plots'
+	@echo 'combined_plots   - Generate Harvest/Forecast comparison plots (slow)'
+	@echo 'forecast_csv and - Fetch csv data only. Might need to "make clean" for this to take effect.'
+	@echo 'harvest_csv        Fetching the Harvest data can take some time'
+
 ## build the summary plots with fresh data
 forecast: clean forecast_summary
 
@@ -37,6 +48,7 @@ forecast_csv : $(VENV_ACTIVATE)
 
 harvest_csv : $(VENV_ACTIVATE)
 	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python harvest_api.py
+
 
 data/figs/.forecast_summary_timestamp : $(FORECAST_CSV)
 	source $(VENV_ACTIVATE) && cd vis && python forecast_summary_to_file.py && \
