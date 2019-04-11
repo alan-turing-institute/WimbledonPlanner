@@ -32,11 +32,19 @@ To create a python venv with requirements installed, download the latest Forecas
 > make
 ```
 
-To update the Forecast data only, and save summary Forecast figures only (including the whiteboard-style visualisations), run:
+Running `make` subsequent times will not trigger anything to be updated. To force everything to update run:
+```bash
+> make clean
+> make
+```
+
+Alternatively, to update the Forecast data only, and save summary Forecast figures only (including the whiteboard-style visualisations), run:
 ```bash
 > make forecast 
 ```
-The above is much quicker than `make` (few seconds rather than few minutes).
+The above is much quicker than `make` (few seconds rather than few minutes), and `make forecast` always triggers the data and figures to be updates (i.e. the initial `make clean` step is not required on subsequent runs.)
+
+
 
 ## Interactive Notebooks
 
