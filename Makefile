@@ -44,10 +44,10 @@ $(HARVEST_CSV) : harvest_csv ;
 
 # generate the csv data
 forecast_csv : $(VENV_ACTIVATE)
-	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd api && python forecast_api.py
+	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd api && python update.py forecast
 
 harvest_csv : $(VENV_ACTIVATE)
-	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python harvest_api.py
+	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python update.py harvest
 
 
 data/figs/.forecast_summary_timestamp : $(FORECAST_CSV)
