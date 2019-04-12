@@ -403,7 +403,6 @@ class Visualise:
             return fig
 
         except ValueError as e:
-            print(e)
             return None
 
     def highlight_allocations(self, df):
@@ -598,7 +597,6 @@ class Visualise:
             return fig
 
         except ValueError as e:
-            print(e)
             return None
 
     def plot_capacity_check(self, start_date=None, end_date=None, figsize=(10, 7)):

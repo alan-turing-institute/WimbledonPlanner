@@ -51,15 +51,15 @@ harvest_csv : $(VENV_ACTIVATE)
 
 
 data/figs/.forecast_summary_timestamp : $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python forecast_summary_to_file.py && \
+	source $(VENV_ACTIVATE) && cd vis && python save.py forecast && \
 	touch ../data/figs/.forecast_summary_timestamp
 
 data/figs/.forecast_individual_timestamp : $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python forecast_individual_to_file.py && \
+	source $(VENV_ACTIVATE) && cd vis && python save.py forecast individual && \
 	touch ../data/figs/.forecast_individual_timestamp
 
 data/figs/.harvest_vs_forecast_timestamp : $(HARVEST_CSV) $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python harvest_vs_forecast_to_file.py && \
+	source $(VENV_ACTIVATE) && cd vis && python save.py harvest && \
 	touch ../data/figs/.harvest_vs_forecast_timestamp
 
 
