@@ -119,6 +119,7 @@ class Visualise:
             # strip time allocation of format '(x.x)' from cell values
             cell = cell[:-6]
             if 'RESOURCE REQUIRED' in cell:
+                # return 'background-image: url(blown.png); color: #00000000' # background image
                 return 'background-color: red; color: yellow; border: 7px solid black; font-weight: bold'
 
             elif cell in names:

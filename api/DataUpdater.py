@@ -13,7 +13,7 @@ import forecast
 import harvest
 
 import json
-import urllib.request
+import requests
 
 import pandas as pd
 from pandas.io.json import json_normalize
@@ -182,6 +182,8 @@ def update_harvest():
 
                 df = df.append(result, ignore_index=True)
 
+        df.set_index('id', inplace=True)
+
         return df
 
     print('USERS')
@@ -228,23 +230,24 @@ def update_harvest():
         """Query all pages of a table in harvest."""
 
         url = "https://api.harvestapp.com/v2/" + table
-        print('Querying', url)
-        request = urllib.request.Request(url=url, headers=headers)
-        response = urllib.request.urlopen(request, timeout=10)
-        response_body = response.read().decode("utf-8")
-        json_response = json.loads(response_body)
+        print('Querying', url, '...', end='')
+
+        req_time = time.time()
+        response = requests.get(url, headers=headers)
+        json_response = response.json()
+
         df = json_normalize(json_response[table])
+
+        diff = time.time() - req_time
+        print('{:.1f} seconds'.format(diff))
 
         while json_response['links']['next'] is not None:
             url = json_response['links']['next']
             print('Querying', url, '... ', end='')
             req_time = time.time()
 
-            request = urllib.request.Request(url=url, headers=headers)
-            response = urllib.request.urlopen(request, timeout=10)
-
-            response_body = response.read().decode("utf-8")
-            json_response = json.loads(response_body)
+            response = requests.get(url, headers=headers)
+            json_response = response.json()
 
             new_entries = json_normalize(json_response[table])
             df = df.append(new_entries)
@@ -255,6 +258,8 @@ def update_harvest():
             # wait a bit to prevent getting throttled (allowed max 100 requests per 15 seconds)
             if diff < 0.15:
                 time.sleep(0.15 - diff)
+
+        df.set_index('id', inplace=True)
 
         return df
 
