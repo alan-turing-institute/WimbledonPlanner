@@ -84,3 +84,11 @@ but seems to work ok. See https://github.com/vafliik/pyforecast
 
 The scripts api/update.py and api/DataUpdater.py use pyforecast to extract
 and save all Forecast data to csv files.
+
+## Issues / "Features"
+
+* Projects don't have have a concept of the resources they require; this can only
+be inferred from the users and placeholders that have been allocated to them.
+
+* People don't have start and end dates. This makes dealing with past leavers and
+future joiners very difficult.
