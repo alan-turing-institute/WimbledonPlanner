@@ -324,7 +324,7 @@ class Forecast:
                     if len(sorted_df) > 0:
                         for i in range(len(sorted_df)):
                             # Fill with format <NAME> (<ALLOCATION>)
-                            df_ranked.loc[date, i + 1] = sorted_df.index[i] + ' ({:.1f})'.format(sorted_df.iloc[i])
+                            df_ranked.loc[date, i + 1] = sorted_df.index[i] + '<br>({:.1f})'.format(sorted_df.iloc[i])
 
                         # empty strings for unused ranks
                         df_ranked.loc[date, range(len(sorted_df) + 1, n_columns + 1)] = ''

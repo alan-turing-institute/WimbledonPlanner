@@ -119,8 +119,8 @@ class Visualise:
             # strip time allocation of format '(x.x)' from cell values
             cell = cell[:-6]
             if 'RESOURCE REQUIRED' in cell:
-                # return 'background-image: url(blown.png); color: #00000000' # background image
-                return 'background-color: red; color: yellow; border: 7px solid black; font-weight: bold'
+                #return 'background-image: url(warning.png); color: #00000000' # background image
+                return 'background-color: red; color: yellow; border: 5px solid black; font-weight: bold; font-family: Helvetica'
 
             elif cell in names:
 
@@ -133,7 +133,7 @@ class Visualise:
                     label_colour = 'white'
 
                 return 'background-color: ' + rgb2hex(colors[cell]) + \
-                       '; border: 1px solid black; color: '+label_colour
+                       '; color: '+label_colour+'; font-family: Helvetica'
 
             else:
                 return 'background-color: white'
