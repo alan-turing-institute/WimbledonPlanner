@@ -61,11 +61,26 @@ date. They can also be archived and have a code (distinct from the id), e.g.
 R-NATS-001 (are these Finance codes?)
 
 There are also fields for tags and notes - we don't use these but they could be
-a place to include e.g. GitHub links or general project keywords/techniques. 
+a place to include e.g. GitHub links or general project keywords/techniques.
 
 Projects also have a harvest_id to link them with their Harvest data.
 
 
 ### Roles
 
+Contains each unique job title (e.g. Research Data Scientist,
+  Principal Research Software Engineer) and lists of which person IDs
+  have these titles.
+
 Roles also have a harvest_id to link them with their Harvest data.
+
+## The Forecast API
+
+Foreacst does not have a public API, see https://help.getharvest.com/forecast/faqs/faq-list/api/
+
+However, there is a stable enough private/hidden API for some wrappers to have
+been developed. One example is pyforecast, which is described as a work in progress
+but seems to work ok. See https://github.com/vafliik/pyforecast
+
+The scripts api/update.py and api/DataUpdater.py use pyforecast to extract
+and save all Forecast data to csv files.
