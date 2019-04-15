@@ -45,7 +45,55 @@ Alternatively, to update the Forecast data only, and save summary Forecast figur
 ```
 The above is much quicker than `make` (few seconds rather than few minutes), and `make forecast` always triggers the data and figures to be updated (i.e. the initial `make clean` step is not required on subsequent runs.)
 
+## Usage with Python
 
+Rather than using make you can also run the python scripts individually yourself.
+
+**To update the data:**
+
+*Forecast:*
+```bash
+> cd api/
+> python update.py forecast
+```
+
+*Harvest:*
+```bash
+> cd api/
+> python update.py harvest
+```
+
+*Forecast and Harvest:*
+```bash
+> cd api/
+> python update.py forecast harvest
+```
+
+**To create the visualisations:**
+
+*Forecast summary plots:*
+```bash
+> cd vis
+> python save.py forecast
+```
+
+*All forecast plots:*
+```bash
+> cd vis
+> python save.py forecast all
+```
+
+*Harvest vs. Forecast comparisons:*
+```bash
+> cd vis
+> python save.py harvest
+```
+
+*Everything:*
+```bash
+> cd vis
+> python save.py forecast harvest all
+```
 
 ## Interactive Notebooks
 
