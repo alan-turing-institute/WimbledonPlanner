@@ -9,6 +9,9 @@ Fields not shown that may be useful are mentioned in the table descriptions belo
 There are also a few additional tables, for example a connections table which
 lists the last time each user logged in.
 
+The visualisations (whiteboard etc.) are created from data in the **Projects**,
+**People**, **Placeholders** and **Assignments** tables only.
+
 ![ForecastDataModel](forecast_data_model.png)
 
 
