@@ -73,16 +73,16 @@ class Visualise:
 
     # Functions to generate some distinct colours, from:
     # https://gist.github.com/adewes/5884820
-    def get_random_color(self, pastel_factor=0.5):
+    def get_random_color(self, pastel_factor=0):
         return [(x + pastel_factor) / (1.0 + pastel_factor) for x in [random.uniform(0, 1.0) for i in [1, 2, 3]]]
 
     def color_distance(self, c1, c2):
-        return sum([abs(x[0] - x[1]) for x in zip(c1, c2)])
+        return sum([(x[0] - x[1])**2 for x in zip(c1, c2)])
 
-    def generate_new_color(self, existing_colors, pastel_factor=0.5):
+    def generate_new_color(self, existing_colors, pastel_factor=0, n_attempts=1000):
         max_distance = None
         best_color = None
-        for i in range(0, 100):
+        for i in range(0, n_attempts):
             color = self.get_random_color(pastel_factor=pastel_factor)
             if not existing_colors:
                 return color
@@ -107,9 +107,20 @@ class Visualise:
         # unpack list of lists
         names = [cell for column in names for cell in column if cell is not '']
         # set of names (i.e. unique names in whole sheet)
-        names = set(names)
+        # changed to using pd.Series then drop_duplicates to preserve order, i.e. from name appearing first to name
+        # appearing last, which helps with keeping colours distinct
+        names = pd.Series(names).drop_duplicates().values
 
         colors = {}
+
+        # don't want black or white to be used as a person/project colour
+        colors['WHITE'] = (1, 1, 1)
+        colors['BLACK'] = (0, 0, 0)
+
+        if key_type == 'project':
+            # add resource required colour to dictionary to prevent similar colours being used for other purposes
+            colors['RES_REQ'] = (1, 0, 0)
+
         for key in names:
             colors[key] = self.generate_new_color(colors.values(), pastel_factor=0)
 
@@ -119,8 +130,10 @@ class Visualise:
             # strip time allocation of format '(x.x)' from cell values
             cell = cell[:-6]
             if 'RESOURCE REQUIRED' in cell:
-                #return 'background-image: url(warning.png); color: #00000000' # background image
-                return 'background-color: red; color: yellow; border: 5px solid black; font-weight: bold; font-family: Helvetica'
+                # return 'background-image: url(warning.png); color: #00000000' # background image
+                # border: 5px solid black;
+                return 'background-color: '+rgb2hex(colors['RES_REQ'])+\
+                       '; color: yellow; font-weight: bold; font-family: Helvetica'
 
             elif cell in names:
 
@@ -139,7 +152,9 @@ class Visualise:
                 return 'background-color: white'
 
         styled_df = sheet.style.applymap(highlight_name).set_properties(**{'text-align': 'center',
-                                                                           'height': '75px'})
+                                                                           'height': '3em',
+                                                                           'white-space': 'nowrap',
+                                                                           'padding': '2mm'})
 
         return styled_df
 
