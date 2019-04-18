@@ -27,12 +27,12 @@ At a minimum we need to accurately record time spent on projects, what the origi
     
     
 Items collected in initial stages should be: 
-	* team member
-	* project
-	* time spent
-	* client
-	* estimated start and end date
-	* project duration
+* team member
+* project
+* time spent
+* client
+* estimated start and end date
+* project duration
     
 # Currently out of scope
     
