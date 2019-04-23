@@ -114,3 +114,7 @@ Could move to a model where only data in a date range of interest is queried,
 but that would then make calculating cumulative time tracked across a project's
 whole duration (and comparing to Forecast) more difficult. Probably where having
 our own database would make the biggest difference.
+
+## Diagram Link
+
+https://dbdiagram.io/d/5cb5a0b0f7c5bb70c72fa5c9
