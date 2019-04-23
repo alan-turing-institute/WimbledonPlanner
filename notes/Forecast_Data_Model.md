@@ -119,3 +119,8 @@ be inferred from the users and placeholders that have been allocated to them.
 
 * People don't have start and end dates.
 This makes dealing with past leavers and future joiners very difficult.
+
+## Diagram/Schema
+
+To see, edit or export the diagram above go to:
+https://dbdiagram.io/d/5cbf2115f7c5bb70c72fba4b
