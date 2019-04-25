@@ -62,13 +62,13 @@ Rather than using make you can also run the python scripts individually yourself
 
 **To update the data:**
 
-*Forecast:*
+*Forecast (saved to `data/forecast`):*
 ```bash
 > cd api/
 > python update.py forecast
 ```
 
-*Harvest:*
+*Harvest (saved to `data/harvest`):*
 ```bash
 > cd api/
 > python update.py harvest
@@ -80,12 +80,12 @@ Rather than using make you can also run the python scripts individually yourself
 > python update.py forecast harvest
 ```
 
-**To create the visualisations:**
+**To create the visualisations (saved to `data/figs`):**
 
 *Whiteboard visualisations (as PDF and HTML):*
 ```bash
-cd vis
-python save.py whiteboard
+> cd vis
+> python save.py whiteboard
 ```
 
 *Forecast summary plots:*
