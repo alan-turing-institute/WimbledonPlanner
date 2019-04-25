@@ -1,0 +1,1 @@
+psql --host=wimbledon-planner.postgres.database.azure.com --port=5432 --username=jack@wimbledon-planner --dbname=forecast -f forecast.sql

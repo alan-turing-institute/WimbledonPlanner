@@ -1,11 +1,23 @@
-import DataHandlers
+import numpy as np
 import pandas as pd
+
 import random
+from copy import deepcopy
+import re
+
+import DataHandlers
+import HTMLWriter
+
 from matplotlib.colors import rgb2hex
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
-from copy import deepcopy
+
+
+def extract_name(text):
+    """strip allocation of format (x.x) and html <br> tags from name"""
+    name = re.sub(r'<br>', '', text)
+    name = re.sub(r'\(\d\.\d\)', '', name)
+    return name
 
 
 class Visualise:
@@ -71,92 +83,20 @@ class Visualise:
 
         return df
 
-    # Functions to generate some distinct colours, from:
-    # https://gist.github.com/adewes/5884820
-    def get_random_color(self, pastel_factor=0):
-        return [(x + pastel_factor) / (1.0 + pastel_factor) for x in [random.uniform(0, 1.0) for i in [1, 2, 3]]]
-
-    def color_distance(self, c1, c2):
-        return sum([(x[0] - x[1])**2 for x in zip(c1, c2)])
-
-    def generate_new_color(self, existing_colors, pastel_factor=0, n_attempts=1000):
-        max_distance = None
-        best_color = None
-        for i in range(0, n_attempts):
-            color = self.get_random_color(pastel_factor=pastel_factor)
-            if not existing_colors:
-                return color
-            best_distance = min([self.color_distance(color, c) for c in existing_colors])
-            if not max_distance or best_distance > max_distance:
-                max_distance = best_distance
-                best_color = color
-        return best_color
-
     def styled_sheet(self, key_type,
                      start_date=None,
                      end_date=None,
-                     freq=None):
-        """colour the cells in sheet by name"""
+                     freq=None,
+                     display='screen'):
+        """Create an HTML table in the style of the whiteboard with cells coloured by name"""
 
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
         sheet = self.fc.spreadsheet_sheet(key_type, start_date, end_date, freq)
 
-        # unique names in each column - [:-6] to remove time allocation of format (x.x) at end
-        names = [sheet[col].str[:-6].unique() for col in sheet]
-        # unpack list of lists
-        names = [cell for column in names for cell in column if cell is not '']
-        # set of names (i.e. unique names in whole sheet)
-        # changed to using pd.Series then drop_duplicates to preserve order, i.e. from name appearing first to name
-        # appearing last, which helps with keeping colours distinct
-        names = pd.Series(names).drop_duplicates().values
+        html = HTMLWriter.make_whiteboard(sheet, key_type, display)
 
-        colors = {}
-
-        # don't want black or white to be used as a person/project colour
-        colors['WHITE'] = (1, 1, 1)
-        colors['BLACK'] = (0, 0, 0)
-
-        if key_type == 'project':
-            # add resource required colour to dictionary to prevent similar colours being used for other purposes
-            colors['RES_REQ'] = (1, 0, 0)
-
-        for key in names:
-            colors[key] = self.generate_new_color(colors.values(), pastel_factor=0)
-
-        # Assign a different colour to each project
-        def highlight_name(cell):
-
-            # strip time allocation of format '(x.x)' from cell values
-            cell = cell[:-6]
-            if 'RESOURCE REQUIRED' in cell:
-                # return 'background-image: url(warning.png); color: #00000000' # background image
-                # border: 5px solid black;
-                return 'background-color: '+rgb2hex(colors['RES_REQ'])+\
-                       '; color: yellow; font-weight: bold; font-family: Helvetica'
-
-            elif cell in names:
-
-                # decide whether to use black or white font
-                # based on: https://stackoverflow.com/a/3943023
-                r, g, b = colors[cell][0], colors[cell][1], colors[cell][2]
-                if (r*0.299 + g*0.587 + b*0.114) > 0.6:
-                    label_colour = 'black'
-                else:
-                    label_colour = 'white'
-
-                return 'background-color: ' + rgb2hex(colors[cell]) + \
-                       '; color: '+label_colour+'; font-family: Helvetica'
-
-            else:
-                return 'background-color: white'
-
-        styled_df = sheet.style.applymap(highlight_name).set_properties(**{'text-align': 'center',
-                                                                           'height': '3em',
-                                                                           'white-space': 'nowrap',
-                                                                           'padding': '2mm'})
-
-        return styled_df
+        return html
 
     def get_allocations(self, id_value, id_type, start_date, end_date, freq):
 

@@ -26,6 +26,7 @@ import time
 import os.path
 import sys
 import string
+import subprocess
 
 import pandas as pd
 
@@ -52,7 +53,7 @@ def save_fig(fig, save_dir, save_name):
 def save_sheet(sheet, save_dir, save_name):
     check_dir(save_dir)
     with open(save_dir + '/' + save_name + '.html', 'w') as f:
-        f.write(sheet.render())
+        f.write(sheet)
 
 
 def init_vis(init_forecast=True, init_harvest=False):
@@ -65,15 +66,15 @@ def init_vis(init_forecast=True, init_harvest=False):
     return vis
 
 
-def forecast_summary(vis):
+def forecast_summary(vis, display='screen'):
     print('Saving Forecast summary plots... ', end='', flush=True)
     start = time.time()
 
     # sheets
-    sheet = vis.styled_sheet('person')
+    sheet = vis.styled_sheet('person', display=display)
     save_sheet(sheet, PEOPLE_DIR, 'people')
 
-    sheet = vis.styled_sheet('project')
+    sheet = vis.styled_sheet('project', display=display)
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     # project summary plots
@@ -93,6 +94,29 @@ def forecast_summary(vis):
     # capacity plot
     fig = vis.plot_capacity_check()
     save_fig(fig, FIG_DIR, 'Capacity_Check')
+
+    print('{:.1f}s'.format(time.time() - start))
+
+
+def whiteboard():
+    print('Saving Whiteboard visualisations...', end='', flush=True)
+    start=time.time()
+
+    # make poster pdf sheets
+    sheet = vis.styled_sheet('person', display='print')
+    save_sheet(sheet, PEOPLE_DIR, 'people')
+
+    sheet = vis.styled_sheet('project', display='print')
+    save_sheet(sheet, PROJECTS_DIR, 'projects')
+
+    subprocess.call(["sh", "whiteboard_to_pdf.sh"])
+
+    # make screen optimised sheets
+    sheet = vis.styled_sheet('person', display='screen')
+    save_sheet(sheet, PEOPLE_DIR, 'people')
+
+    sheet = vis.styled_sheet('project', display='screen')
+    save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     print('{:.1f}s'.format(time.time() - start))
 
@@ -183,6 +207,9 @@ if __name__ == '__main__':
 
     elif 'forecast' in args:
         forecast_summary(vis)
+
+    elif 'whiteboard' in args:
+        whiteboard()
 
     if 'harvest' in args:
         harvest_vs_forecast(vis)
