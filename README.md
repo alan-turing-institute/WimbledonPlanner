@@ -82,6 +82,12 @@ Rather than using make you can also run the python scripts individually yourself
 
 **To create the visualisations:**
 
+*Whiteboard visualisations (as PDF and HTML):*
+```bash
+cd vis
+python save.py whiteboard
+```
+
 *Forecast summary plots:*
 ```bash
 > cd vis
