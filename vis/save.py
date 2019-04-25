@@ -109,7 +109,10 @@ def whiteboard():
     sheet = vis.styled_sheet('project', display='print')
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
-    subprocess.call(["sh", "whiteboard_to_pdf.sh"])
+    try:
+        subprocess.call(["sh", "whiteboard_to_pdf.sh"])
+    except:
+        print('PDF conversion failed.')
 
     # make screen optimised sheets
     sheet = vis.styled_sheet('person', display='screen')

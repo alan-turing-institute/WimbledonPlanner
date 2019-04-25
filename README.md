@@ -3,6 +3,17 @@
 Project Wimbledon is an attempt to fix and possibly automate the REG group's
 planning and billing process.
 
+## Requirements
+
+Python package dependencies are listed in requirements.txt and are automatically installed to the python virtual environment
+created when running make (see below).
+
+For converting the HTML whiteboard visualisations to PDFs the command line tool `wkhtmltopdf` is required.
+To install it on Mac OS (assuming `brew` is installed) run:
+```bash
+> brew cask install wkhtmltopdf
+```
+
 ## Configuration
 
 The file `api/secrets.py` must be created, containing the API tokens/authorisation info for Harvest and Forecast.
@@ -16,12 +27,12 @@ harvest_api_credentials = {
 }
 ```
 
-To get the tokens: 
+To get the tokens:
 1) Go to https://id.getharvest.com/developers and login (ask Oliver about making an account if you don't have one).
 2) Click "Create New Personal Access Token"
 3) Name the token after the machine you are creating the `secrets.py` file on.
-4) To get the Harvest account key, ensure that you have selected "Harvest - The Alan Turing Institute" under "Choose Account" 
-5) To get the Forecast account key, ensure that you have selected "Forecast - The Alan Turing Institute" under "Choose Account" 
+4) To get the Harvest account key, ensure that you have selected "Harvest - The Alan Turing Institute" under "Choose Account"
+5) To get the Forecast account key, ensure that you have selected "Forecast - The Alan Turing Institute" under "Choose Account"
 
 This file **must not be checked into version control** and is listed in the repository's `.gitignore` file to ensure it is not.
 If you rename this file, make sure to update it's entry in the `.gitignore` file.
@@ -41,7 +52,7 @@ Running `make` subsequent times will not trigger anything to be updated. To forc
 
 Alternatively, to update the Forecast data only, and save summary Forecast figures only (including the whiteboard-style visualisations), run:
 ```bash
-> make forecast 
+> make forecast
 ```
 The above is much quicker than `make` (few seconds rather than few minutes), and `make forecast` always triggers the data and figures to be updated (i.e. the initial `make clean` step is not required on subsequent runs.)
 
