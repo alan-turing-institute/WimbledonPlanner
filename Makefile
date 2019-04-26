@@ -26,6 +26,7 @@ help:
 	@echo 'all (default)    - Generate all plots (slow)'
 	@echo 'forecast         - Fetch latest Forecast csv data and generate Forecast summary plots'
 	@echo 'clean            - Remove csv data'
+	@echo 'whiteboard       - Make the wallchart/whiteboard plots'
 	@echo 'forecast_summary - Generate Forecast summary plots using present csv data (quick)'
 	@echo 'forecast_plots   - Generate full set of Forecast plots'
 	@echo 'combined_plots   - Generate Harvest/Forecast comparison plots (slow)'
@@ -62,6 +63,12 @@ data/figs/.harvest_vs_forecast_timestamp : $(HARVEST_CSV) $(FORECAST_CSV)
 	source $(VENV_ACTIVATE) && cd vis && python save.py harvest && \
 	touch ../data/figs/.harvest_vs_forecast_timestamp
 
+data/figs/projects/projects.pdf : $(FORECAST_CSV)
+	source $(VENV_ACTIVATE) && \
+	cd vis/ && \
+	python save.py whiteboard && \
+	python HTMLWriter.py project print && \
+	bash whiteboard_to_pdf.sh 
 
 forecast_summary: data/figs/.forecast_summary_timestamp
 
@@ -69,8 +76,10 @@ forecast_plots: data/figs/.forecast_summary_timestamp data/figs/.forecast_indivi
 
 combined_plots: data/figs/.harvest_vs_forecast_timestamp
 
+whiteboard : data/figs/projects/projects.pdf
+
 clean:
 	rm -rf $(FORECAST_CSV) $(HARVEST_CSV)
 
-.PHONY: all combined_plots forecast_plots forecast_summary forecast clean
+.PHONY: all whiteboard combined_plots forecast_plots forecast_summary forecast clean
 .INTERMEDIATE: forecast_csv harvest_csv 
