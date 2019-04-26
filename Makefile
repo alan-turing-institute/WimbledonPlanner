@@ -36,6 +36,9 @@ help:
 ## build the summary plots with fresh data
 forecast: clean forecast_summary
 
+## build the whiteboard visualisations with fresh data
+whiteboard: clean whiteboard_plots
+
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
 	python -m venv ./venv && source $@ && pip install -Ur requirements.txt
@@ -66,9 +69,7 @@ data/figs/.harvest_vs_forecast_timestamp : $(HARVEST_CSV) $(FORECAST_CSV)
 data/figs/projects/projects.pdf : $(FORECAST_CSV)
 	source $(VENV_ACTIVATE) && \
 	cd vis/ && \
-	python save.py whiteboard && \
-	python HTMLWriter.py project print && \
-	bash whiteboard_to_pdf.sh 
+	python save.py whiteboard
 
 forecast_summary: data/figs/.forecast_summary_timestamp
 
@@ -76,10 +77,10 @@ forecast_plots: data/figs/.forecast_summary_timestamp data/figs/.forecast_indivi
 
 combined_plots: data/figs/.harvest_vs_forecast_timestamp
 
-whiteboard : data/figs/projects/projects.pdf
+whiteboard_plots: data/figs/projects/projects.pdf
 
 clean:
 	rm -rf $(FORECAST_CSV) $(HARVEST_CSV)
 
-.PHONY: all whiteboard combined_plots forecast_plots forecast_summary forecast clean
+.PHONY: all whiteboard whiteboard_plots combined_plots forecast_plots forecast_summary forecast clean
 .INTERMEDIATE: forecast_csv harvest_csv 
