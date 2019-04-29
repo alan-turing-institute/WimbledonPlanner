@@ -14,6 +14,8 @@ To install it on Mac OS (assuming `brew` is installed) run:
 > brew cask install wkhtmltopdf
 ```
 
+`brew` can be installed from the Turing self service app, or from here: https://brew.sh/
+
 ## Configuration
 
 The file `api/secrets.py` must be created, containing the API tokens/authorisation info for Harvest and Forecast.
