@@ -1,63 +1,65 @@
-CREATE TABLE "Projects" (
+CREATE SCHEMA forecast;
+
+CREATE TABLE forecast.projects (
   "id" int PRIMARY KEY,
-  "name" varchar,
-  "code" varchar,
+  "name" text,
+  "code" text,
   "start_date" date,
   "end_date" date,
   "client_id" int,
   "harvest_id" int,
-  "notes" varchar,
-  "archived" bit
+  "notes" text,
+  "archived" boolean
 );
 
-CREATE TABLE "Roles" (
+CREATE TABLE forecast.roles (
   "id" int PRIMARY KEY,
-  "name" varchar,
+  "name" text,
   "harvest_role_id" int
 );
 
-CREATE TABLE "People" (
+CREATE TABLE forecast.people (
   "id" int PRIMARY KEY,
-  "first_name" varchar,
-  "last_name" varchar,
-  "email" varchar,
+  "first_name" text,
+  "last_name" text,
+  "email" text,
   "role" int,
   "harvest_user_id" int,
-  "login" bit,
-  "subscribed" bit,
-  "admin" bit,
-  "archived" bit,
+  "login" text,
+  "subscribed" boolean,
+  "admin" boolean,
+  "archived" boolean,
   "weekly_capacity" int,
-  "working_days_monday" bit,
-  "working_days_tuesday" bit,
-  "working_days_wednesday" bit,
-  "working_days_thursday" bit,
-  "working_days_friday" bit,
-  "working_days_saturday" bit,
-  "working_days_sunday" bit
+  "working_days_monday" boolean,
+  "working_days_tuesday" boolean,
+  "working_days_wednesday" boolean,
+  "working_days_thursday" boolean,
+  "working_days_friday" boolean,
+  "working_days_saturday" boolean,
+  "working_days_sunday" boolean
 );
 
-CREATE TABLE "Placeholders" (
+CREATE TABLE forecast.placeholders (
   "id" int PRIMARY KEY,
-  "name" varchar,
+  "name" text,
   "role" int,
-  "archived" bit
+  "archived" boolean
 );
 
-CREATE TABLE "Clients" (
+CREATE TABLE forecast.clients (
   "id" int PRIMARY KEY,
-  "name" varchar,
+  "name" text,
   "harvest_id" int,
-  "archived" bit
+  "archived" boolean
 );
 
-CREATE TABLE "Milestones" (
+CREATE TABLE forecast.milestones (
   "id" int PRIMARY KEY,
   "date" date,
   "project_id" int
 );
 
-CREATE TABLE "Assignments" (
+CREATE TABLE forecast.assignments (
   "id" int PRIMARY KEY,
   "person_id" int,
   "placeholder_id" int,
@@ -65,15 +67,23 @@ CREATE TABLE "Assignments" (
   "start_date" date,
   "end_date" date,
   "allocation" int,
-  "notes" varchar
+  "notes" text
 );
 
-ALTER TABLE "Projects" ADD FOREIGN KEY ("client_id") REFERENCES "Clients" ("id");
+ALTER TABLE forecast.projects ADD FOREIGN KEY ("client_id") REFERENCES forecast.clients ("id");
 
-ALTER TABLE "Milestones" ADD FOREIGN KEY ("project_id") REFERENCES "Projects" ("id");
+ALTER TABLE forecast.projects ADD FOREIGN KEY ("harvest_id") REFERENCES harvest.projects ("id");
 
-ALTER TABLE "Assignments" ADD FOREIGN KEY ("person_id") REFERENCES "People" ("id");
+ALTER TABLE forecast.people ADD FOREIGN KEY ("harvest_user_id") REFERENCES forecast.users ("id");
 
-ALTER TABLE "Assignments" ADD FOREIGN KEY ("placeholder_id") REFERENCES "Placeholders" ("id");
+ALTER TABLE forecast.roles ADD FOREIGN KEY ("harvest_role_id") REFERENCES harvest.roles ("id");
 
-ALTER TABLE "Assignments" ADD FOREIGN KEY ("project_id") REFERENCES "Projects" ("id");
+ALTER TABLE forecast.clients ADD FOREIGN KEY ("harvest_id") REFERENCES harvest.clients ("id");
+
+ALTER TABLE forecast.milestones ADD FOREIGN KEY ("project_id") REFERENCES forecast.projects ("id");
+
+ALTER TABLE forecast.assignments ADD FOREIGN KEY ("person_id") REFERENCES forecast.people ("id");
+
+ALTER TABLE forecast.assignments ADD FOREIGN KEY ("placeholder_id") REFERENCES forecast.placeholders ("id");
+
+ALTER TABLE forecast.assignments ADD FOREIGN KEY ("project_id") REFERENCES forecast.projects ("id");
