@@ -50,11 +50,17 @@ Running `make` subsequent times will not trigger anything to be updated. To forc
 > make
 ```
 
-Alternatively, to update the Forecast data only, and save summary Forecast figures only (including the whiteboard-style visualisations), run:
+Alternatively, to update the Forecast data only, and save summary Forecast figures only, run:
 ```bash
 > make forecast
 ```
-The above is much quicker than `make` (few seconds rather than few minutes), and `make forecast` always triggers the data and figures to be updated (i.e. the initial `make clean` step is not required on subsequent runs.)
+
+Or to update the Forecast data and save the whiteboard visualisations only:
+```bash
+> make whiteboard
+```
+
+The above `make forecast` and `make whiteboard` are much quicker than `make` (few seconds rather than few minutes), and always trigger the data to be updated (i.e. the initial `make clean` step is not required on subsequent runs.)
 
 ## Usage with Python
 
