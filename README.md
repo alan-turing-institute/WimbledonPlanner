@@ -14,6 +14,11 @@ To install it on Mac OS (assuming `brew` is installed) run:
 > brew cask install wkhtmltopdf
 ```
 
+You may also need to install ghostscript with:
+```bash
+> brew install ghostscript
+```
+
 `brew` can be installed from the Turing self service app, or from here: https://brew.sh/
 
 ## Configuration
