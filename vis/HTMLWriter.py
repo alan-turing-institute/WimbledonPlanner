@@ -1,3 +1,7 @@
+"""The functions in this file take a dataframe output from a DataHandlers.Forecast.spreadsheet_sheet dataframe
+and convert it into a styled HTML table.
+
+The primary function is make_whiteboard(df, key_type, display)"""
 import random
 from matplotlib.colors import rgb2hex
 import pandas as pd
@@ -11,11 +15,13 @@ import os.path
 # Functions to generate some distinct colours, inspired by:
 # https://gist.github.com/adewes/5884820
 def get_random_color(pastel_factor=0):
+    """Generate a random r,g,b colour. If pastel_factor>0 paler colours tend to be generated."""
     return [(x + pastel_factor) / (1.0 + pastel_factor) for x in [random.uniform(0, 1.0) for i in [1, 2, 3]]]
 
 
 def color_distance(c1, c2):
-    """inspired by https://www.compuphase.com/cmetric.htm"""
+    """Value representing the visual distinction between two r,g,b colours,
+    inspired by https://www.compuphase.com/cmetric.htm"""
     r1, g1, b1 = c1
     r2, g2, b2 = c2
 
@@ -28,6 +34,8 @@ def color_distance(c1, c2):
 
 
 def generate_new_color(existing_colors, pastel_factor=0, n_attempts=1000):
+    """Generate a colour as distinct as possible from the colours defined in existing_colors (a list of (r,g,b)
+    tuples). n_attempts random colours are generated, and the one with the largest minimum colour distance """
     max_distance = None
     best_color = None
     for i in range(n_attempts):
