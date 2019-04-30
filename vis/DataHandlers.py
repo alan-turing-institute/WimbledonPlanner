@@ -40,7 +40,7 @@ class Forecast:
         else:
             self.hrs_per_day = hrs_per_day
 
-        self.people, self.projects, self.placeholders, self.assignments, self.date_range = self.load_data()
+        self.people, self.projects, self.placeholders, self.assignments, self.clients, self.date_range = self.load_data()
 
         self.people_allocations, self.people_totals = self.get_allocations('person')
 
@@ -86,13 +86,18 @@ class Forecast:
                                   parse_dates=['start_date', 'end_date', 'updated_at'],
                                   infer_datetime_format=True)
 
+        clients = pd.read_csv('../data/forecast/clients.csv',
+                              index_col='id',
+                              parse_dates=['updated_at'],
+                              infer_datetime_format=True)
+
         # convert assignments in seconds per day to fractions of 1 FTE (defined by self.hrs_per_day)
         assignments['allocation'] = assignments['allocation'] / (self.hrs_per_day * 60 * 60)
 
         # Find the earliest and latest date in the data, create a range of weekdays between these dates
         date_range = get_business_days(assignments['start_date'].min(), assignments['end_date'].max())
 
-        return people, projects, placeholders, assignments, date_range
+        return people, projects, placeholders, assignments, clients, date_range
 
     def get_person_name(self, person_id):
         """Get the full name of someone from their person_id"""
@@ -352,6 +357,19 @@ class Forecast:
 
         # merge everything together into one large dataframe, sorted by key
         sheet = pd.concat(sheet).sort_index()
+
+        if key_type == 'project':
+            # Add project client info to index (~programme area)
+            proj_idx = [self.get_project_id(name) for name in sheet.index.get_level_values(0)]
+            client_idx = self.projects.loc[proj_idx, 'client_id']
+            client_name = self.clients.loc[client_idx, 'name']
+
+            sheet['client_name'] = client_name.values
+            sheet.set_index(['client_name', sheet.index], inplace=True)
+            sheet.index.rename('project_name', 1, inplace=True)
+            sheet.index.rename('rank', 2, inplace=True)
+            sheet.sort_values(by=['client_name', 'project_name', 'rank'], inplace=True)
+            sheet.index.rename([None, None, None], inplace=True)
 
         return sheet
 

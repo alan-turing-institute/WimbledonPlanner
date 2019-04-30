@@ -1,14 +1,12 @@
 import numpy as np
 import pandas as pd
 
-import random
 from copy import deepcopy
 import re
 
 import DataHandlers
 import HTMLWriter
 
-from matplotlib.colors import rgb2hex
 import matplotlib.pyplot as plt
 import seaborn as sns
 

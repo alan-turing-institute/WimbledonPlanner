@@ -207,11 +207,17 @@ def get_print_style():
     return style
 
 
-def write_header(columns, title='Research Engineering Project Allocations'):
+def write_header(key_type, columns, title='Research Engineering Project Allocations'):
     header = """<thead> <tr>
             <th></th>
-            <th></th>
-            <td class="title" colspan={n_columns}>{title}</td>
+            <th></th>"""
+
+    if key_type == 'project':
+        # project has extra column for client (programme area) groupings
+        header += """<th></th>
+        """
+
+    header += """<td class="title" colspan={n_columns}>{title}</td>
      </tr><tr>
      <th class="blank" ></th>
      <th class="blank" ></th>
@@ -281,7 +287,7 @@ def write_table(df, key_type, display='print'):
     else:
         raise ValueError('key_type must be project or person')
 
-    table += write_header(df.columns, title=title)
+    table += write_header(key_type, df.columns, title=title)
 
     table += """<tbody>
     """
@@ -291,28 +297,66 @@ def write_table(df, key_type, display='print'):
 
     for group_idx, group in enumerate(groups):
         group_label, group_content = group
+
         n_rows = len(group_content)
 
         table += """<tr>
         <th class="index" rowspan={n_rows}>{group_label}</th>
         """.format(n_rows=n_rows, group_label=group_label)
 
-        for i in range(n_rows):
-            row_label = group_content.iloc[i].name[1]
-            table += """<th>{row_label}</th>
-            """.format(row_label=row_label)
+        #print(n_rows, group_label)
 
-            row_content = group_content.iloc[i].values
-            for cell in row_content:
-                name = get_name_id(cell)
-                if name.strip() == '':
-                    table += """<td class="blank"></td>
-                    """
-                else:
-                    table += """<td class="{name}" >{cell}</td>
-                    """.format(name=name, cell=cell)
+        if key_type == 'person':
 
-            table += """</tr> """
+            for i in range(n_rows):
+                row_label = group_content.iloc[i].name[1]
+                table += """<th>{row_label}</th>
+                """.format(row_label=row_label)
+
+                row_content = group_content.iloc[i].values
+                for cell in row_content:
+                    name = get_name_id(cell)
+                    if name.strip() == '':
+                        table += """<td class="blank"></td>
+                        """
+                    else:
+                        table += """<td class="{name}" >{cell}</td>
+                        """.format(name=name, cell=cell)
+
+                table += """</tr> """
+
+        elif key_type == 'project':
+            # extra level for client grouping (project area)
+
+            project_groups = group_content.groupby(level=1)
+            n_projects = len(project_groups)
+
+            for project_idx, project_group in enumerate(project_groups):
+                project_name, project_content = project_group
+
+                n_people = len(project_content)
+
+                print(project_name, n_people)
+
+                table += """<th class="index" rowspan={n_people}>{project_name}</th>
+                """.format(n_people=n_people, project_name=project_name)
+
+                for i in range(n_people):
+
+                    row_content = project_content.iloc[i].values
+                    for cell in row_content:
+                        name = get_name_id(cell)
+                        if name.strip() == '':
+                            table += """<td class="blank"></td>
+                            """
+                        else:
+                            table += """<td class="{name}" >{cell}</td>
+                            """.format(name=name, cell=cell)
+
+                    table += """</tr> """
+
+                if project_idx + 1 < n_projects:
+                    table += get_separator()
 
         if group_idx+1 < n_groups:
             table += get_separator()
