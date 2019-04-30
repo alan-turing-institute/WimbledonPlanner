@@ -44,7 +44,7 @@ To get the tokens:
 This file **must not be checked into version control** and is listed in the repository's `.gitignore` file to ensure it is not.
 If you rename this file, make sure to update it's entry in the `.gitignore` file.
 
-## Quickstart (Mac only)
+## Quickstart
 
 Browse to the `WimbledonPlanner` directory then double click on `run_whiteboard.command` to create the whiteboard visualisations from the latest Forecast data.
 The visualisastions are saved in `data/figs/projects` and `data/figs/people`.
