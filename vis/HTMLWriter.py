@@ -162,7 +162,7 @@ def get_screen_style():
         } .index {
           text-align:  center;
           vertical-align: center;
-          font-weight: 400;
+          font-weight: 600;
           background-color: #dedede;
         } .header {
           text-align:  center;
@@ -210,7 +210,7 @@ def get_print_style():
         } .index {
           text-align:  center;
           vertical-align: center;
-          font-weight: 400;
+          font-weight: 600;
           background-color: #dedede;
         } .header {
           font-weight: 400;
@@ -238,8 +238,12 @@ def get_print_style():
 
 
 def write_header(key_type, columns, title='Research Engineering Project Allocations'):
+    # header = """<thead> <tr>
+    #         <th></th>
+    #         <th></th>
+    #         """
+
     header = """<thead> <tr>
-            <th></th>
             <th></th>
             """
 
@@ -250,13 +254,11 @@ def write_header(key_type, columns, title='Research Engineering Project Allocati
         </tr><tr>
         <th class="blank" ></th>
         <th class="blank" ></th>
-        <th class="blank" ></th>
         """.format(n_columns=len(columns), title=title)
 
     elif key_type == 'person':
         header += """<td class="title" colspan={n_columns}>{title}</td>
          </tr><tr>
-         <th class="blank" ></th>
          <th class="blank" ></th>
         """.format(n_columns=len(columns), title=title)
 
@@ -347,9 +349,9 @@ def write_table(df, key_type, display='print'):
             """.format(n_rows=n_rows, group_label=group_label)
 
             for i in range(n_rows):
-                row_label = group_content.iloc[i].name[1]
-                table += """<th>{row_label}</th>
-                """.format(row_label=row_label)
+                # row_label = group_content.iloc[i].name[1]
+                # table += """<th>{row_label}</th>
+                # """.format(row_label=row_label)
 
                 row_content = group_content.iloc[i].values
                 for cell in row_content:
@@ -393,11 +395,12 @@ def write_table(df, key_type, display='print'):
                 """.format(n_people=n_people, project_name=project_name)
 
                 for i in range(n_people):
-                    row_label = project_content.iloc[i].name[2]
-                    row_content = project_content.iloc[i].values
+                    # row_label = project_content.iloc[i].name[2]
 
-                    table += """<th>{row_label}</th>
-                                    """.format(row_label=row_label)
+                    # table += """<th>{row_label}</th>
+                    #                 """.format(row_label=row_label)
+
+                    row_content = project_content.iloc[i].values
 
                     for cell in row_content:
                         name = get_name_id(cell)
