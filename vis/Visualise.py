@@ -1,14 +1,12 @@
 import numpy as np
 import pandas as pd
 
-import random
 from copy import deepcopy
 import re
 
 import DataHandlers
 import HTMLWriter
 
-from matplotlib.colors import rgb2hex
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -43,7 +41,7 @@ class Visualise:
 
         #  set default time parameters
         if start_date is None:
-            self.START_DATE = pd.datetime.now()
+            self.START_DATE = pd.datetime.now() - pd.Timedelta('30 days')
         else:
             self.START_DATE = start_date
 

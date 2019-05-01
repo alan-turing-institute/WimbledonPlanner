@@ -15,6 +15,9 @@
 * Import data to the database directly from the Harvest and Forecast APIs (without CSV step).
   * Amaani found https://www.singer.io/, https://github.com/singer-io/tap-harvest and https://github.com/singer-io/tap-harvest-forecast which may be useful for this.
   
+* Figure out how to insert only new rows without having to delete everything first (to avoid errors due to trying to 
+insert same data multiple times and primary key not being unique).
+
 * Add functionality to create visualisations via the SQL database rather than from the CSVs.
 
 * Make a local SQL database rather than an Azure one.
