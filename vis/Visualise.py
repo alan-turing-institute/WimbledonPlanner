@@ -41,7 +41,7 @@ class Visualise:
 
         #  set default time parameters
         if start_date is None:
-            self.START_DATE = pd.datetime.now()
+            self.START_DATE = pd.datetime.now() - pd.Timedelta('30 days')
         else:
             self.START_DATE = start_date
 

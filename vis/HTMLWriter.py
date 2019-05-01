@@ -83,14 +83,14 @@ def get_name_id(name):
     return name_id
 
 
-def get_name_style(name, background_color):
+def get_name_style(name, background_color, name_type=None):
     if 'RESOURCE REQUIRED' in name or 'RESOURCE_REQUIRED' in name:
         background_color = rgb2hex(background_color)
 
         style = """.RESOURCE_REQUIRED {{
                   background-color: red;
                   color: yellow;
-                  font-weight: bold;
+                  font-weight: 400;
                 }} """.format(background_color=background_color)
     else:
         name_id = get_name_id(name)
@@ -98,17 +98,26 @@ def get_name_style(name, background_color):
         text_color = get_text_color(background_color)
         background_color = rgb2hex(background_color)
 
-        style = """.{name_id} {{
-          background-color: {background_color};
-          color: {text_color};
-        }} """.format(name_id=name_id,
-                      text_color=text_color,
-                      background_color=background_color)
+        if name_type == 'client':
+            style = """.{name_id} {{
+              background-color: {background_color};
+              color: {text_color};
+              font-weight: 600;
+            }} """.format(name_id=name_id,
+                          text_color=text_color,
+                          background_color=background_color)
+        else:
+            style = """.{name_id} {{
+              background-color: {background_color};
+              color: {text_color};
+            }} """.format(name_id=name_id,
+                          text_color=text_color,
+                          background_color=background_color)
 
     return style
 
 
-def write_style(colors, display='print'):
+def write_style(colors, client_colors=None, display='print'):
     style = """<style  type="text/css" > """
 
     if display == 'print':
@@ -121,6 +130,10 @@ def write_style(colors, display='print'):
     for name, color in colors.items():
         style += get_name_style(name, color)
 
+    if client_colors is not None:
+        for client, color in client_colors.items():
+            style += get_name_style(client, color, name_type='client')
+
     style += '</style>'
 
     return style
@@ -128,34 +141,37 @@ def write_style(colors, display='print'):
 
 def get_screen_style():
     style = """table {
-          font-size: 10;
+          font-size: 13;
+          font-family: neue-haas-unica, sans-serif;
+          font-style: normal;
+          font-weight: 400;
        } td {
           text-align:  center;
           height:  4em;
           padding:  1mm;
-          font-family:  Helvetica;
           text-align:  center;
         } th {
           height:  2em;
           padding:  1mm;
-          font-family:  Helvetica;
+          font-weight: 400;
         } .title {
           height: 2em;
           text-align:  center;
-          font-family:  Helvetica;
-          font-weight: bold;
-          font-size: 20;
+          font-weight: 300;
+          font-size: 55;
         } .index {
-          text-align:  right;
+          text-align:  center;
           vertical-align: center;
+          font-weight: 400;
+          background-color: #dedede;
         } .header {
           text-align:  center;
           vertical-align: bottom;
+          font-weight: 400;
         } .separator {
           height:  1.5em;
           vertical-align: bottom;
           padding:  0mm;
-          font-weight: bold;
         } .colwidth {
           background-color:  white;
           color: white;
@@ -168,7 +184,12 @@ def get_screen_style():
 
 
 def get_print_style():
-    style = """td {
+    style = """table {
+          font-size: 13;
+          font-family: neue-haas-unica, sans-serif;
+          font-style: normal;
+          font-weight: 400;
+       } td {
           text-align:  center;
           height:  3em;
           white-space:  nowrap;
@@ -180,17 +201,26 @@ def get_print_style():
           white-space:  nowrap;
           padding:  2mm;
           font-family:  Helvetica;
+          font-weight: 400;
         } .title {
           text-align:  center;
           font-family:  Helvetica;
-          font-weight: bold;
-          font-size: 36;
+          font-weight: 300;
+          font-size: 55;
         } .index {
-          text-align:  right;
+          text-align:  center;
           vertical-align: center;
+          font-weight: 400;
+          background-color: #dedede;
         } .header {
+          font-weight: 400;
           text-align:  center;
           vertical-align: bottom;
+        }  .client {
+          text-align:  left;
+          vertical-align: center;
+          background-color: #66cfc8;
+          color: white;
         } .separator {
           height:  3em;
           vertical-align: bottom;
@@ -210,18 +240,25 @@ def get_print_style():
 def write_header(key_type, columns, title='Research Engineering Project Allocations'):
     header = """<thead> <tr>
             <th></th>
-            <th></th>"""
+            <th></th>
+            """
 
     if key_type == 'project':
         # project has extra column for client (programme area) groupings
         header += """<th></th>
-        """
+        <td class="title" colspan={n_columns}>{title}</td>
+        </tr><tr>
+        <th class="blank" ></th>
+        <th class="blank" ></th>
+        <th class="blank" ></th>
+        """.format(n_columns=len(columns), title=title)
 
-    header += """<td class="title" colspan={n_columns}>{title}</td>
-     </tr><tr>
-     <th class="blank" ></th>
-     <th class="blank" ></th>
-    """.format(n_columns=len(columns), title=title)
+    elif key_type == 'person':
+        header += """<td class="title" colspan={n_columns}>{title}</td>
+         </tr><tr>
+         <th class="blank" ></th>
+         <th class="blank" ></th>
+        """.format(n_columns=len(columns), title=title)
 
     for colname in columns:
         header += """<th class="header" >{colname}</th>
@@ -256,7 +293,7 @@ def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
     as wide as width_str"""
 
     html = """<tr>
-        <th class="index" rowspan=1></th>
+        <th class="colwidth" rowspan=1></th>
         <th></th>
         """
 
@@ -296,17 +333,18 @@ def write_table(df, key_type, display='print'):
     n_groups = len(groups)
 
     for group_idx, group in enumerate(groups):
+
         group_label, group_content = group
 
-        n_rows = len(group_content)
-
-        table += """<tr>
-        <th class="index" rowspan={n_rows}>{group_label}</th>
-        """.format(n_rows=n_rows, group_label=group_label)
-
-        #print(n_rows, group_label)
-
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # !!!!!!!!!!!! PERSON !!!!!!!!!!!!!!!!!
         if key_type == 'person':
+
+            n_rows = len(group_content)
+
+            table += """<tr>
+            <th class="index" rowspan={n_rows}>{group_label}</th>
+            """.format(n_rows=n_rows, group_label=group_label)
 
             for i in range(n_rows):
                 row_label = group_content.iloc[i].name[1]
@@ -325,25 +363,42 @@ def write_table(df, key_type, display='print'):
 
                 table += """</tr> """
 
+            if group_idx+1 < n_groups:
+                table += get_separator()
+            else:
+                table += fix_colwidth(df.shape[1])
+        # -------------- END OF PERSON --------------
+
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # !!!!!!!!!!!! PROJECT !!!!!!!!!!!!!!!!
         elif key_type == 'project':
             # extra level for client grouping (project area)
+
+            n_rows = len(group_content)
 
             project_groups = group_content.groupby(level=1)
             n_projects = len(project_groups)
 
+            table += """<tr>
+            <th class="{group_id}" rowspan={n_rows}>{group_label}</th>
+            """.format(group_id=get_name_id(group_label), n_rows=n_rows+n_projects-1, group_label=group_label)  # n_rows+n_projects to take into account separator rows
+
+            # loop over projects in this client group
             for project_idx, project_group in enumerate(project_groups):
                 project_name, project_content = project_group
 
                 n_people = len(project_content)
 
-                print(project_name, n_people)
-
                 table += """<th class="index" rowspan={n_people}>{project_name}</th>
                 """.format(n_people=n_people, project_name=project_name)
 
                 for i in range(n_people):
-
+                    row_label = project_content.iloc[i].name[2]
                     row_content = project_content.iloc[i].values
+
+                    table += """<th>{row_label}</th>
+                                    """.format(row_label=row_label)
+
                     for cell in row_content:
                         name = get_name_id(cell)
                         if name.strip() == '':
@@ -355,13 +410,14 @@ def write_table(df, key_type, display='print'):
 
                     table += """</tr> """
 
-                if project_idx + 1 < n_projects:
-                    table += get_separator()
+                table += get_separator()
+            # end of inner loop over client projects
 
-        if group_idx+1 < n_groups:
-            table += get_separator()
-        else:
-            table += fix_colwidth(df.shape[1])
+            if group_idx+1 < n_groups:
+                table += get_separator()
+            else:
+                table += fix_colwidth(df.shape[1])
+        # -------------- END OF PROJECT --------------
 
     table += """</tbody>
        </table>"""
@@ -370,8 +426,15 @@ def write_table(df, key_type, display='print'):
 
 
 def get_colors(df):
-    # unique names in each column - [:-9] to remove time allocation/html tags at end
-    names = [df[col].str[:-9].unique() for col in df]
+    # remove time allocation/html tags at end of names
+    strip_df = df.copy(deep=True)
+    for col in strip_df:
+        strip_df[col] = strip_df[col].str.replace(r'<br>', '', regex=True)
+        strip_df[col] = strip_df[col].str.replace(r'\(\d\.\d\)', '', regex=True)
+
+    # unique names in each column
+    names = [strip_df[col].unique() for col in strip_df]
+
     # unpack list of lists
     names = [cell for column in names for cell in column if cell is not '']
     # set of names (i.e. unique names in whole sheet)
@@ -381,9 +444,12 @@ def get_colors(df):
 
     colors = {}
 
-    # don't want white or black to be used as a person/project colour
+    # don't want white to be used as a person/project colour
     colors['WHITE'] = (1, 1, 1)
+    # to avoid black/dark colours, uncomment this line:
     colors['BLACK'] = (0, 0, 0)
+
+    # colour used for resource required cells
     colors['RESOURCE_REQUIRED'] = (1, 0, 0)
 
     for key in names:
@@ -393,9 +459,27 @@ def get_colors(df):
     return colors
 
 
+def get_client_colors(df):
+    clients = df.index.get_level_values(0).unique()
+
+    # secondary colours from Turing design guidelines
+    turing_colors = [(0, 0.49, 1), (1, 0.49, 0), (0, 1, 0.49), (1, 0, 0.49),
+                     (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1),
+                     (1, 0, 0), (0.49, 0, 1), (0, 1, 0)]
+
+    client_colors = {clients[idx]: turing_colors[idx % len(turing_colors)] for idx in range(len(clients))}
+    return client_colors
+
+
 def make_whiteboard(df, key_type, display):
     colors = get_colors(df)
-    html = write_style(colors, display=display)
+
+    if key_type == 'project':
+        client_colors = get_client_colors(df)
+    else:
+        client_colors = None
+
+    html = write_style(colors, client_colors, display=display)
     html += write_table(df, key_type, display=display)
 
     return html
