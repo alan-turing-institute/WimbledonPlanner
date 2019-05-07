@@ -1,7 +1,9 @@
 import pandas as pd
-# pip install holidays
 import holidays
 from copy import deepcopy
+import sqlalchemy as sqla
+import os.path
+import json
 
 
 def get_business_days(start_date, end_date):
@@ -33,14 +35,19 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
 
 class Forecast:
     """Load and group Forecast data"""
-    def __init__(self, hrs_per_day=None):
+    def __init__(self, data_source='csv', hrs_per_day=None):
         # 1 FTE hours per day for projects
         if hrs_per_day is None:
             self.hrs_per_day = 8
         else:
             self.hrs_per_day = hrs_per_day
 
-        self.people, self.projects, self.placeholders, self.assignments, self.clients, self.date_range = self.load_data()
+        if data_source == 'csv':
+            self.people, self.projects, self.placeholders, self.assignments, self.clients, self.date_range = self.load_csv_data()
+        elif data_source == 'sql':
+            self.people, self.projects, self.placeholders, self.assignments, self.clients, self.date_range = self.load_sql_data()
+        else:
+            raise ValueError('data_source must be csv or sql')
 
         self.people_allocations, self.people_totals = self.get_allocations('person')
 
@@ -50,7 +57,9 @@ class Forecast:
 
         self.project_reqs, self.project_netalloc = self.get_project_required()
 
-    def load_data(self):
+    def load_csv_data(self):
+        """load data from csv files in ../data/forecast directory"""
+
         people = pd.read_csv('../data/forecast/people.csv',
                              index_col='id',
                              parse_dates=['updated_at'],
@@ -90,6 +99,75 @@ class Forecast:
                               index_col='id',
                               parse_dates=['updated_at'],
                               infer_datetime_format=True)
+
+        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.hrs_per_day)
+        assignments['allocation'] = assignments['allocation'] / (self.hrs_per_day * 60 * 60)
+
+        # Find the earliest and latest date in the data, create a range of weekdays between these dates
+        date_range = get_business_days(assignments['start_date'].min(), assignments['end_date'].max())
+
+        return people, projects, placeholders, assignments, clients, date_range
+
+    def load_sql_data(self):
+        """load data from sql database defined by ../sql/config.json, which must be a json containing
+        host: the server name (url)
+        database: the name of the database on the server
+        drivername: the type of database it is, e.g. postgresql"""
+
+        with open('../sql/config.json', 'r') as f:
+            config = json.load(f)
+
+        with open(os.path.expanduser("~/.pgpass"), 'r') as f:
+            secrets = None
+            for line in f:
+                if config['host'] in line:
+                    secrets = line.strip().split(':')
+                    break
+
+        if secrets is None:
+            raise ValueError('did not find ' + config['host'] + ' in ~/.pgpass')
+
+        url = sqla.engine.url.URL(drivername=config['drivername'],
+                                  username=secrets[-2],
+                                  password=secrets[-1],
+                                  host=config['host'],
+                                  database=config['database'])
+
+        engine = sqla.create_engine(url)
+
+        connection = engine.connect()
+
+        people = pd.read_sql_table('people', connection, schema='forecast',
+                                   index_col='id')
+
+        # assign missing capacities as 1 FTE, given by self.hrs_per_day, 5 days per week
+        people['weekly_capacity'].fillna(self.hrs_per_day * 5 * 60 * 60, inplace=True)
+
+        # convert capacity into FTE at self.hrs_per_day hours per day
+        people['weekly_capacity'] = people['weekly_capacity'] / (self.hrs_per_day * 5 * 60 * 60)
+
+        # remove project managers
+        people = people[people.role != "['Research Project Manager']"]
+
+        # manually remove misc cases
+        # TODO: Ideally people should have start and end dates
+        people = people[people.first_name != 'Joel']
+        people = people[people.first_name != 'Angus']
+        people = people[people.first_name != 'Amaani']
+
+        clients = pd.read_sql_table('clients', connection, schema='forecast',
+                                    index_col='id')
+
+        projects = pd.read_sql_table('projects', connection, schema='forecast',
+                                     index_col='id',
+                                     parse_dates=['start_date', 'end_date'])
+
+        placeholders = pd.read_sql_table('placeholders', connection, schema='forecast',
+                                         index_col='id')
+
+        assignments = pd.read_sql_table('assignments', connection, schema='forecast',
+                                        index_col='id',
+                                        parse_dates=['start_date', 'end_date'])
 
         # convert assignments in seconds per day to fractions of 1 FTE (defined by self.hrs_per_day)
         assignments['allocation'] = assignments['allocation'] / (self.hrs_per_day * 60 * 60)
@@ -377,14 +455,20 @@ class Forecast:
 class Harvest:
     """Load and group Harvest data"""
 
-    def __init__(self, proj_hrs_per_day=None):
+    def __init__(self, data_source='csv', proj_hrs_per_day=None):
+        self.data_source = data_source
 
         if proj_hrs_per_day is None:
             self.proj_hrs_per_day = 6.4
         else:
             self.proj_hrs_per_day = proj_hrs_per_day
 
-        self.time_entries, self.projects, self.tasks, self.clients, self.people, self.date_range = self.load_data()
+        if data_source == 'csv':
+            self.time_entries, self.projects, self.tasks, self.clients, self.people, self.date_range = self.load_csv_data()
+        elif data_source == 'sql':
+            self.time_entries, self.projects, self.tasks, self.clients, self.people, self.date_range = self.load_sql_data()
+        else:
+            raise ValueError('data_source must be csv or sql')
 
         self.projects_tasks = self.get_entries('project', 'task')
         self.projects_people = self.get_entries('project', 'person')
@@ -398,7 +482,7 @@ class Harvest:
         self.clients_totals = self.get_entries('client', 'TOTAL')
         self.tasks_totals = self.get_entries('task', 'TOTAL')
 
-    def load_data(self):
+    def load_csv_data(self):
         time_entries = pd.read_csv('../data/harvest/time_entries.csv',
                                    index_col='id',
                                    parse_dates=['created_at', 'spent_date', 'updated_at',
@@ -411,7 +495,7 @@ class Harvest:
 
         projects = pd.read_csv('../data/harvest/projects.csv',
                                index_col='id',
-                               parse_dates=['created_at', 'ends_on', 'updated_at'],
+                               parse_dates=['created_at', 'starts_on', 'ends_on', 'updated_at'],
                                infer_datetime_format=True)
 
         # remove empty columns
@@ -439,6 +523,63 @@ class Harvest:
                              infer_datetime_format=True)
 
         people.dropna(axis=1, inplace=True)
+
+        # Find the earliest and latest date in the data, create a range of weekdays between these dates
+        # NB: Harvest data needs to include non-working days as there may be time entries on these days, e.g.
+        # leave or block entering data for a month on the 1st of that month.
+        date_range = pd.date_range(start=time_entries['spent_date'].min(),
+                                   end=time_entries['spent_date'].max(),
+                                   freq='D')
+
+        return time_entries, projects, tasks, clients, people, date_range
+
+    def load_sql_data(self):
+        """load data from sql database defined by ../sql/config.json, which must be a json containing
+        host: the server name (url)
+        database: the name of the database on the server
+        drivername: the type of database it is, e.g. postgresql"""
+
+        with open('../sql/config.json', 'r') as f:
+            config = json.load(f)
+
+        with open(os.path.expanduser("~/.pgpass"), 'r') as f:
+            secrets = None
+            for line in f:
+                if config['host'] in line:
+                    secrets = line.strip().split(':')
+                    break
+
+        if secrets is None:
+            raise ValueError('did not find ' + config['host'] + ' in ~/.pgpass')
+
+        url = sqla.engine.url.URL(drivername=config['drivername'],
+                                  username=secrets[-2],
+                                  password=secrets[-1],
+                                  host=config['host'],
+                                  database=config['database'])
+
+        engine = sqla.create_engine(url)
+
+        connection = engine.connect()
+
+        projects = pd.read_sql_table('projects', connection, schema='harvest',
+                                     index_col='id',
+                                     parse_dates=['starts_on', 'ends_on'])
+
+        tasks = pd.read_sql_table('tasks', connection, schema='harvest',
+                                  index_col='id')
+
+        clients = pd.read_sql_table('clients', connection, schema='harvest',
+                                    index_col='id')
+
+        people = pd.read_sql_table('users', connection, schema='harvest',
+                                   index_col='id')
+
+        time_entries = pd.read_sql_table('time_entries', connection, schema='harvest',
+                                         index_col='id',
+                                         parse_dates=['spent_date'])
+
+        time_entries = pd.merge(time_entries, projects['client_id'], left_on='project_id', right_index=True, how='left')
 
         # Find the earliest and latest date in the data, create a range of weekdays between these dates
         # NB: Harvest data needs to include non-working days as there may be time entries on these days, e.g.
@@ -496,13 +637,13 @@ class Harvest:
     def get_name(self, id_value, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
         'person', 'project' 'client', or 'task'."""
-        if id_type == 'person' or id_type == 'user.id':
+        if id_type == 'person' or id_type == 'user.id' or id_type == 'user_id':
             return self.get_person_name(id_value)
-        elif id_type == 'project' or id_type == 'project.id':
+        elif id_type == 'project' or id_type == 'project.id' or id_type == 'project_id':
             return self.get_project_name(id_value)
-        elif id_type == 'client' or id_type == 'client.id':
+        elif id_type == 'client' or id_type == 'client.id' or id_type == 'client_id':
             return self.get_client_name(id_value)
-        elif id_type == 'task'  or id_type == 'task.id':
+        elif id_type == 'task' or id_type == 'task.id' or id_type == 'task_id':
             return self.get_task_name(id_value)
         else:
             raise ValueError('id_type must be person, project, client or task')
@@ -528,39 +669,81 @@ class Harvest:
         id_column can be 'person', 'project', 'client', or 'task'
         ref_column can be 'person', 'project', 'client', 'task' or 'TOTAL' but must not be same as id_column."""
 
+        if ref_column == id_column:
+            raise ValueError('id_column and ref_column must be different.')
+
+        # id column
         if id_column == 'person':
-            id_column = 'user.id'
+            if self.data_source == 'csv':
+                id_column = 'user.id'
+            elif self.data_source == 'sql':
+                id_column = 'user_id'
+
             id_values = self.people.index
+
         elif id_column == 'project':
-            id_column = 'project.id'
+            if self.data_source == 'csv':
+                id_column = 'project.id'
+            elif self.data_source == 'sql':
+                id_column = 'project_id'
+
             id_values = self.projects.index
+
         elif id_column == 'client':
-            id_column = 'client.id'
+            if self.data_source == 'csv':
+                id_column = 'client.id'
+            elif self.data_source == 'sql':
+                id_column = 'client_id'
+
             id_values = self.clients.index
+
         elif id_column == 'task':
-            id_column = 'task.id'
+            if self.data_source == 'csv':
+                id_column = 'task.id'
+            elif self.data_source == 'sql':
+                id_column = 'task_id'
+
             id_values = self.tasks.index
+
         else:
             raise ValueError('id_column must be person, project, client or task')
 
-        if ref_column == id_column:
-            raise ValueError('id_column and ref_column must be different.')
-        elif ref_column == 'person':
-            ref_column = 'user.id'
+        # ref_column
+        if ref_column == 'person':
+            if self.data_source == 'csv':
+                ref_column = 'user.id'
+            elif self.data_source == 'sql':
+                ref_column = 'user_id'
+
         elif ref_column == 'project':
-            ref_column = 'project.id'
+            if self.data_source == 'csv':
+                ref_column = 'project.id'
+            elif self.data_source == 'sql':
+                ref_column = 'project_id'
+
         elif ref_column == 'client':
-            ref_column = 'client.id'
+            if self.data_source == 'csv':
+                ref_column = 'client.id'
+            elif self.data_source == 'sql':
+                ref_column = 'client_id'
+
         elif ref_column == 'task':
-            ref_column = 'task.id'
+            if self.data_source == 'csv':
+                ref_column = 'task.id'
+            elif self.data_source == 'sql':
+                ref_column = 'task_id'
+
         elif ref_column != 'TOTAL':
             raise ValueError('id_column must be person, project, client, task or TOTAL')
 
+        # group time_entries by id_column, ref_column and spent_date
         if ref_column == 'TOTAL':
             grouped_entries = self.time_entries.groupby([id_column, 'spent_date']).hours.sum()
         else:
             grouped_entries = self.time_entries.groupby([id_column, ref_column, 'spent_date']).hours.sum()
 
+        # populate the entries dict from grouped_entries
+        # entries is a dict with id_column values as keys and the items being a dataframe with ref_column as the index
         entries = {}
 
         for idx in id_values:

@@ -30,7 +30,7 @@ class Visualise:
         # only initiate forecast and harvest objects if requested - to have option to be quicker
         # TODO: Deal with case where hv/fc hasn't been initiated but a function tries to use them.
         if init_forecast:
-            self.fc = DataHandlers.Forecast(hrs_per_day)
+            self.fc = DataHandlers.Forecast(hrs_per_day=hrs_per_day)
         else:
             self.fc = None
 
