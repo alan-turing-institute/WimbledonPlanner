@@ -469,7 +469,7 @@ def get_client_colors(df):
     # secondary colours from Turing design guidelines
     turing_colors = [(0, 0.49, 1), (1, 0.49, 0), (0, 1, 0.49), (1, 0, 0.49),
                      (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1),
-                     (1, 0, 0), (0.49, 0, 1), (0, 1, 0)]
+                     (0.49, 0, 1), (0, 1, 0)]
 
     client_colors = {clients[idx]: turing_colors[idx % len(turing_colors)] for idx in range(len(clients))}
     return client_colors
