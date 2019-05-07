@@ -88,9 +88,10 @@ def get_name_style(name, background_color, name_type=None):
         background_color = rgb2hex(background_color)
 
         style = """.RESOURCE_REQUIRED {{
-                  background-color: red;
-                  color: yellow;
-                  font-weight: 400;
+                  background-color: white;
+                  color: red;
+                  font-weight: 600;
+                  border: 1px solid red;
                 }} """.format(background_color=background_color)
     else:
         name_id = get_name_id(name)
@@ -103,6 +104,9 @@ def get_name_style(name, background_color, name_type=None):
               background-color: {background_color};
               color: {text_color};
               font-weight: 600;
+              font-size: 21;
+              white-space:  normal;
+              width: 300px; 
             }} """.format(name_id=name_id,
                           text_color=text_color,
                           background_color=background_color)
@@ -213,16 +217,12 @@ def get_print_style():
           font-weight: 600;
           background-color: #dedede;
         } .header {
+          font-size: 21;
           font-weight: 400;
           text-align:  center;
           vertical-align: bottom;
-        }  .client {
-          text-align:  left;
-          vertical-align: center;
-          background-color: #66cfc8;
-          color: white;
         } .separator {
-          height:  3em;
+          height:  2em;
           vertical-align: bottom;
           padding:  0mm;
           font-weight: bold;
@@ -413,7 +413,8 @@ def write_table(df, key_type, display='print'):
 
                     table += """</tr> """
 
-                table += get_separator()
+                if project_idx+1 < n_projects:
+                    table += get_separator()
             # end of inner loop over client projects
 
             if group_idx+1 < n_groups:
