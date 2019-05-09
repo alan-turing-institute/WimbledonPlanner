@@ -1,1 +1,1 @@
-{"drivername": "postgresql", "host": "wimbledon-planner.postgres.database.azure.com", "database": "wimbledon"}
+{"drivername": "postgresql", "host": "localhost", "database": "wimbledon"}

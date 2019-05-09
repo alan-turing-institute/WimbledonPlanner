@@ -4,7 +4,7 @@ from copy import deepcopy
 import sqlalchemy as sqla
 import os.path
 import json
-
+import subprocess
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
@@ -74,12 +74,6 @@ class Forecast:
         # remove project managers
         people = people[people.roles != "['Research Project Manager']"]
 
-        # manually remove misc cases
-        # TODO: Ideally people should have start and end dates
-        people = people[people.first_name != 'Joel']
-        people = people[people.first_name != 'Angus']
-        people = people[people.first_name != 'Amaani']
-
         projects = pd.read_csv('../data/forecast/projects.csv',
                                index_col='id',
                                parse_dates=['updated_at', 'start_date', 'end_date'],
@@ -117,21 +111,29 @@ class Forecast:
         with open('../sql/config.json', 'r') as f:
             config = json.load(f)
 
-        with open(os.path.expanduser("~/.pgpass"), 'r') as f:
-            secrets = None
-            for line in f:
-                if config['host'] in line:
-                    secrets = line.strip().split(':')
-                    break
+        if config['host'] == 'localhost':
+            url = sqla.engine.url.URL(drivername=config['drivername'],
+                                      host=config['host'],
+                                      database=config['database'])
 
-        if secrets is None:
-            raise ValueError('did not find ' + config['host'] + ' in ~/.pgpass')
+            subprocess.call(['sh', '../sql/start_localhost.sh'], cwd='../sql')
 
-        url = sqla.engine.url.URL(drivername=config['drivername'],
-                                  username=secrets[-2],
-                                  password=secrets[-1],
-                                  host=config['host'],
-                                  database=config['database'])
+        else:
+            with open(os.path.expanduser("~/.pgpass"), 'r') as f:
+                secrets = None
+                for line in f:
+                    if config['host'] in line:
+                        secrets = line.strip().split(':')
+                        break
+
+            if secrets is None:
+                raise ValueError('did not find ' + config.wimbledon_config['host'] + ' in ~/.pgpass')
+
+            url = sqla.engine.url.URL(drivername=config['drivername'],
+                                      username=secrets[-2],
+                                      password=secrets[-1],
+                                      host=config['host'],
+                                      database=config['database'])
 
         engine = sqla.create_engine(url)
 
@@ -148,12 +150,6 @@ class Forecast:
 
         # remove project managers
         people = people[people.role != "['Research Project Manager']"]
-
-        # manually remove misc cases
-        # TODO: Ideally people should have start and end dates
-        people = people[people.first_name != 'Joel']
-        people = people[people.first_name != 'Angus']
-        people = people[people.first_name != 'Amaani']
 
         clients = pd.read_sql_table('clients', connection, schema='forecast',
                                     index_col='id')
@@ -542,21 +538,29 @@ class Harvest:
         with open('../sql/config.json', 'r') as f:
             config = json.load(f)
 
-        with open(os.path.expanduser("~/.pgpass"), 'r') as f:
-            secrets = None
-            for line in f:
-                if config['host'] in line:
-                    secrets = line.strip().split(':')
-                    break
+        if config['host'] == 'localhost':
+            url = sqla.engine.url.URL(drivername=config['drivername'],
+                                      host=config['host'],
+                                      database=config['database'])
 
-        if secrets is None:
-            raise ValueError('did not find ' + config['host'] + ' in ~/.pgpass')
+            subprocess.call(['sh', '../sql/start_localhost.sh'], cwd='../sql')
 
-        url = sqla.engine.url.URL(drivername=config['drivername'],
-                                  username=secrets[-2],
-                                  password=secrets[-1],
-                                  host=config['host'],
-                                  database=config['database'])
+        else:
+            with open(os.path.expanduser("~/.pgpass"), 'r') as f:
+                secrets = None
+                for line in f:
+                    if config['host'] in line:
+                        secrets = line.strip().split(':')
+                        break
+
+            if secrets is None:
+                raise ValueError('did not find ' + config.wimbledon_config['host'] + ' in ~/.pgpass')
+
+            url = sqla.engine.url.URL(drivername=config['drivername'],
+                                      username=secrets[-2],
+                                      password=secrets[-1],
+                                      host=config['host'],
+                                      database=config['database'])
 
         engine = sqla.create_engine(url)
 
