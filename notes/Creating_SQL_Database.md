@@ -88,7 +88,10 @@ can run SQL commands to create other databases, tables etc.
 
 To avoid having to enter your password every time, it can be entered in the file `~/.pgpass`:
 1) Create the file `~/.pgpass`
-2) Insert the following line: `<SERVER-NAME>.postgres.database.azure.com:*:*:<USERNAME>@<SERVER-NAME>:<PASSWORD>`
+2) Insert the following line: 
+```
+<SERVER-NAME>.postgres.database.azure.com:*:*:<USERNAME>@<SERVER-NAME>:<PASSWORD>
+```
 3) Save the file.
 4) Change the permissions of the file with `chmod 0600 ~/.pgpass` (disallow access to world or group)
 
