@@ -1,0 +1,83 @@
+---
+runtime: shiny
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```
+
+
+```{r low_level, echo=FALSE}
+library(dygraphs)
+library(ggplot2)
+library(dplyr)
+library(xts)
+library(scales)
+library(tidyr)
+
+start_month <- "2019-04"
+num_months <- 24
+month_mids <- seq(as.Date(paste(start_month,"15",sep="-")), length = num_months, by="months")
+month_starts <- seq(as.Date(paste(start_month,"1",sep="-")), length = (num_months + 1), by="months")
+
+# Capacity
+reg_perm <- c(21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00, 21.00)
+reg_ftc <- c(3.00, 4.00, 3.50, 3.50, 3.50, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 2.00, 2.00, 2.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00)
+reg_assoc <- c(1.00, 1.50, 1.50, 2.50, 1.50, 1.50, 1.50, 1.50, 1.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50, 0.50
+)
+univ_partner <- c(2.50, 3.00, 6.00, 5.50, 5.00, 5.00, 5.00, 5.00, 5.00, 4.50, 4.50, 4.50)
+
+capacity_types <- c("REG Assoc", "Uni Del Partner", "REG FTC", "REG Perm")
+Capacity_type <- rep(capacity_types,times=num_months)
+Month <- rep(month_mids, each=length(capacity_types))
+FTE <- c(rbind(apply(apply(rbind(reg_perm, reg_ftc, univ_partner, reg_assoc), 2 ,cumsum), 2, rev)))
+
+capacity <- data.frame(Capacity_type, Month, FTE)
+capacity$Capacity_type <- factor(capacity$Capacity_type, levels = c(capacity_types))
+
+# Demand
+confirmed <- c(27.50, 29.00, 31.50, 33.00, 31.50, 35.50, 38.50, 37.00, 34.00, 26.50, 26.50, 24.50, 23.50, 22.50, 20.00, 18.00, 18.00, 17.00, 17.00, 16.50, 14.50, 15.50, 15.50, 15.50)
+unconfirmed_third <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.17, 2.17, 2.17, 2.17, 2.17, 2.17, 1.83, 1.50, 1.50, 2.17, 2.17, 2.17, 2.33, 2.33, 2.33, 2.33, 2.50, 2.50, 2.50)
+unconfirmed_half <- c(0.00, 0.00, 0.00, 0.00, 0.00, 0.58, 1.08, 1.08, 1.08, 1.08, 1.08, 0.92, 0.75, 0.75, 1.08, 1.08, 1.08, 1.17, 1.17, 1.17, 1.17, 1.25, 1.25, 1.25)
+unconfirmed_two_thirds <- c(0.00, 0.00, 0.00, 0.00, 0.00, 0.58, 1.08, 1.08, 1.08, 1.08, 1.08, 0.92, 0.75, 0.75, 1.08, 1.08, 1.08, 1.17, 1.17, 1.17, 1.17, 1.25, 1.25, 1.25)
+unconfirmed_all <- c(0.00, 0.00, 0.00, 0.00, 0.00, 1.17, 2.17, 2.17, 2.17, 2.17, 2.17, 1.83, 1.50, 1.50, 2.17, 2.17, 2.17, 2.33, 2.33, 2.33, 2.33, 2.50, 2.50, 2.50)
+
+demand_types <- c("Unconfirmed at 100%", "Unconfirmed at 67%", "Unconfirmed at 50%", "Unconfirmed at 33%","Confirmed")
+Demand_type <- rep(demand_types,times=num_months)
+Month <- rep(month_mids, each=length(demand_types))
+FTE <- c(rbind(unconfirmed_all, unconfirmed_two_thirds, unconfirmed_half, unconfirmed_third, confirmed))
+
+demand <- data.frame(Demand_type, Month, FTE)
+demand$Demand_type <- factor(demand$Demand_type, levels = c(demand_types))
+
+capacity2 <- data.frame(month_mids,t(rbind(apply(apply(rbind(reg_perm, reg_ftc, univ_partner, reg_assoc),2 ,cumsum),2,rev))))
+
+capacity2 <- gather(capacity2, Capacity_type, value, reg_perm, reg_ftc, univ_partner, reg_assoc)
+capacity2$Capacity_type <- factor(capacity2$Capacity_type, levels = c(capacity_types))
+
+# Plot
+renderPlot({
+ggplot() +
+geom_area(data = demand, mapping = aes(x=Month, y=FTE, fill=Demand_type), colour="black", size=.2, alpha=.4) +
+scale_fill_brewer(palette="Greens", breaks=rev(levels(demand$Demand_type))) +
+geom_line(data = capacity, mapping = aes(x=Month, y=FTE, colour=Capacity_type), size=1) +
+scale_color_manual(values = c("#000000", "#B22222", "#3399FF", "#6A5ACD")) +
+geom_vline(xintercept=month_starts[1], linetype=1) +
+geom_vline(xintercept=month_starts[4], linetype=3, size=0.7) + 
+geom_vline(xintercept=month_starts[7], linetype="longdash") + 
+geom_vline(xintercept=month_starts[10], linetype=3, size=0.7) +  
+geom_vline(xintercept=month_starts[13], linetype=1) +
+geom_vline(xintercept=month_starts[16], linetype=3, size=0.7) + 
+geom_vline(xintercept=month_starts[19], linetype="longdash") + 
+geom_vline(xintercept=month_starts[22], linetype=3, size=0.7) +  
+geom_vline(xintercept=month_starts[25], linetype=1, size=0.7) +
+scale_x_date(labels = date_format("%Y-%m"), breaks = Month) +
+theme(text = element_text(size=16), axis.text.x = element_text(angle = 90)) +
+expand_limits(x=c(min(month_starts), max(month_starts))) +
+labs(title = "Research engineering: Forecast of capacity vs demand",
+caption = "Data for financial years 2019-20 and 2020-21")
+})
+```
