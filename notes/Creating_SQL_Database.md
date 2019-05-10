@@ -110,8 +110,8 @@ To connect:
 4) Open Connections tab (rectangular one top left)
 5) Create a new connection (hover over "SERVERS" then it's the first icon to the right)
 6) Choose connection type "PostgreSQL"
-7) Enter your server name of the form <database-name>.postgres.database.azure.come (can get this from the Azure portal)
-8) Enter your admin username of the form <username>@<server-name> (can get this from the Azure portal)
+7) Enter your server name of the form `<database-name>.postgres.database.azure.com` (can get this from the Azure portal)
+8) Enter your admin username of the form `<username>@<server-name>` (can get this from the Azure portal)
 9) Enter your admin password (can change this from the Azure portal if your forgot it)
 10) You should now be able to browse through the server from the connections tab. 
 You can also run SQL queries from Azure data studio to see some of the data etc.
