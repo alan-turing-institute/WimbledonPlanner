@@ -6,6 +6,7 @@ import os.path
 import json
 import subprocess
 
+
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
 
@@ -296,6 +297,38 @@ class Forecast:
 
         return allocations, totals
 
+    def get_project_unconfirmed(self):
+        """Get unconfirmed project requirements"""
+
+        project_unconf_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('unconfirmed')].index
+
+        project_unconfirmed = self.project_totals.copy(deep=True)
+        project_unconfirmed[:] = 0
+
+        for idx in project_unconf_ids:
+            allocs = self.placeholder_allocations[idx]
+
+            for col in allocs.columns:
+                project_unconfirmed[col] += allocs[col]
+
+        return project_unconfirmed
+
+    def get_project_deferred(self):
+        """Get deferred project allocations"""
+
+        project_defer_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('deferred')].index
+
+        project_deferred = self.project_totals.copy(deep=True)
+        project_deferred[:] = 0
+
+        for idx in project_defer_ids:
+            allocs = self.placeholder_allocations[idx]
+
+            for col in allocs.columns:
+                project_deferred[col] += allocs[col]
+
+        return project_deferred
+
     def get_project_required(self):
         """Get amount of additional resource that needs to be required over time, i.e. difference between
         project requirements and project allocations."""
@@ -303,7 +336,14 @@ class Forecast:
         project_reqs = self.project_totals.copy(deep=True)
 
         # add resource req info from placeholders
-        resource_req_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('resource required')].index
+        resource_req_ids = []
+        for idx in self.placeholders.index:
+            name = self.placeholders.loc[idx, 'name'].lower()
+
+            if 'deferred' in name or 'unconfirmed' in name:
+                continue
+            else:
+                resource_req_ids.append(idx)
 
         for idx in resource_req_ids:
             allocs = self.placeholder_allocations[idx]
