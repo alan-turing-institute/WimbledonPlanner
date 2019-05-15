@@ -104,7 +104,7 @@ def get_name_style(name, background_color, name_type=None):
               background-color: {background_color};
               color: {text_color};
               font-weight: 600;
-              font-size: 21;
+              font-size: 16;
               white-space:  normal;
               width: 300px; 
             }} """.format(name_id=name_id,

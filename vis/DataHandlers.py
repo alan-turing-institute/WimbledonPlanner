@@ -58,6 +58,32 @@ class Forecast:
 
         self.project_reqs, self.project_netalloc = self.get_project_required()
 
+        """
+        project_confirmed
+        project_unconfirmed
+        project_deferred
+        project_resourcereq
+
+        client_confirmed
+        client_unconfirmed
+        client_deferred
+        client_resourcereq
+
+        people_allocations
+        people_total
+        people_capacity
+        people_available
+
+        capacity_total
+        capacity_allocated
+        capacity_available
+
+        institute_allocations
+        institute_total
+        institute_capacity
+        institute_available
+        """
+
     def load_csv_data(self):
         """load data from csv files in ../data/forecast directory"""
 
