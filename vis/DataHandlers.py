@@ -68,9 +68,8 @@ class Forecast:
         # project_deferred:  df of (date, project_id) with total allocation to deferred placeholders
         self.project_deferred = self.get_project_deferred()
 
-        # project_reqs
-        # project_netalloc
-        # project_required
+        # project_reqs: total people + institute + resource_required placeholder allocations to project?
+        # project_netalloc: resource_required allocations to each project?
         self.project_reqs, self.project_netalloc = self.get_project_required()
 
         """
