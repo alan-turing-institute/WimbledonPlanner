@@ -50,12 +50,27 @@ class Forecast:
         else:
             raise ValueError('data_source must be csv or sql')
 
+        # people_allocations: dict with key person_id, contains df of (date, project_id) with allocation
+        # people_totals: df of (date, person_id) with total allocations
         self.people_allocations, self.people_totals = self.get_allocations('person')
 
+        # project_allocations: dict with key project_id, contains df of (date, person_id) with allocation
+        # project_totals: df of (date, project_id) with total allocations across PEOPLE ONLY
         self.project_allocations, self.project_totals = self.get_allocations('project')
 
+        # placeholder_allocations: dict with key placeholder_id, contains df of (date, project_id) with allocation
+        # placeholder_totals: df of (date, placeholder_id) with total allocation
         self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder')
 
+        # project_unconfirmed: df of (date, project_id) with total allocation to unconfirmed placeholders
+        self.project_unconfirmed = self.get_project_unconfirmed()
+
+        # project_deferred:  df of (date, project_id) with total allocation to deferred placeholders
+        self.project_deferred = self.get_project_deferred()
+
+        # project_reqs
+        # project_netalloc
+        # project_required
         self.project_reqs, self.project_netalloc = self.get_project_required()
 
         """
