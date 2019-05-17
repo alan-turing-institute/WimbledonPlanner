@@ -149,7 +149,7 @@ def get_screen_style():
           font-family: neue-haas-unica, sans-serif;
           font-style: normal;
           font-weight: 400;
-       } td {
+        } td {
           text-align:  center;
           height:  4em;
           padding:  1mm;
@@ -158,7 +158,18 @@ def get_screen_style():
           height:  2em;
           padding:  1mm;
           font-weight: 400;
-        } .title {
+        }  th a {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }  th:hover {
+          background-color: #ffff99;
+        }  a {
+          color: inherit;
+          text-decoration: inherit;
+         }.title {
           height: 2em;
           text-align:  center;
           font-weight: 300;
@@ -206,7 +217,18 @@ def get_print_style():
           padding:  2mm;
           font-family:  Helvetica;
           font-weight: 400;
-        } .title {
+        }  th a {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }  th:hover {
+          background-color: #ffff99;
+        }  a {
+          color: inherit;
+          text-decoration: inherit;
+         } .title {
           text-align:  center;
           font-family:  Helvetica;
           font-weight: 300;

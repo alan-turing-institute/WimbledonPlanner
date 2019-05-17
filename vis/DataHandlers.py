@@ -557,7 +557,7 @@ class Forecast:
             git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
 
             for idx, proj in enumerate(proj_names):
-                if not (type(proj_gitissue) is float and np.isnan(proj_gitissue)):
+                if not (type(proj_gitissue[idx]) is float and np.isnan(proj_gitissue[idx])):
                     proj_names[idx] = """<a href="{url}/{issue}">{proj}</a>""".format(url=git_base_url,
                                                                                      issue=proj_gitissue[idx],
                                                                                      proj=proj)
