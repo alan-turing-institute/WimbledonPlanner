@@ -69,8 +69,12 @@ def get_text_color(background_color, threshold=0.6):
 
 
 def get_name_id(name):
-    if "RESOURCE REQUIRED" in name:
-        name_id = "RESOURCE_REQUIRED"
+    if 'RESOURCE REQUIRED' in name:
+        name_id = 'RESOURCE_REQUIRED'
+    elif 'UNCONFIRMED' in name:
+        name_id = 'UNCONFIRMED'
+    elif 'DEFERRED' in name:
+        name_id = 'DEFERRED'
     else:
         # remove html tags and digits, if present
         name = re.sub(r'<br>', '', name)
@@ -83,16 +87,29 @@ def get_name_id(name):
     return name_id
 
 
-def get_name_style(name, background_color, name_type=None):
+def get_name_style(name, background_color=None, name_type=None):
     if 'RESOURCE REQUIRED' in name or 'RESOURCE_REQUIRED' in name:
-        background_color = rgb2hex(background_color)
-
-        style = """.RESOURCE_REQUIRED {{
+        style = """.RESOURCE_REQUIRED {
                   background-color: white;
                   color: red;
                   font-weight: 600;
                   border: 1px solid red;
-                }} """.format(background_color=background_color)
+                } """
+
+    elif 'UNCONFIRMED' in name:
+        style = """.UNCONFIRMED {
+                          background-color: white;
+                          color: gray;
+                          font-weight: 600;
+                          border: 1px solid gray;
+                } """
+    elif 'DEFERRED' in name:
+        style = """.DEFERRED {
+                          background-color: white;
+                          color: orange;
+                          font-weight: 600;
+                          border: 1px solid orange;
+                } """
     else:
         name_id = get_name_id(name)
 
@@ -133,6 +150,10 @@ def write_style(colors, client_colors=None, display='print'):
 
     for name, color in colors.items():
         style += get_name_style(name, color)
+
+    style += get_name_style('RESOURCE REQUIRED')
+    style += get_name_style('UNCONFIRMED')
+    style += get_name_style('DEFERRED')
 
     if client_colors is not None:
         for client, color in client_colors.items():
@@ -473,13 +494,19 @@ def get_colors(df):
     # don't want white to be used as a person/project colour
     colors['WHITE'] = (1, 1, 1)
     # to avoid black/dark colours, uncomment this line:
-    colors['BLACK'] = (0, 0, 0)
+    #colors['BLACK'] = (0, 0, 0)
 
     # colour used for resource required cells
-    colors['RESOURCE_REQUIRED'] = (1, 0, 0)
+    #colors['RESOURCE_REQUIRED'] = (1, 0, 0)
 
     for key in names:
-        if "RESOURCE REQUIRED" not in key:
+        if "RESOURCE REQUIRED" in key:
+            continue
+        elif "UNCONFIRMED" in key:
+            continue
+        elif "DEFERRED" in key:
+            continue
+        else:
             colors[key] = generate_new_color(colors.values())
 
     return colors

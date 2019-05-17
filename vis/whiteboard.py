@@ -41,8 +41,6 @@ if __name__ == '__main__':
 
     start_date = pd.to_datetime(sys.argv[1])
     end_date = pd.to_datetime(sys.argv[2])
-    print(start_date)
-    print(end_date)
 
     vis = Visualise(init_forecast=True, init_harvest=False,
                     start_date=start_date, end_date=end_date)

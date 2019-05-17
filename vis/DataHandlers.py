@@ -437,11 +437,22 @@ class Forecast:
 
             mask = (self.project_resourcereq.index >= start_date) & (self.project_resourcereq.index <= end_date)
             resreq = self.project_resourcereq.loc[mask]
+            unconfirmed = self.project_unconfirmed.loc[mask]
+            deferred = self.project_deferred.loc[mask]
 
             if add_placeholders:
                 # add placeholders to data_dict, excluding resource required placeholders
-                placeholder_ids = [idx for idx in self.placeholders.index
-                                   if 'resource required' not in self.placeholders.loc[idx, 'name'].lower()]
+                placeholder_ids = []
+                for idx in self.placeholders.index:
+                    name = self.placeholders.loc[idx, 'name'].lower()
+                    if 'resource required' in name:
+                        continue
+                    elif 'unconfirmed' in name:
+                        continue
+                    elif 'deferred' in name:
+                        continue
+                    else:
+                        placeholder_ids.append(idx)
 
                 for placeholder_id in placeholder_ids:
                     for project_id in self.placeholder_allocations[placeholder_id].columns:
@@ -484,6 +495,8 @@ class Forecast:
                     df.columns = [self.get_name(person_id, 'person') for person_id in df.columns]
                     df.columns.name = self.get_name(key, 'project')
                     df['RESOURCE REQUIRED'] = resreq[key]
+                    df['UNCONFIRMED'] = unconfirmed[key]
+                    df['DEFERRED'] = deferred[key]
 
                 elif key_type == 'person':
                     df.columns = [self.get_name(project_id, 'project') for project_id in df.columns]
