@@ -5,7 +5,8 @@ import sqlalchemy as sqla
 import os.path
 import json
 import subprocess
-
+import re
+import numpy as np
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
@@ -55,8 +56,8 @@ class Forecast:
         self.people_allocations, self.people_totals = self.get_allocations('person')
 
         # project_allocations: dict with key project_id, contains df of (date, person_id) with allocation
-        # project_totals: df of (date, project_id) with total allocations across PEOPLE ONLY
-        self.project_allocations, self.project_totals = self.get_allocations('project')
+        # project_confirmed: df of (date, project_id) with total allocations across PEOPLE ONLY
+        self.project_allocations, self.project_confirmed = self.get_allocations('project')
 
         # placeholder_allocations: dict with key placeholder_id, contains df of (date, project_id) with allocation
         # placeholder_totals: df of (date, placeholder_id) with total allocation
@@ -68,34 +69,47 @@ class Forecast:
         # project_deferred:  df of (date, project_id) with total allocation to deferred placeholders
         self.project_deferred = self.get_project_deferred()
 
-        # project_reqs: total people + institute + resource_required placeholder allocations to project?
-        # project_netalloc: resource_required allocations to each project?
-        self.project_reqs, self.project_netalloc = self.get_project_required()
+        # project_confirmed: total people + institute + resource_required placeholder allocations to project?
+        # project_resourcereq: resource_required allocations to each project?
+        self.project_confirmed, self.project_resourcereq = self.get_project_required()
+
+
+        #people_totals
+        #project_confirmed
+        #placeholder_totals
+
 
         """
-        project_confirmed
-        project_unconfirmed
-        project_deferred
-        project_resourcereq
+        project_people:  FTE assignment of each person to each project
+        project_confirmed: total confirmed FTE requirement of project
+        project_allocated: total FTE allocated to project
+        project_resourcereq: total extra FTE that needs to be allocated to project (confirmed - allocated)
+        project_unconfirmed: total unconfirmed FTE a project may need
+        project_deferred: total deferred FTE of a project
 
-        client_confirmed
-        client_unconfirmed
-        client_deferred
-        client_resourcereq
+        people_projects:  project assignments for each person (~transpose of project_people)
+        people_allocated: total FTE each person has been allocated to 
+        people_capacity: FTE capacity of each person over time
+        people_available: total free FTE each person has
+        
+        institute_projects: project assignments for each institute placeholder
+        institute_allocated: 
+        institute_capacity:
+        institute_available:
+        
+        client_confirmed: confirmed FTE requirement of a client
+        client_allocated: FTE allocated to a client
+        client_resourcereq: extra FTE that needs to be allocated to a client (confirmed - allocated)
+        client_unconfirmed: unconfirmed FTE a client may need
+        client_deferred: deferred FTE of a client
 
-        people_allocations
-        people_total
-        people_capacity
-        people_available
-
-        capacity_total
-        capacity_allocated
-        capacity_available
-
-        institute_allocations
-        institute_total
-        institute_capacity
-        institute_available
+        capacity_total: total FTE capacity of each group - e.g. REG permananet, FTC, partner, associate etc.
+        capacity_allocated: allocated FTE of each group
+        capacity_available: available FTE of each group
+        
+        demand_confirmed
+        demand_unconfirmed
+        demand_deferred
         """
 
     def load_csv_data(self):
@@ -140,6 +154,19 @@ class Forecast:
 
         # Find the earliest and latest date in the data, create a range of weekdays between these dates
         date_range = get_business_days(assignments['start_date'].min(), assignments['end_date'].max())
+
+        # project colon separated tags to columns
+        for idx, row in projects.iterrows():
+
+            tags = re.findall(r"(?<=\')(.*?)(?=[\'\,])", row['tags'])
+
+            for tag in tags:
+                if ':' in tag:
+                    split_tag = tag.split(':')
+                    column = split_tag[0].strip()
+                    value = split_tag[1].strip()
+
+                    projects.loc[idx, column] = value
 
         return people, projects, placeholders, assignments, clients, date_range
 
@@ -342,14 +369,14 @@ class Forecast:
 
         project_unconf_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('unconfirmed')].index
 
-        project_unconfirmed = self.project_totals.copy(deep=True)
+        project_unconfirmed = pd.DataFrame(index=self.date_range, columns=self.projects.index)
         project_unconfirmed[:] = 0
 
         for idx in project_unconf_ids:
             allocs = self.placeholder_allocations[idx]
 
-            for col in allocs.columns:
-                project_unconfirmed[col] += allocs[col]
+            for project in allocs.columns:
+                project_unconfirmed[project] += allocs[project]
 
         return project_unconfirmed
 
@@ -358,14 +385,14 @@ class Forecast:
 
         project_defer_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('deferred')].index
 
-        project_deferred = self.project_totals.copy(deep=True)
+        project_deferred = pd.DataFrame(index=self.date_range, columns=self.projects.index)
         project_deferred[:] = 0
 
         for idx in project_defer_ids:
             allocs = self.placeholder_allocations[idx]
 
-            for col in allocs.columns:
-                project_deferred[col] += allocs[col]
+            for project in allocs.columns:
+                project_deferred[project] += allocs[project]
 
         return project_deferred
 
@@ -373,7 +400,10 @@ class Forecast:
         """Get amount of additional resource that needs to be required over time, i.e. difference between
         project requirements and project allocations."""
         # Project requirements = Project assignments + Resource required assignments
-        project_reqs = self.project_totals.copy(deep=True)
+        project_confirmed = self.project_confirmed.copy(deep=True)
+
+        project_resourcereq = pd.DataFrame(index=self.date_range, columns=self.projects.index)
+        project_resourcereq[:] = 0
 
         # add resource req info from placeholders
         resource_req_ids = []
@@ -388,12 +418,13 @@ class Forecast:
         for idx in resource_req_ids:
             allocs = self.placeholder_allocations[idx]
 
-            for col in allocs.columns:
-                project_reqs[col] += allocs[col]
+            for project in allocs.columns:
+                project_confirmed[project] += allocs[project]
 
-        project_netalloc = project_reqs - self.project_totals
+                if 'resource required' in self.placeholders.loc[idx, 'name'].lower():
+                    project_resourcereq[project] += allocs[project]
 
-        return project_reqs, project_netalloc
+        return project_confirmed, project_resourcereq
 
     def spreadsheet_sheet(self, key_type, start_date, end_date, freq, add_placeholders=True):
         """Create a spreadsheet style dataframe with the rows being key_type (project or person ids), the columns
@@ -404,8 +435,8 @@ class Forecast:
             # copy to prevent overwriting original
             data_dict = deepcopy(self.project_allocations)
 
-            mask = (self.project_netalloc.index >= start_date) & (self.project_netalloc.index <= end_date)
-            resreq = self.project_netalloc.loc[mask]
+            mask = (self.project_resourcereq.index >= start_date) & (self.project_resourcereq.index <= end_date)
+            resreq = self.project_resourcereq.loc[mask]
 
             if add_placeholders:
                 # add placeholders to data_dict, excluding resource required placeholders
@@ -513,11 +544,27 @@ class Forecast:
         sheet = pd.concat(sheet).sort_index()
 
         if key_type == 'project':
-            # Add project client info to index (~programme area)
+
+            # Get project client names
             proj_idx = [self.get_project_id(name) for name in sheet.index.get_level_values(0)]
             client_idx = self.projects.loc[proj_idx, 'client_id']
             client_name = self.clients.loc[client_idx, 'name']
 
+            # Get GitHub issue numbers
+            proj_names = sheet.index.levels[0].values
+            proj_idx = [self.get_project_id(name) for name in proj_names]
+            proj_gitissue = [self.projects.loc[idx, 'GitHub'] for idx in proj_idx]
+            git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
+
+            for idx, proj in enumerate(proj_names):
+                if not (type(proj_gitissue) is float and np.isnan(proj_gitissue)):
+                    proj_names[idx] = """<a href="{url}/{issue}">{proj}</a>""".format(url=git_base_url,
+                                                                                     issue=proj_gitissue[idx],
+                                                                                     proj=proj)
+
+            sheet.index.set_levels(proj_names, level=0, inplace=True)
+
+            # Add project client info to index (~programme area)
             sheet['client_name'] = client_name.values
             sheet.set_index(['client_name', sheet.index], inplace=True)
             sheet.index.rename('project_name', 1, inplace=True)
