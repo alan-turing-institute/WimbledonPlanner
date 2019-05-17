@@ -41,7 +41,7 @@ whiteboard: clean whiteboard_plots
 
 # set up the python virtual environment
 $(VENV_ACTIVATE): requirements.txt
-	python -m venv ./venv && source $@ && pip install -Ur requirements.txt
+	python3 -m venv ./venv && source $@ && pip3 install -Ur requirements.txt
 
 $(FORECAST_CSV) : forecast_csv ;
 $(HARVEST_CSV) : harvest_csv ;
