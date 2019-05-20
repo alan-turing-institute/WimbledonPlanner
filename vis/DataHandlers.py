@@ -366,9 +366,7 @@ class Forecast:
         for idx in self.placeholders.index:
             name = self.placeholders.loc[idx, 'name'].lower()
 
-            if 'deferred' in name or 'unconfirmed' in name:
-                continue
-            else:
+            if 'resource required' in name:
                 resource_req_ids.append(idx)
 
         for idx in resource_req_ids:
