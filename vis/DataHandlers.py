@@ -480,12 +480,15 @@ class Forecast:
 
         # for each project
         for key in data_dict.keys():
-
             # get the projects's person allocations
             df = data_dict[key]
 
             # replace ids with names. for project id: include resource required.
             if key_type == 'project':
+                if self.get_name(key, 'project') == 'UNAVAILABLE':
+                    # don't display allocations to unavailable project
+                    continue
+
                 df.columns = [self.get_name(person_id, 'person') for person_id in df.columns]
                 df.columns.name = self.get_name(key, 'project')
 
@@ -504,8 +507,7 @@ class Forecast:
             df = select_date_range(df, start_date, end_date)
 
             # check there are project allocations to display
-            rows, cols = df.shape
-            if rows > 0 and cols > 0:
+            if df.shape[0] > 0 and df.shape[1] > 0:
 
                 # update the set of names
                 [names.add(col) for col in df.columns]
@@ -514,14 +516,12 @@ class Forecast:
                 if freq != 'D':
                     df = df.resample(freq).mean()
 
-                # max number items assigned to this key at a time
-                n_columns = (df > 0).sum(axis=1).max()
+                # sort people (column order) by magnitude of earliest assignment
+                df = df.sort_values(by=[idx for idx in df.index], axis=1, ascending=False)
 
-                # initialise data frame to store projects/people ranked by time assignment
-                df_ranked = pd.DataFrame(index=df.index, columns=range(1, n_columns + 1))
-
+                """PREVIOUS METHOD:
                 # for each date period
-                for date in df_ranked.index:
+                for date in key_sheet.index:
 
                     # rank the items for this date period by time allocation
                     sorted_df = df.loc[date, df.loc[date] > 0].sort_values(ascending=False)
@@ -529,31 +529,63 @@ class Forecast:
                     if len(sorted_df) > 0:
                         for i in range(len(sorted_df)):
                             # Fill with format <NAME> (<ALLOCATION>)
-                            df_ranked.loc[date, i + 1] = sorted_df.index[i] + '<br>({:.1f})'.format(sorted_df.iloc[i])
+                            key_sheet.loc[date, i + 1] = sorted_df.index[i] + '<br>({:.1f})'.format(sorted_df.iloc[i])
 
                         # empty strings for unused ranks
-                        df_ranked.loc[date, range(len(sorted_df) + 1, n_columns + 1)] = ''
+                        key_sheet.loc[date, range(len(sorted_df) + 1, n_columns + 1)] = ''
 
                     else:
-                        df_ranked.loc[date, :] = ''
+                        key_sheet.loc[date, :] = ''
+                """
+
+                # max number items assigned to this key at a time
+                n_columns = (df > 0).sum(axis=1).max()
+
+                # initialise data frame to store projects/people ranked by time assignment
+                key_sheet = pd.DataFrame(index=df.index, columns=range(1, n_columns + 1))
+                # empty strings for blank cells
+                key_sheet[:] = ''
+
+                fill_idx = None
+
+                for name_idx, name in enumerate(df.columns):
+                    # flags dates where this name has a non-zero allocation
+                    nonzero_allocs = df.iloc[:, name_idx] > 0
+
+                    # choose where to place new allocations in key_sheet
+                    for key_col in key_sheet.columns:
+                        # flags columns in key_sheet where the new allocations in df[name] overlap
+                        # with previous allocations added to key_sheet
+                        conflicts = key_sheet.loc[nonzero_allocs, key_col].str.len() > 0
+
+                        # if there is no overlap between new allocations and this column we can fill the values there
+                        if (~conflicts).all():
+                            fill_idx = key_col
+                            break
+
+                    if fill_idx is None:
+                        raise KeyError("no suitable column to fill without conflicts")
+
+                    # insert the new allocations with format <NAME> (<ALLOCATION>)
+                    key_sheet.loc[nonzero_allocs, fill_idx] = name + df.iloc[nonzero_allocs.values, name_idx].apply(lambda x: '<br>({:.1f})'.format(x))
 
                 # remove unused columns
-                [df_ranked.drop(col, axis=1, inplace=True) for col in df_ranked.columns if
-                 df_ranked[col].str.len().sum() == 0]
+                [key_sheet.drop(col, axis=1, inplace=True) for col in key_sheet.columns if
+                 key_sheet[col].str.len().sum() == 0]
 
                 # format dates nicely
                 if freq == 'MS':
-                    df_ranked = pd.DataFrame(df_ranked, index=df_ranked.index.strftime("%b-%Y"))
+                    key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%b-%Y"))
                 elif freq == 'W-MON':
-                    df_ranked = pd.DataFrame(df_ranked, index=df_ranked.index.strftime("%d-%b-%Y"))
+                    key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%d-%b-%Y"))
                 else:
-                    df_ranked = pd.DataFrame(df_ranked, index=df_ranked.index.strftime("%Y-%m-%d"))
+                    key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%Y-%m-%d"))
 
                 # store the allocations - transpose to get rows as keys and columns as dates
                 try:
-                    sheet[self.get_name(key, key_type)] = df_ranked.T
+                    sheet[self.get_name(key, key_type)] = key_sheet.T
                 except KeyError:
-                    sheet[self.get_name(key, 'placeholder')] = df_ranked.T
+                    sheet[self.get_name(key, 'placeholder')] = key_sheet.T
 
         # merge everything together into one large dataframe, sorted by key
         sheet = pd.concat(sheet).sort_index()
