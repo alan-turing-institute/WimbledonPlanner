@@ -110,6 +110,13 @@ def get_name_style(name, background_color=None, name_type=None):
                           font-weight: 600;
                           border: 1px solid orange;
                 } """
+    elif 'UNAVAILABLE' in name:
+        style = """.UNAVAILABLE {
+                          background-color: white;
+                          color: red;
+                          font-weight: 600;
+                          border: 1px solid red;
+                } """
     else:
         name_id = get_name_id(name)
 
@@ -154,6 +161,7 @@ def write_style(colors, client_colors=None, display='print'):
     style += get_name_style('RESOURCE REQUIRED')
     style += get_name_style('UNCONFIRMED')
     style += get_name_style('DEFERRED')
+    style += get_name_style('UNAVAILABLE')
 
     if client_colors is not None:
         for client, color in client_colors.items():
@@ -374,7 +382,7 @@ def write_table(df, key_type, display='print'):
     table += """<tbody>
     """
 
-    groups = df.groupby(level=0)
+    groups = df.groupby(level=0, sort=False)
     n_groups = len(groups)
 
     for group_idx, group in enumerate(groups):
@@ -427,7 +435,7 @@ def write_table(df, key_type, display='print'):
 
             n_rows = len(group_content)
 
-            project_groups = group_content.groupby(level=1)
+            project_groups = group_content.groupby(level=1, sort=False)
             n_projects = len(project_groups)
 
             table += """<tr>

@@ -506,6 +506,11 @@ class Forecast:
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
 
+            if key_type == 'person':
+                if 'UNAVAILABLE' in df.columns and len(df.columns) == 1:
+                    # don't display people who are only assigned as unavailable
+                    continue
+
             # check there are project allocations to display
             if df.shape[0] > 0 and df.shape[1] > 0:
 
@@ -518,25 +523,6 @@ class Forecast:
 
                 # sort people (column order) by magnitude of earliest assignment
                 df = df.sort_values(by=[idx for idx in df.index], axis=1, ascending=False)
-
-                """PREVIOUS METHOD:
-                # for each date period
-                for date in key_sheet.index:
-
-                    # rank the items for this date period by time allocation
-                    sorted_df = df.loc[date, df.loc[date] > 0].sort_values(ascending=False)
-
-                    if len(sorted_df) > 0:
-                        for i in range(len(sorted_df)):
-                            # Fill with format <NAME> (<ALLOCATION>)
-                            key_sheet.loc[date, i + 1] = sorted_df.index[i] + '<br>({:.1f})'.format(sorted_df.iloc[i])
-
-                        # empty strings for unused ranks
-                        key_sheet.loc[date, range(len(sorted_df) + 1, n_columns + 1)] = ''
-
-                    else:
-                        key_sheet.loc[date, :] = ''
-                """
 
                 # max number items assigned to this key at a time
                 n_columns = (df > 0).sum(axis=1).max()
@@ -597,27 +583,30 @@ class Forecast:
             client_idx = self.projects.loc[proj_idx, 'client_id']
             client_name = self.clients.loc[client_idx, 'name']
 
-            # Get GitHub issue numbers
-            proj_names = sheet.index.levels[0].values
-            proj_idx = [self.get_project_id(name) for name in proj_names]
-            proj_gitissue = [self.projects.loc[idx, 'GitHub'] for idx in proj_idx]
-            git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
-
-            for idx, proj in enumerate(proj_names):
-                if not (type(proj_gitissue[idx]) is float and np.isnan(proj_gitissue[idx])):
-                    proj_names[idx] = """<a href="{url}/{issue}">{proj}</a>""".format(url=git_base_url,
-                                                                                     issue=proj_gitissue[idx],
-                                                                                     proj=proj)
-
-            sheet.index.set_levels(proj_names, level=0, inplace=True)
-
             # Add project client info to index (~programme area)
             sheet['client_name'] = client_name.values
             sheet.set_index(['client_name', sheet.index], inplace=True)
             sheet.index.rename('project_name', 1, inplace=True)
             sheet.index.rename('rank', 2, inplace=True)
+
             sheet.sort_values(by=['client_name', 'project_name', 'rank'], inplace=True)
+
             sheet.index.rename([None, None, None], inplace=True)
+
+            # Get GitHub issue numbers, add as hrefs
+            proj_names = sheet.index.levels[1].values
+            proj_idx = [self.get_project_id(name) for name in proj_names]
+            proj_gitissue = [self.projects.loc[idx, 'GitHub'] for idx in proj_idx]
+            git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
+
+            proj_names_with_url = {}
+            for idx, proj in enumerate(proj_names):
+                if not (type(proj_gitissue[idx]) is float and np.isnan(proj_gitissue[idx])):
+                    proj_names_with_url[proj] = """<a href="{url}/{issue}">{proj}</a>""".format(url=git_base_url,
+                                                                                               issue=proj_gitissue[idx],
+                                                                                               proj=proj)
+
+            sheet.rename(proj_names_with_url, axis='index', level=1, inplace=True)
 
         return sheet
 
