@@ -185,7 +185,7 @@ def get_screen_style():
           display: flex;
           align-items: center;
           justify-content: center;
-        }  th:hover {
+        }  .index:hover {
           background-color: #ffff99;
         }  a {
           color: inherit;
@@ -244,7 +244,7 @@ def get_print_style():
           display: flex;
           align-items: center;
           justify-content: center;
-        }  th:hover {
+        }  .index:hover {
           background-color: #ffff99;
         }  a {
           color: inherit;
