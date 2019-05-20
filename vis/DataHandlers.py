@@ -456,10 +456,10 @@ class Forecast:
 
                 for placeholder_id in placeholder_ids:
                     for project_id in self.placeholder_allocations[placeholder_id].columns:
-                        data_dict[project_id].loc[:, placeholder_id] = self.placeholder_allocations[placeholder_id][project_id]
+                        data_dict[project_id].loc[:, placeholder_id] = self.placeholder_allocations[placeholder_id][project_id].copy()
 
         elif key_type == 'person':
-            data_dict = self.people_allocations
+            data_dict = deepcopy(self.people_allocations)
 
             if add_placeholders:
                 # add placeholders to data_dict, excluding resource required placeholders
@@ -467,7 +467,8 @@ class Forecast:
                                    if 'resource required' not in self.placeholders.loc[idx, 'name'].lower()]
 
                 for idx in placeholder_ids:
-                    data_dict[idx] = self.placeholder_allocations[idx]
+                    # copy needed to prevent overwriting original placeholder_allocations df later
+                    data_dict[idx] = self.placeholder_allocations[idx].copy()
 
         else:
             return ValueError('key type must be person or project')
@@ -483,27 +484,28 @@ class Forecast:
             # get the projects's person allocations
             df = data_dict[key]
 
+            # replace ids with names. for project id: include resource required.
+            if key_type == 'project':
+                df.columns = [self.get_name(person_id, 'person') for person_id in df.columns]
+                df.columns.name = self.get_name(key, 'project')
+
+                df['RESOURCE REQUIRED'] = resreq[key].copy()
+                df['UNCONFIRMED'] = unconfirmed[key].copy()
+                df['DEFERRED'] = deferred[key].copy()
+
+            elif key_type == 'person':
+                df.columns = [self.get_name(project_id, 'project') for project_id in df.columns]
+                df.columns.name = self.get_name(key, 'person')
+
+            else:
+                return ValueError('key type must be person or project')
+
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
 
             # check there are project allocations to display
             rows, cols = df.shape
             if rows > 0 and cols > 0:
-
-                # replace ids with names. for project id: include resource required.
-                if key_type == 'project':
-                    df.columns = [self.get_name(person_id, 'person') for person_id in df.columns]
-                    df.columns.name = self.get_name(key, 'project')
-                    df['RESOURCE REQUIRED'] = resreq[key]
-                    df['UNCONFIRMED'] = unconfirmed[key]
-                    df['DEFERRED'] = deferred[key]
-
-                elif key_type == 'person':
-                    df.columns = [self.get_name(project_id, 'project') for project_id in df.columns]
-                    df.columns.name = self.get_name(key, 'person')
-
-                else:
-                    return ValueError('key type must be person or project')
 
                 # update the set of names
                 [names.add(col) for col in df.columns]

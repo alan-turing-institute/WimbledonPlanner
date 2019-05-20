@@ -23,8 +23,8 @@ def save_sheet(sheet, save_dir, save_name):
 
 
 def whiteboard(vis):
-    print('Saving Whiteboard visualisations...', end='', flush=True)
-    start=time.time()
+    print('Creating Whiteboard visualisations... ', end='', flush=True)
+    start = time.time()
 
     # make poster pdf sheets
     sheet = vis.styled_sheet('person', display='print')
@@ -37,6 +37,9 @@ def whiteboard(vis):
 
 
 if __name__ == '__main__':
+    print('Initialising visualisation object... ', end='', flush=True)
+    init = time.time()
+
     args = sys.argv[1:]
 
     start_date = pd.to_datetime(sys.argv[1])
@@ -44,6 +47,8 @@ if __name__ == '__main__':
 
     vis = Visualise(init_forecast=True, init_harvest=False,
                     start_date=start_date, end_date=end_date)
+
+    print('{:.1f}s'.format(time.time() - init))
 
     whiteboard(vis)
 

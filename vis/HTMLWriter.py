@@ -408,8 +408,14 @@ def write_table(df, key_type, display='print'):
 
                 table += """</tr> """
 
+                if i < n_rows-1:
+                    table += """
+                    <tr>"""
+
             if group_idx+1 < n_groups:
                 table += get_separator()
+                table += """
+                <tr>"""
             else:
                 table += fix_colwidth(df.shape[1])
         # -------------- END OF PERSON --------------
@@ -454,7 +460,11 @@ def write_table(df, key_type, display='print'):
                             table += """<td class="{name}" >{cell}</td>
                             """.format(name=name, cell=cell)
 
-                    table += """</tr> """
+                    table += """</tr>"""
+
+                    if i < n_people-1:
+                        table += """
+                        <tr>"""
 
                 if project_idx+1 < n_projects:
                     table += get_separator()
@@ -462,6 +472,8 @@ def write_table(df, key_type, display='print'):
 
             if group_idx+1 < n_groups:
                 table += get_separator()
+                table += """
+                <tr>"""
             else:
                 table += fix_colwidth(df.shape[1])
         # -------------- END OF PROJECT --------------
