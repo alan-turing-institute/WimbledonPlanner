@@ -40,10 +40,15 @@ if __name__ == '__main__':
     print('Initialising visualisation object... ', end='', flush=True)
     init = time.time()
 
-    args = sys.argv[1:]
+    if len(sys.argv)>1:
+        start_date = pd.to_datetime(sys.argv[1])
+    else:
+        start_date = pd.datetime.now() - pd.Timedelta('30 days')
 
-    start_date = pd.to_datetime(sys.argv[1])
-    end_date = pd.to_datetime(sys.argv[2])
+    if len(sys.argv)>2:
+        end_date = pd.to_datetime(sys.argv[2])
+    else:
+        end_date = start_date + pd.Timedelta('395 days')
 
     vis = Visualise(init_forecast=True, init_harvest=False,
                     start_date=start_date, end_date=end_date)
