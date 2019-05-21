@@ -73,7 +73,34 @@ class Forecast:
         # project_resourcereq: resource_required allocations to each project?
         self.project_confirmed, self.project_resourcereq = self.get_project_required()
 
+        # consolidated allocations for resource required, unconfirmed, deferred (may be split over multiple placeholders
+        # on Forecast)
+        resreq_idx = [idx for idx in self.placeholders.index
+                      if 'resource required' in self.placeholders.loc[idx, 'name'].lower()]
 
+        self.resourcereq_allocations = self.placeholder_allocations[resreq_idx[0]]
+        if len(resreq_idx) > 1:
+            for idx in resreq_idx[1:]:
+                self.resourcereq_allocations = self.resourcereq_allocations.add(self.placeholder_allocations[idx],
+                                                                                fill_value=0)
+
+        unconf_idx = [idx for idx in self.placeholders.index
+                      if 'unconfirmed' in self.placeholders.loc[idx, 'name'].lower()]
+
+        self.unconfirmed_allocations = self.placeholder_allocations[unconf_idx[0]]
+        if len(unconf_idx) > 1:
+            for idx in unconf_idx[1:]:
+                self.unconfirmed_allocations = self.unconfirmed_allocations.add(self.placeholder_allocations[idx],
+                                                                                fill_value=0)
+
+        defer_idx = [idx for idx in self.placeholders.index
+                     if 'deferred' in self.placeholders.loc[idx, 'name'].lower()]
+
+        self.deferred_allocations = self.placeholder_allocations[defer_idx[0]]
+        if len(defer_idx) > 1:
+            for idx in defer_idx[1:]:
+                self.deferred_allocations = self.deferred_allocations.add(self.placeholder_allocations[idx],
+                                                                          fill_value=0)
         #people_totals
         #project_confirmed
         #placeholder_totals
@@ -499,13 +526,19 @@ class Forecast:
             data_dict = deepcopy(self.people_allocations)
 
             if add_placeholders:
-                # add placeholders to data_dict, excluding resource required placeholders
+                # add institute/misc placeholders to data_dict (not resource required, unavailable or deferred)
                 placeholder_ids = [idx for idx in self.placeholders.index
-                                   if 'resource required' not in self.placeholders.loc[idx, 'name'].lower()]
+                                   if 'resource required' not in self.placeholders.loc[idx, 'name'].lower() and
+                                      'unconfirmed' not in self.placeholders.loc[idx, 'name'].lower() and
+                                      'deferred' not in self.placeholders.loc[idx, 'name'].lower()]
 
                 for idx in placeholder_ids:
                     # copy needed to prevent overwriting original placeholder_allocations df later
                     data_dict[idx] = self.placeholder_allocations[idx].copy()
+
+                data_dict['Resource Required'] = self.resourcereq_allocations.copy()
+                data_dict['Unconfirmed'] = self.unconfirmed_allocations.copy()
+                data_dict['Deferred'] = self.deferred_allocations.copy()
 
         else:
             return ValueError('key type must be person or project')
@@ -535,7 +568,11 @@ class Forecast:
 
             elif key_type == 'person':
                 df.columns = [self.get_name(project_id, 'project') for project_id in df.columns]
-                df.columns.name = self.get_name(key, 'person')
+
+                if (key == 'Resource Required') or (key == 'Unconfirmed') or (key == 'Deferred'):
+                    df.columns.name = key
+                else:
+                    df.columns.name = self.get_name(key, 'person')
 
             else:
                 return ValueError('key type must be person or project')
@@ -605,10 +642,7 @@ class Forecast:
                     key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%Y-%m-%d"))
 
                 # store the allocations - transpose to get rows as keys and columns as dates
-                try:
-                    sheet[self.get_name(key, key_type)] = key_sheet.T
-                except KeyError:
-                    sheet[self.get_name(key, 'placeholder')] = key_sheet.T
+                sheet[df.columns.name] = key_sheet.T
 
         # merge everything together into one large dataframe, sorted by key
         sheet = pd.concat(sheet).sort_index()
@@ -648,14 +682,22 @@ class Forecast:
         elif key_type == 'person':
 
             # Get person association group
-            person_idx = [self.get_id(name, 'person') for name in sheet.index.get_level_values(0)]
+            person_idx = []
+            for name in sheet.index.get_level_values(0):
+                try:
+                    person_idx.append(self.get_id(name, 'person'))
+                except (KeyError, ValueError, IndexError):
+                    person_idx.append('Placeholder')
 
             group_name = []
             for idx in person_idx:
-                try:
-                    group_name.append(self.people.loc[idx, 'association_group'])
-                except KeyError:
-                    group_name.append(self.placeholders.loc[idx, 'association_group'])
+                if idx == 'Placeholder':
+                    group_name.append('Placeholder')
+                else:
+                    try:
+                        group_name.append(self.people.loc[idx, 'association_group'])
+                    except KeyError:
+                        group_name.append(self.placeholders.loc[idx, 'association_group'])
 
             # Add project client info to index (~programme area)
             sheet['group_name'] = group_name
