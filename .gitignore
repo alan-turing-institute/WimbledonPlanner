@@ -4,6 +4,7 @@
 api/secrets.py
 api/forecast_cache.sqlite
 /data/
+tmp.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
