@@ -3,6 +3,12 @@
 Project Wimbledon is an attempt to fix and possibly automate the REG group's
 planning and billing process.
 
+Recent versions of the "whiteboard" visualisation can be found on SharePoint here:
+
+* [Projects sheet](https://thealanturininstitute.sharepoint.com/:u:/s/ResearchEngineering/EawBPLOCSQVHvmQNwuz5Nd8Bv8leoZ5TjFXRE_TUtwvo7A?e=gUr6GO)
+
+* [People sheet](https://thealanturininstitute.sharepoint.com/:u:/s/ResearchEngineering/EfI1jsHdKkNLsUoMa6lOc2gBgyPOtKigueTbnYXwHtFxnQ?e=VQkdTV)
+
 ## Requirements
 
 Python package dependencies are listed in requirements.txt and are automatically installed to the python virtual environment
