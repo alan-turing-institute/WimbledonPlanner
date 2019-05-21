@@ -145,7 +145,7 @@ def get_name_style(name, background_color=None, name_type=None):
     return style
 
 
-def write_style(colors, client_colors=None, display='print'):
+def write_style(colors, group_colors=None, display='print'):
     style = """<style  type="text/css" > """
 
     if display == 'print':
@@ -163,8 +163,8 @@ def write_style(colors, client_colors=None, display='print'):
     style += get_name_style('DEFERRED')
     style += get_name_style('UNAVAILABLE')
 
-    if client_colors is not None:
-        for client, color in client_colors.items():
+    if group_colors is not None:
+        for client, color in group_colors.items():
             style += get_name_style(client, color, name_type='client')
 
     style += '</style>'
@@ -288,30 +288,16 @@ def get_print_style():
     return style
 
 
-def write_header(key_type, columns, title='Research Engineering Project Allocations'):
-    # header = """<thead> <tr>
-    #         <th></th>
-    #         <th></th>
-    #         """
+def write_header(columns, title='Research Engineering Project Allocations'):
 
     header = """<thead> <tr>
-            <th></th>
-            """
-
-    if key_type == 'project':
-        # project has extra column for client (programme area) groupings
-        header += """<th></th>
+        <th></th>
+        <th></th>
         <td class="title" colspan={n_columns}>{title}</td>
-        </tr><tr>
+    </tr><tr>
         <th class="blank" ></th>
         <th class="blank" ></th>
-        """.format(n_columns=len(columns), title=title)
-
-    elif key_type == 'person':
-        header += """<td class="title" colspan={n_columns}>{title}</td>
-         </tr><tr>
-         <th class="blank" ></th>
-        """.format(n_columns=len(columns), title=title)
+    """.format(n_columns=len(columns), title=title)
 
     for colname in columns:
         header += """<th class="header" >{colname}</th>
@@ -360,7 +346,7 @@ def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
     return html
 
 
-def write_table(df, key_type, display='print'):
+def write_table(df, title, display='print'):
     if display == 'print':
         table = """<table cellspacing="5mm"; border-collapse:collapse;>
         """
@@ -370,14 +356,7 @@ def write_table(df, key_type, display='print'):
     else:
         raise ValueError('display must be print or screen')
 
-    if key_type == 'project':
-        title = 'Research Engineering Project Allocations'
-    elif key_type == 'person':
-        title = 'Research Engineering Person Allocations'
-    else:
-        raise ValueError('key_type must be project or person')
-
-    table += write_header(key_type, df.columns, title=title)
+    table += write_header(df.columns, title=title)
 
     table += """<tbody>
     """
@@ -385,26 +364,32 @@ def write_table(df, key_type, display='print'):
     groups = df.groupby(level=0, sort=False)
     n_groups = len(groups)
 
+    # Loop over index groupings (either project client/programmes, or people role type)
     for group_idx, group in enumerate(groups):
 
         group_label, group_content = group
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # !!!!!!!!!!!! PERSON !!!!!!!!!!!!!!!!!
-        if key_type == 'person':
+        n_rows = len(group_content)
 
-            n_rows = len(group_content)
+        index_groups = group_content.groupby(level=1, sort=False)
+        n_index_groups = len(index_groups)
 
-            table += """<tr>
-            <th class="index" rowspan={n_rows}>{group_label}</th>
-            """.format(n_rows=n_rows, group_label=group_label)
+        table += """<tr>
+        <th class="{group_id}" rowspan={n_rows}>{group_label}</th>
+        """.format(group_id=get_name_id(group_label), n_rows=n_rows+n_index_groups-1, group_label=group_label)  # n_rows+n_index_groups to take into account separator rows
 
-            for i in range(n_rows):
-                # row_label = group_content.iloc[i].name[1]
-                # table += """<th>{row_label}</th>
-                # """.format(row_label=row_label)
+        # Loop over rows in this index group (each row being a project or a person)
+        for index_idx, index_group in enumerate(index_groups):
+            index_name, index_content = index_group
 
-                row_content = group_content.iloc[i].values
+            n_people = len(index_content)
+
+            table += """<th class="index" rowspan={n_people}>{index_name}</th>
+            """.format(n_people=n_people, index_name=index_name)
+
+            for i in range(n_people):
+                row_content = index_content.iloc[i].values
+
                 for cell in row_content:
                     name = get_name_id(cell)
                     if name.strip() == '':
@@ -414,77 +399,22 @@ def write_table(df, key_type, display='print'):
                         table += """<td class="{name}" >{cell}</td>
                         """.format(name=name, cell=cell)
 
-                table += """</tr> """
+                table += """</tr>"""
 
-                if i < n_rows-1:
+                if i < n_people-1:
                     table += """
                     <tr>"""
 
-            if group_idx+1 < n_groups:
+            if index_idx+1 < n_index_groups:
                 table += get_separator()
-                table += """
-                <tr>"""
-            else:
-                table += fix_colwidth(df.shape[1])
-        # -------------- END OF PERSON --------------
+        # end of inner loop over client projects
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # !!!!!!!!!!!! PROJECT !!!!!!!!!!!!!!!!
-        elif key_type == 'project':
-            # extra level for client grouping (project area)
-
-            n_rows = len(group_content)
-
-            project_groups = group_content.groupby(level=1, sort=False)
-            n_projects = len(project_groups)
-
-            table += """<tr>
-            <th class="{group_id}" rowspan={n_rows}>{group_label}</th>
-            """.format(group_id=get_name_id(group_label), n_rows=n_rows+n_projects-1, group_label=group_label)  # n_rows+n_projects to take into account separator rows
-
-            # loop over projects in this client group
-            for project_idx, project_group in enumerate(project_groups):
-                project_name, project_content = project_group
-
-                n_people = len(project_content)
-
-                table += """<th class="index" rowspan={n_people}>{project_name}</th>
-                """.format(n_people=n_people, project_name=project_name)
-
-                for i in range(n_people):
-                    # row_label = project_content.iloc[i].name[2]
-
-                    # table += """<th>{row_label}</th>
-                    #                 """.format(row_label=row_label)
-
-                    row_content = project_content.iloc[i].values
-
-                    for cell in row_content:
-                        name = get_name_id(cell)
-                        if name.strip() == '':
-                            table += """<td class="blank"></td>
-                            """
-                        else:
-                            table += """<td class="{name}" >{cell}</td>
-                            """.format(name=name, cell=cell)
-
-                    table += """</tr>"""
-
-                    if i < n_people-1:
-                        table += """
-                        <tr>"""
-
-                if project_idx+1 < n_projects:
-                    table += get_separator()
-            # end of inner loop over client projects
-
-            if group_idx+1 < n_groups:
-                table += get_separator()
-                table += """
-                <tr>"""
-            else:
-                table += fix_colwidth(df.shape[1])
-        # -------------- END OF PROJECT --------------
+        if group_idx+1 < n_groups:
+            table += get_separator()
+            table += """
+            <tr>"""
+        else:
+            table += fix_colwidth(df.shape[1])
 
     table += """</tbody>
        </table>"""
@@ -532,7 +462,7 @@ def get_colors(df):
     return colors
 
 
-def get_client_colors(df):
+def get_group_colors(df):
     clients = df.index.get_level_values(0).unique()
 
     # secondary colours from Turing design guidelines
@@ -540,20 +470,22 @@ def get_client_colors(df):
                      (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1),
                      (0.49, 0, 1), (0, 1, 0)]
 
-    client_colors = {clients[idx]: turing_colors[idx % len(turing_colors)] for idx in range(len(clients))}
-    return client_colors
+    group_colors = {clients[idx]: turing_colors[idx % len(turing_colors)] for idx in range(len(clients))}
+    return group_colors
 
 
 def make_whiteboard(df, key_type, display):
     colors = get_colors(df)
 
-    if key_type == 'project':
-        client_colors = get_client_colors(df)
-    else:
-        client_colors = None
+    group_colors = get_group_colors(df)
 
-    html = write_style(colors, client_colors, display=display)
-    html += write_table(df, key_type, display=display)
+    if key_type == 'project':
+        title = 'Research Engineering Project Allocations'
+    elif key_type == 'person':
+        title = 'Research Engineering Person Allocations'
+
+    html = write_style(colors, group_colors, display=display)
+    html += write_table(df, title, display=display)
 
     return html
 

@@ -126,6 +126,8 @@ class Forecast:
         # convert capacity into FTE at self.hrs_per_day hours per day
         people['weekly_capacity'] = people['weekly_capacity'] / (self.hrs_per_day * 5 * 60 * 60)
 
+        people['full_name'] = people['first_name'] + ' ' + people['last_name']
+
         # remove project managers
         people = people[people.roles != "['Research Project Manager']"]
 
@@ -167,6 +169,28 @@ class Forecast:
                     value = split_tag[1].strip()
 
                     projects.loc[idx, column] = value
+
+        # project/placeholder: extract capacity group
+        def association_group(role_str):
+            if 'REG Director' in role_str:
+                return 'REG Director'
+            elif 'REG Principal' in role_str:
+                return 'REG Principal'
+            elif 'REG Senior' in role_str:
+                return 'REG Senior'
+            elif 'REG Permanent' in role_str:
+                return 'REG Permanent'
+            elif 'REG FTC' in role_str:
+                return 'REG FTC'
+            elif 'REG Associate' in role_str:
+                return 'REG Associate'
+            elif 'University Partner' in role_str:
+                return 'University Partner'
+            else:
+                return 'Placeholder'
+
+        people['association_group'] = people['roles'].apply(association_group)
+        placeholders['association_group'] = placeholders['roles'].apply(association_group)
 
         return people, projects, placeholders, assignments, clients, date_range
 
@@ -219,6 +243,8 @@ class Forecast:
         # remove project managers
         people = people[people.role != "['Research Project Manager']"]
 
+        people['full_name'] = people['first_name'] + ' ' + people['last_name']
+
         clients = pd.read_sql_table('clients', connection, schema='forecast',
                                     index_col='id')
 
@@ -245,19 +271,12 @@ class Forecast:
         """Get the full name of someone from their person_id"""
         return self.people.loc[person_id, 'first_name'] + ' ' + self.people.loc[person_id, 'last_name']
 
-    def get_person_id(self, first_name, last_name=None):
+    def get_person_id(self, full_name):
         """Get the person_id of someone from their first_name and last_name."""
-        if last_name is None:
-            person_id = self.people.loc[(self.people['first_name'] == first_name)]
+        person_id = self.people.loc[(self.people['full_name'] == full_name)]
 
-            if len(person_id) != 1:
-                raise ValueError('Could not unique person with name ' + first_name)
-
-        else:
-            person_id = self.people.loc[(self.people['first_name'] == first_name) & (self.people['last_name'] == last_name)]
-
-            if len(person_id) != 1:
-                raise ValueError('Could not unique person with name ' + first_name + ' ' + last_name)
+        if len(person_id) != 1:
+            raise ValueError('Could not unique person with name ' + full_name)
 
         return person_id.index[0]
 
@@ -296,6 +315,24 @@ class Forecast:
             return self.get_project_name(id_value)
         elif id_type == 'placeholder':
             return self.get_placeholder_name(id_value)
+        else:
+            raise ValueError('id_type must be person, project or placeholder')
+
+    def get_id(self, name, id_type):
+        """Get the name of an id based on the type of id it is. id_type can be
+        'person', 'project' or 'placeholder'"""
+        if id_type == 'person':
+            try:
+                return self.get_person_id(name)
+            except (KeyError, ValueError):
+                # if person id search fails check whether it's a placeholder id
+                # to deal with cases where they've been merged together
+                return self.get_placeholder_id(name)
+
+        elif id_type == 'project':
+            return self.get_project_id(name)
+        elif id_type == 'placeholder':
+            return self.get_placeholder_id(name)
         else:
             raise ValueError('id_type must be person, project or placeholder')
 
@@ -587,9 +624,9 @@ class Forecast:
             sheet['client_name'] = client_name.values
             sheet.set_index(['client_name', sheet.index], inplace=True)
             sheet.index.rename('project_name', 1, inplace=True)
-            sheet.index.rename('rank', 2, inplace=True)
+            sheet.index.rename('row', 2, inplace=True)
 
-            sheet.sort_values(by=['client_name', 'project_name', 'rank'], inplace=True)
+            sheet.sort_values(by=['client_name', 'project_name', 'row'], inplace=True)
 
             sheet.index.rename([None, None, None], inplace=True)
 
@@ -607,6 +644,32 @@ class Forecast:
                                                                                                proj=proj)
 
             sheet.rename(proj_names_with_url, axis='index', level=1, inplace=True)
+
+        elif key_type == 'person':
+
+            # Get person association group
+            person_idx = [self.get_id(name, 'person') for name in sheet.index.get_level_values(0)]
+
+            group_name = []
+            for idx in person_idx:
+                try:
+                    group_name.append(self.people.loc[idx, 'association_group'])
+                except KeyError:
+                    group_name.append(self.placeholders.loc[idx, 'association_group'])
+
+            # Add project client info to index (~programme area)
+            sheet['group_name'] = group_name
+            sheet.set_index(['group_name', sheet.index], inplace=True)
+            sheet.index.rename('person_name', 1, inplace=True)
+            sheet.index.rename('row', 2, inplace=True)
+
+            sheet.sort_values(by=['group_name', 'person_name', 'row'], inplace=True)
+
+            sheet = sheet.reindex(['REG Director', 'REG Principal', 'REG Senior', 'REG Permanent',
+                                   'REG FTC', 'REG Associate', 'University Partner', 'Placeholder'],
+                                  level=0)
+
+            sheet.index.rename([None, None, None], inplace=True)
 
         return sheet
 

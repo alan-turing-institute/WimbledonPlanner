@@ -6,7 +6,7 @@
 
 SHELL := /bin/bash
 
-# python activate virtual env
+# python3 activate virtual env
 VENV_ACTIVATE = venv/bin/activate
 
 FORECAST_CSV_BASE = assignments.csv connections.csv people.csv projects.csv \
@@ -39,37 +39,37 @@ forecast: clean forecast_summary
 ## build the whiteboard visualisations with fresh data
 whiteboard: clean whiteboard_plots
 
-# set up the python virtual environment
+# set up the python3 virtual environment
 $(VENV_ACTIVATE): requirements.txt
-	python -m venv ./venv && source $@ && pip install -Ur requirements.txt
+	python3 -m venv ./venv && source $@ && pip3 install -Ur requirements.txt
 
 $(FORECAST_CSV) : forecast_csv ;
 $(HARVEST_CSV) : harvest_csv ;
 
 # generate the csv data
 forecast_csv : $(VENV_ACTIVATE)
-	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd api && python update.py forecast
+	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd api && python3 update.py forecast
 
 harvest_csv : $(VENV_ACTIVATE)
-	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python update.py harvest
+	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python3 update.py harvest
 
 
 data/figs/.forecast_summary_timestamp : $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python save.py forecast && \
+	source $(VENV_ACTIVATE) && cd vis && python3 save.py forecast && \
 	touch ../data/figs/.forecast_summary_timestamp
 
 data/figs/.forecast_individual_timestamp : $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python save.py forecast individual && \
+	source $(VENV_ACTIVATE) && cd vis && python3 save.py forecast individual && \
 	touch ../data/figs/.forecast_individual_timestamp
 
 data/figs/.harvest_vs_forecast_timestamp : $(HARVEST_CSV) $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python save.py harvest && \
+	source $(VENV_ACTIVATE) && cd vis && python3 save.py harvest && \
 	touch ../data/figs/.harvest_vs_forecast_timestamp
 
 data/figs/projects/projects.pdf : $(FORECAST_CSV)
 	source $(VENV_ACTIVATE) && \
 	cd vis/ && \
-	python save.py whiteboard
+	python3 save.py whiteboard
 
 forecast_summary: data/figs/.forecast_summary_timestamp
 
