@@ -7,6 +7,8 @@ import json
 import subprocess
 import re
 import numpy as np
+import wimbledon.config
+
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
@@ -101,43 +103,6 @@ class Forecast:
             for idx in defer_idx[1:]:
                 self.deferred_allocations = self.deferred_allocations.add(self.placeholder_allocations[idx],
                                                                           fill_value=0)
-        #people_totals
-        #project_confirmed
-        #placeholder_totals
-
-
-        """
-        project_people:  FTE assignment of each person to each project
-        project_confirmed: total confirmed FTE requirement of project
-        project_allocated: total FTE allocated to project
-        project_resourcereq: total extra FTE that needs to be allocated to project (confirmed - allocated)
-        project_unconfirmed: total unconfirmed FTE a project may need
-        project_deferred: total deferred FTE of a project
-
-        people_projects:  project assignments for each person (~transpose of project_people)
-        people_allocated: total FTE each person has been allocated to 
-        people_capacity: FTE capacity of each person over time
-        people_available: total free FTE each person has
-        
-        institute_projects: project assignments for each institute placeholder
-        institute_allocated: 
-        institute_capacity:
-        institute_available:
-        
-        client_confirmed: confirmed FTE requirement of a client
-        client_allocated: FTE allocated to a client
-        client_resourcereq: extra FTE that needs to be allocated to a client (confirmed - allocated)
-        client_unconfirmed: unconfirmed FTE a client may need
-        client_deferred: deferred FTE of a client
-
-        capacity_total: total FTE capacity of each group - e.g. REG permananet, FTC, partner, associate etc.
-        capacity_allocated: allocated FTE of each group
-        capacity_available: available FTE of each group
-        
-        demand_confirmed
-        demand_unconfirmed
-        demand_deferred
-        """
 
     def load_csv_data(self):
         """load data from csv files in ../data/forecast directory"""
@@ -227,8 +192,7 @@ class Forecast:
         database: the name of the database on the server
         drivername: the type of database it is, e.g. postgresql"""
 
-        with open('../sql/config.json', 'r') as f:
-            config = json.load(f)
+        config = wimbledon.config.get_sql_config()
 
         if config['host'] == 'localhost':
             url = sqla.engine.url.URL(drivername=config['drivername'],
@@ -801,8 +765,7 @@ class Harvest:
         database: the name of the database on the server
         drivername: the type of database it is, e.g. postgresql"""
 
-        with open('../sql/config.json', 'r') as f:
-            config = json.load(f)
+        config = wimbledon.config.get_sql_config()
 
         if config['host'] == 'localhost':
             url = sqla.engine.url.URL(drivername=config['drivername'],
@@ -1058,5 +1021,3 @@ class Harvest:
             entries = pd.DataFrame(entries)
 
         return entries
-
-

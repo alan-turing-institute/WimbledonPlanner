@@ -7,12 +7,12 @@ import os
 import json
 import pandas as pd
 
+import wimbledon.config
 """
 Make database connection
 """
 
-with open('config.json', 'r') as f:
-    config = json.load(f)
+config = wimbledon.config.get_sql_config()
 
 if config['host'] == 'localhost':
     url = sqla.engine.url.URL(drivername=config['drivername'],

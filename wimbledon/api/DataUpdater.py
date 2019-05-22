@@ -1,13 +1,4 @@
-"""
-The functions in this script rely on the file secrets.py existing in the same directory and containing
-authentication information for Harvest and Forecast as a dictionary with the following form:
-
-harvest_api_credentials = {
-    "harvest_account_id": "<HARVEST_ACCOUNT_ID>",
-    "forecast_account_id": "<FORECAST_ACCOUNT_ID>",
-    "access_token": "<ACCESS_TOKEN>"
-"""
-import secrets
+import wimbledon.config
 
 import forecast
 import harvest
@@ -37,8 +28,7 @@ import subprocess
 
 
 def get_db_connection():
-    with open('../sql/config.json', 'r') as f:
-        config = json.load(f)
+    config = wimbledon.config.get_sql_config()
 
     if config['host'] == 'localhost':
         url = sqla.engine.url.URL(drivername=config['drivername'],
@@ -55,8 +45,8 @@ def get_db_connection():
                     sql_secrets = line.strip().split(':')
                     break
 
-        if secrets is None:
-            raise ValueError('did not find ' + config.wimbledon_config['host'] + ' in ~/.pgpass')
+        if sql_secrets is None:
+            raise ValueError('did not find ' + config['host'] + ' in ~/.pgpass')
 
         url = sqla.engine.url.URL(drivername=config['drivername'],
                                   username=sql_secrets[-2],
@@ -123,6 +113,8 @@ def update_forecast(data_store='csv', connection=None):
     if data_store == 'csv':
         check_dir('../data/forecast')
 
+    secrets = wimbledon.config.get_harvest_credentials()
+
     api = forecast.Api(account_id=secrets.harvest_api_credentials['forecast_account_id'],
                        auth_token=secrets.harvest_api_credentials['access_token'])
 
@@ -132,7 +124,7 @@ def update_forecast(data_store='csv', connection=None):
     print(user.first_name, user.last_name, user.email)
     print()
 
-    def response_to_df(api_response, title=''):
+    def response_to_df(api_response):
         """Takes an api response in the pyforecast foremat and converts it into a pandas data frame."""
         results = [json.loads(result.to_json()) for result in api_response]
 
@@ -232,6 +224,8 @@ def update_harvest(data_store='csv', connection=None):
 
     if data_store == 'csv':
         check_dir('../data/harvest')
+
+    secrets = wimbledon.config.get_harvest_credentials()
 
     token = harvest.PersonalAccessToken(account_id=secrets.harvest_api_credentials['harvest_account_id'],
                                         access_token=secrets.harvest_api_credentials['access_token'])

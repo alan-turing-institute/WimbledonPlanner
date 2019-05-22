@@ -1,0 +1,116 @@
+import json
+import os.path
+
+CONFIG_DIR = os.path.expanduser('~/.wimbledon')
+
+HARVEST_CREDENTIALS_PATH = CONFIG_DIR + '/.harvest_credentials'
+SQL_CONFIG_PATH = CONFIG_DIR + '/.sql_config'
+
+
+def check_dir(directory):
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
+
+
+def set_harvest_credentials(harvest_account_id,
+                            forecast_account_id,
+                            access_token):
+    """
+    Saves Harvest credentials to ~/.wimbledon/.harvest_credentials as a json file containing a harvest account id,
+    a forecast account id and an access token.
+
+    Get these from https://id.getharvest.com/developers.
+
+    :param harvest_account_id:
+    :param forecast_account_id:
+    :param access_token:
+    :return:
+    """
+
+    credentials = {
+        "harvest_account_id": harvest_account_id,
+        "forecast_account_id": forecast_account_id,
+        "access_token": access_token
+    }
+
+    check_dir(CONFIG_DIR)
+
+    with open(HARVEST_CREDENTIALS_PATH, 'w') as f:
+        json.dump(credentials, f)
+
+
+def get_harvest_credentials():
+    """
+    Load Harvest credentials from ~/.wimbledon/.harvest_credentials, which should be a json file containing the keys
+    harvest_account_id, forecast_account_id and access_token.
+
+    :return:
+    """
+
+    try:
+        with open(HARVEST_CREDENTIALS_PATH, 'r') as f:
+            harvest_credentials = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError('No Harvest credentials found. Please create the file '+ HARVEST_CREDENTIALS_PATH)
+
+    keys = harvest_credentials.keys()
+
+    assert "harvest_account_id" in keys and len(harvest_credentials["harvest_account_id"]) > 0, \
+        "harvest_account_id not set in " + HARVEST_CREDENTIALS_PATH
+
+    assert "forecast_account_id" in keys and len(harvest_credentials["forecast_account_id"]) > 0, \
+        "forecast_account_id not set in " + HARVEST_CREDENTIALS_PATH
+
+    assert "access_token" in keys and len(harvest_credentials["access_token"]) > 0, \
+        "access_token not set in " + HARVEST_CREDENTIALS_PATH
+
+    return harvest_credentials
+
+
+def set_sql_config(drivername, host, database):
+    """
+    Saves configuration of a SQL database to ~/.wimbledon/.sql_config
+
+    :param drivername:
+    :param host:
+    :param database:
+    :return:
+    """
+    sql_config = {
+        "drivername": drivername,
+        "host": host,
+        "database": database
+    }
+
+    check_dir(CONFIG_DIR)
+
+    with open(SQL_CONFIG_PATH, 'w') as f:
+        json.dump(sql_config, f)
+
+
+def get_sql_config():
+    """
+    Loads SQL database configuration from ~/.wimbledon/.sql_config which should be a json file with the keys
+    drivername, host and database.
+
+    :return:
+    """
+
+    try:
+        with open(SQL_CONFIG_PATH, 'r') as f:
+            sql_config = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError('No SQL configuration file found. Please create the file ' + SQL_CONFIG_PATH)
+
+    keys = sql_config.keys()
+
+    assert "drivername" in keys and len(sql_config["drivername"]) > 0, \
+        "drivername not set in " + SQL_CONFIG_PATH
+
+    assert "host" in keys and len(sql_config["host"]) > 0, \
+        "host not set in " + SQL_CONFIG_PATH
+
+    assert "database" in keys and len(sql_config["database"]) > 0, \
+        "database not set in " + SQL_CONFIG_PATH
+
+    return sql_config
