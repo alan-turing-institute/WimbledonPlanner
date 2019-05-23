@@ -5,7 +5,7 @@ The primary function is make_whiteboard(df, key_type, display)"""
 import random
 from matplotlib.colors import rgb2hex
 import pandas as pd
-import DataHandlers
+import wimbledon.vis.DataHandlers
 import string
 import re
 import sys
@@ -533,11 +533,11 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    fc = DataHandlers.Forecast()
-    df = fc.spreadsheet_sheet(key_type,
-                              pd.datetime.now() - pd.Timedelta('30 days'),
-                              pd.datetime.now() + pd.Timedelta('365 days'),
-                              'MS')
+    fc = wimbledon.vis.DataHandlers.Forecast()
+    df = fc.whiteboard(key_type,
+                       pd.datetime.now() - pd.Timedelta('30 days'),
+                       pd.datetime.now() + pd.Timedelta('365 days'),
+                       'MS')
 
     html = make_whiteboard(df, key_type, display)
 

@@ -1,15 +1,33 @@
 import json
 import os.path
+import wimbledon
 
 CONFIG_DIR = os.path.expanduser('~/.wimbledon')
 
 HARVEST_CREDENTIALS_PATH = CONFIG_DIR + '/.harvest_credentials'
 SQL_CONFIG_PATH = CONFIG_DIR + '/.sql_config'
-
+WIMBLEDON_CONFIG_PATH = CONFIG_DIR + '/.wimbledon_config'
 
 def check_dir(directory):
+    """
+    Check whether directory exists; if not create it.
+
+    :param directory:
+    :return:
+    """
     if not os.path.isdir(directory):
         os.makedirs(directory)
+
+    return os.path.isdir(directory)
+
+
+def get_wimbledon_path():
+    """
+    Get the directory of the wimbledon code base.
+
+    :return:
+    """
+    return os.path.dirname(wimbledon.__file__)
 
 
 def set_harvest_credentials(harvest_account_id,
@@ -67,19 +85,23 @@ def get_harvest_credentials():
     return harvest_credentials
 
 
-def set_sql_config(drivername, host, database):
+def set_sql_config(drivername, host, database, username='', password=''):
     """
     Saves configuration of a SQL database to ~/.wimbledon/.sql_config
 
     :param drivername:
     :param host:
     :param database:
+    :param password:
+    :param username:
     :return:
     """
     sql_config = {
         "drivername": drivername,
         "host": host,
-        "database": database
+        "database": database,
+        "username": username,
+        "password": password
     }
 
     check_dir(CONFIG_DIR)
@@ -112,5 +134,12 @@ def get_sql_config():
 
     assert "database" in keys and len(sql_config["database"]) > 0, \
         "database not set in " + SQL_CONFIG_PATH
+
+    if sql_config["host"] != 'localhost':
+        assert "username" in keys and len(sql_config["username"]) > 0, \
+            "username not set in " + SQL_CONFIG_PATH
+
+        assert "password" in keys and len(sql_config["password"]) > 0, \
+            "password not set in " + SQL_CONFIG_PATH
 
     return sql_config

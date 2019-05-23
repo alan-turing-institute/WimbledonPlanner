@@ -11,20 +11,12 @@ from pandas.io.json import json_normalize
 
 import time
 
-import os.path
-
-
-def check_dir(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
+import sqlalchemy as sqla
+import subprocess
 
 '''
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 '''
-
-import sqlalchemy as sqla
-import subprocess
 
 
 def get_db_connection():
@@ -35,26 +27,18 @@ def get_db_connection():
                                   host=config['host'],
                                   database=config['database'])
 
-        subprocess.call(['sh', '../sql/make_clean_db.sh', '--config', 'localhost'], cwd='../sql')
+        subprocess.call(['sh', 'make_clean_db.sh', '--config', 'localhost'],
+                        cwd=wimbledon.config.get_wimbledon_path()+'/api/sql')
 
     else:
-        with open(os.path.expanduser("~/.pgpass"), 'r') as f:
-            sql_secrets = None
-            for line in f:
-                if config['host'] in line:
-                    sql_secrets = line.strip().split(':')
-                    break
-
-        if sql_secrets is None:
-            raise ValueError('did not find ' + config['host'] + ' in ~/.pgpass')
-
         url = sqla.engine.url.URL(drivername=config['drivername'],
-                                  username=sql_secrets[-2],
-                                  password=sql_secrets[-1],
+                                  username=config['username'],
+                                  password=config['password'],
                                   host=config['host'],
                                   database=config['database'])
 
-        subprocess.call(['sh', '../sql/make_clean_db.sh', '--config', 'azure'], cwd='../sql')
+        subprocess.call(['sh', 'make_clean_db.sh', '--config', 'azure'],
+                        cwd=wimbledon.config.get_wimbledon_path()+'/api/sql')
 
     engine = sqla.create_engine(url)
     connection = engine.connect()
@@ -63,8 +47,7 @@ def get_db_connection():
 
 
 # function to load csv and insert it to database
-def df_to_sql(connection, schema, table_name,
-              df, usecols, parse_dates, ints_with_nan):
+def df_to_sql(connection, schema, table_name, df):
 
     """
     Function to send df to database.
@@ -76,16 +59,33 @@ def df_to_sql(connection, schema, table_name,
     index_col: which column is the index
     """
 
-    df = df[usecols]
+    ints_with_nan = ['harvest_id', 'client_id', 'harvest_role_id', 'harvest_user_id',
+                     'person_id', 'placeholder_id', 'project_id', 'client.id',
+                     'user.id', 'project.id', 'task.id']
 
     for col in ints_with_nan:
-        # Integer columns with NaN: Requires pandas 0.24 (otherwise ids end up as floats)
-        df[col] = df[col].astype('Int64')
+        if col in df.columns:
+            # Integer columns with NaN: Requires pandas 0.24 (otherwise ids end up as floats)
+            df[col] = df[col].astype('Int64')
+
+    parse_dates = ['start_date', 'end_date', 'date', 'starts_on', 'ends_on', 'spent_date']
 
     for col in parse_dates:
-        df[col] = pd.to_datetime(df[col], infer_datetime_format=True)
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], infer_datetime_format=True)
 
     df.columns = df.columns.str.replace('.', '_')
+
+    query = """
+    SELECT * FROM information_schema.columns 
+    WHERE table_schema='{schema}' AND table_name='{table_name};'
+    """.format(schema=schema, table_name=table_name)
+
+    columns = connection.execute(query).fetchall()
+    columns = [col[3] for col in columns]
+    usecols = [col for col in columns if col in df.columns]
+
+    df = df[usecols]
 
     df.to_sql(table_name, connection, schema=schema, if_exists='append')
 
@@ -95,28 +95,19 @@ def df_to_sql(connection, schema, table_name,
 '''
 
 
-def update_forecast(data_store='csv', connection=None):
+def get_forecast():
     """
     Extract forecast data from its API using the pyforecast package.
-
-    To install pyforecast, run:
-    pip install pyforecast
 
     NB: The forecast API is not public and is undocumented. See:
     https://help.getharvest.com/forecast/faqs/faq-list/api/
     """
-    if (data_store != 'csv') and (data_store != 'sql'):
-        return ValueError('data_store must be csv or sql')
-
     start = time.time()
 
-    if data_store == 'csv':
-        check_dir('../data/forecast')
+    harvest_api_credentials = wimbledon.config.get_harvest_credentials()
 
-    secrets = wimbledon.config.get_harvest_credentials()
-
-    api = forecast.Api(account_id=secrets.harvest_api_credentials['forecast_account_id'],
-                       auth_token=secrets.harvest_api_credentials['access_token'])
+    api = forecast.Api(account_id=harvest_api_credentials['forecast_account_id'],
+                       auth_token=harvest_api_credentials['access_token'])
 
     user = api.whoami()
     print()
@@ -134,84 +125,42 @@ def update_forecast(data_store='csv', connection=None):
         return df
 
     print('CLIENTS')
-    clients = response_to_df(api.get_clients(), title='CLIENTS')
-    if data_store == 'csv':
-        clients.to_csv('../data/forecast/clients.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'clients', clients,
-                  usecols=['name', 'harvest_id', 'archived'],
-                  parse_dates=[],
-                  ints_with_nan=['harvest_id'])
+    clients = response_to_df(api.get_clients())
 
     print('PROJECTS')
-    projects = response_to_df(api.get_projects(), title='PROJECTS')
-    if data_store == 'csv':
-        projects.to_csv('../data/forecast/projects.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'projects', projects,
-                  usecols=['name', 'code', 'start_date', 'end_date', 'client_id', 'harvest_id', 'notes', 'archived'],
-                  parse_dates=['start_date', 'end_date'],
-                  ints_with_nan=['client_id','harvest_id'])
+    projects = response_to_df(api.get_projects())
 
     print('ROLES')
-    roles = response_to_df(api.get_roles(), title='ROLES')
-    if data_store == 'csv':
-        roles.to_csv('../data/forecast/roles.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'roles', roles,
-                  usecols=['name', 'harvest_role_id'],
-                  parse_dates=[],
-                  ints_with_nan=['harvest_role_id'])
+    roles = response_to_df(api.get_roles())
 
     print('PEOPLE')
-    people = response_to_df(api.get_people(), title='PEOPLE')
-    if data_store == 'csv':
-        people.to_csv('../data/forecast/people.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'people', people,
-                  usecols=['first_name', 'last_name', 'email', 'harvest_user_id', 'login', 'subscribed',
-                           'admin', 'archived', 'weekly_capacity', 'working_days.monday', 'working_days.tuesday',
-                           'working_days.wednesday', 'working_days.thursday', 'working_days.friday',
-                           'working_days.saturday', 'working_days.sunday'],
-                  parse_dates=[],
-                  ints_with_nan=['harvest_user_id'])
+    people = response_to_df(api.get_people())
 
     print('PLACEHOLDERS')
-    placeholders = response_to_df(api.get_placeholders(), title='PLACEHOLDERS')
-    if data_store == 'csv':
-        placeholders.to_csv('../data/forecast/placeholders.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'placeholders', placeholders,
-                  usecols=['name', 'archived'],
-                  parse_dates=[],
-                  ints_with_nan=[])
+    placeholders = response_to_df(api.get_placeholders())
 
     print('MILESTONES')
-    milestones = response_to_df(api.get_milestones(), title='MILESTONES')
-    if data_store == 'csv':
-        milestones.to_csv('../data/forecast/milestones.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'milestones', milestones,
-                  usecols=['date', 'project_id'],
-                  parse_dates=['date'],
-                  ints_with_nan=['project_id'])
+    milestones = response_to_df(api.get_milestones())
 
     print('ASSIGNMENTS')
-    assignments = response_to_df(api.get_assignments(), title='ASSIGNMENTS')
-    if data_store == 'csv':
-        assignments.to_csv('../data/forecast/assignments.csv')
-    else:
-        df_to_sql(connection, 'forecast', 'assignments', assignments,
-                  usecols=['person_id', 'placeholder_id', 'project_id', 'start_date', 'end_date', 'allocation',
-                           'notes'],
-                  parse_dates=['start_date', 'end_date'],
-                  ints_with_nan=['person_id', 'placeholder_id', 'project_id'])
+    assignments = response_to_df(api.get_assignments())
 
     print('='*50)
     print('DONE! ({:.1f}s)'.format(time.time()-start))
 
+    forecast_data = {'clients': clients,
+                     'projects': projects,
+                     'roles': roles,
+                     'people': people,
+                     'placeholders': placeholders,
+                     'milestones': milestones,
+                     'assignments': assignments
+                     }
 
-def update_harvest(data_store='csv', connection=None):
+    return forecast_data
+
+
+def get_harvest():
     """
     Extract harvest data using the python-harvest package.
 
@@ -222,13 +171,10 @@ def update_harvest(data_store='csv', connection=None):
 
     start = time.time()
 
-    if data_store == 'csv':
-        check_dir('../data/harvest')
+    harvest_api_credentials = wimbledon.config.get_harvest_credentials()
 
-    secrets = wimbledon.config.get_harvest_credentials()
-
-    token = harvest.PersonalAccessToken(account_id=secrets.harvest_api_credentials['harvest_account_id'],
-                                        access_token=secrets.harvest_api_credentials['access_token'])
+    token = harvest.PersonalAccessToken(account_id=harvest_api_credentials['harvest_account_id'],
+                                        access_token=harvest_api_credentials['access_token'])
 
     client = harvest.Harvest("https://api.harvestapp.com/api/v2", token)
 
@@ -237,7 +183,7 @@ def update_harvest(data_store='csv', connection=None):
     print('AUTHENTICATED USER:')
     print(auth_user.first_name, auth_user.last_name, auth_user.email)
 
-    def objs_to_df(objs, prefix=None,title=''):
+    def objs_to_df(objs, prefix=None):
         """Convert the attributes of each object in a list of objects into a pandas dataframe."""
         df = [obj.__dict__ for obj in objs]
         df = pd.DataFrame.from_dict(df)
@@ -306,77 +252,27 @@ def update_harvest(data_store='csv', connection=None):
 
     print('CLIENTS')
     clients = get_all_pages(client.clients)
-    if data_store == 'csv':
-        clients.to_csv('../data/harvest/clients.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'clients', clients,
-                  usecols=['name', 'is_active'],
-                  parse_dates=[],
-                  ints_with_nan=[])
 
     print('PROJECTS')
     projects = get_all_pages(client.projects)
-    if data_store == 'csv':
-        projects.to_csv('../data/harvest/projects.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'projects', projects,
-                  usecols=['name', 'budget', 'code', 'starts_on', 'ends_on', 'client.id', 'notes', 'is_active'],
-                  parse_dates=['starts_on', 'ends_on'],
-                  ints_with_nan=['client.id'])
 
     print('ROLES')
     roles = get_all_pages(client.roles)
-    if data_store == 'csv':
-        roles.to_csv('../data/harvest/roles.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'roles', roles,
-                  usecols=['name'],
-                  parse_dates=[],
-                  ints_with_nan=[])
 
     print('USERS')
     users = get_all_pages(client.users)
-    if data_store == 'csv':
-        users.to_csv('../data/harvest/users.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'users', users,
-                  usecols=['first_name', 'last_name', 'email', 'weekly_capacity', 'is_active',
-                           'is_project_manager', 'is_contractor'],
-                  parse_dates=[],
-                  ints_with_nan=[])
 
     print('TASKS')
     tasks = get_all_pages(client.tasks)
-    if data_store == 'csv':
-        tasks.to_csv('../data/harvest/tasks.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'tasks', tasks,
-                  usecols=['name', 'is_active'],
-                  parse_dates=[],
-                  ints_with_nan=[])
 
     print('USER ASSIGNMENTS')
     user_assignments = get_all_pages(client.user_assignments)
-    if data_store == 'csv':
-        user_assignments.to_csv('../data/harvest/user_assignments.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'user_assignments', user_assignments,
-                  usecols=['user.id', 'project.id', 'is_active', 'is_project_manager'],
-                  parse_dates=[],
-                  ints_with_nan=['user.id', 'project.id'])
 
     print('TASK ASSIGNMENTS')
     task_assignments = get_all_pages(client.task_assignments)
-    if data_store == 'csv':
-        task_assignments.to_csv('../data/harvest/task_assignments.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'task_assignments', task_assignments,
-                  usecols=['task.id', 'project.id'],
-                  parse_dates=[],
-                  ints_with_nan=['task.id', 'project.id'])
 
     '''
-    Issues with python-harvest modeule:
+    Issues with python-harvest module:
     
     time_entries: Currently fails due to time_entries.cost_rate should be "float" instead of "NoneType" error
 
@@ -426,35 +322,50 @@ def update_harvest(data_store='csv', connection=None):
 
     api_headers = {
         "User-Agent": "Hut23@turing.ac.uk",
-        "Authorization": "Bearer " + secrets.harvest_api_credentials['access_token'],
-        "Harvest-Account-ID": secrets.harvest_api_credentials['harvest_account_id']
+        "Authorization": "Bearer " + harvest_api_credentials['access_token'],
+        "Harvest-Account-ID": harvest_api_credentials['harvest_account_id']
     }
 
     print('TIME ENTRIES:')
     time_entries = api_to_df('time_entries', api_headers)
-    if data_store == 'csv':
-        time_entries.to_csv('../data/harvest/time_entries.csv')
-    else:
-        df_to_sql(connection, 'harvest', 'time_entries', time_entries,
-                  usecols=['user.id', 'project.id', 'task.id', 'spent_date', 'hours', 'notes'],
-                  parse_dates=['spent_date'],
-                  ints_with_nan=['user.id', 'project.id', 'task.id'])
 
     print('='*50)
     print('DONE! ({:.1f}s)'.format(time.time()-start))
 
+    harvest_data = {'clients': clients,
+                    'projects': projects,
+                    'roles': roles,
+                    'users': users,
+                    'tasks': tasks,
+                    'user_assignments': user_assignments,
+                    'task_assignments': task_assignments,
+                    'time_entries': time_entries}
 
-def update(run_harvest=True, run_forecast=True, data_store='csv'):
-    if (data_store != 'csv') and (data_store != 'sql'):
-        return ValueError('data_store must be csv or sql')
+    return harvest_data
 
-    if data_store == 'sql':
-        connection = get_db_connection()
-    else:
-        connection = None
+
+def update_to_csv(data_dir, run_forecast=True, run_harvest=True):
+    if run_forecast:
+        forecast_data = get_forecast()
+
+        for (key, df) in forecast_data.items():
+            df.to_csv(data_dir+'/forecast/'+key+'.csv')
 
     if run_harvest:
-        update_harvest(data_store=data_store, connection=connection)
+        harvest_data = get_harvest()
 
-    if run_forecast:
-        update_forecast(data_store=data_store, connection=connection)
+        for (key, df) in harvest_data.items():
+            df.to_csv(data_dir+'/harvest/'+key+'.csv')
+
+
+def update_to_sql():
+    forecast_data = get_forecast()
+    harvest_data = get_harvest()
+
+    connection = get_db_connection()
+
+    for (key, df) in harvest_data.items():
+        df_to_sql(connection, 'harvest', key, df)
+
+    for (key, df) in forecast_data.items():
+        df_to_sql(connection, 'forecast', key, df)

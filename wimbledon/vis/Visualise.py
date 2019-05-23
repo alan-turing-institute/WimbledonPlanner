@@ -4,8 +4,8 @@ import pandas as pd
 from copy import deepcopy
 import re
 
-import DataHandlers
-import HTMLWriter
+from wimbledon.vis import DataHandlers
+from wimbledon.vis import HTMLWriter
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -81,16 +81,16 @@ class Visualise:
 
         return df
 
-    def styled_sheet(self, key_type,
-                     start_date=None,
-                     end_date=None,
-                     freq=None,
-                     display='screen'):
+    def whiteboard(self, key_type,
+                   start_date=None,
+                   end_date=None,
+                   freq=None,
+                   display='screen'):
         """Create an HTML table in the style of the whiteboard with cells coloured by name"""
 
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
-        sheet = self.fc.spreadsheet_sheet(key_type, start_date, end_date, freq)
+        sheet = self.fc.whiteboard(key_type, start_date, end_date, freq)
 
         html = HTMLWriter.make_whiteboard(sheet, key_type, display)
 
@@ -121,9 +121,9 @@ class Visualise:
 
         elif id_type == 'project':
 
-            if id_value == 'ALL_TOTALS':
+            if id_value == 'CONFIRMED':
                 # initialise df
-                df = self.fc.project_totals.copy()
+                df = self.fc.project_confirmed.copy()
 
                 # slice the given date range from the dataframe
                 df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
@@ -131,9 +131,9 @@ class Visualise:
                 # replace person ids with names
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
 
-            elif id_value == 'ALL_REQUIREMENTS':
+            elif id_value == 'RESOURCE_REQ':
                 # initialise df
-                df = self.fc.project_reqs.copy()
+                df = self.fc.project_resourcereq.copy()
 
                 # slice the given date range from the dataframe
                 df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
@@ -141,9 +141,9 @@ class Visualise:
                 # replace person ids with names
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
 
-            elif id_value == 'ALL_NETALLOC':
+            elif id_value == 'ALLOCATED':
                 # initialise df
-                df = self.fc.project_netalloc.copy()
+                df = self.fc.project_confirmed.copy() - self.fc.project_resourcereq.copy()
 
                 # slice the given date range from the dataframe
                 df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
@@ -306,29 +306,10 @@ class Visualise:
 
             elif id_type == 'project':
                 # get the project's person allocations
-                nominal_allocation = self.fc.project_reqs[id_value]
+                nominal_allocation = self.fc.project_confirmed[id_value]
                 nominal_allocation = DataHandlers.select_date_range(nominal_allocation, start_date, end_date,
                                                                     drop_zero_cols=False)
                 time_label = 'Time Requirement'
-
-            elif id_type == 'institute':
-                nominal_allocation = self.fc.project_reqs[id_value].copy(deep=True)
-
-                # add allocated resources from partner institutes to totals
-                placeholder_ids = [idx for idx in self.fc.placeholders.index
-                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name'].lower()]
-
-                for placeholder_id in placeholder_ids:
-                    if id_value in self.fc.placeholder_allocations[placeholder_id].columns:
-                        nominal_allocation += self.fc.placeholder_allocations[placeholder_id][id_value]
-
-                time_label = 'Time Requirement'
-
-                nominal_allocation = DataHandlers.select_date_range(nominal_allocation, start_date, end_date,
-                                                                    drop_zero_cols=False)
-
-                # don't include resource resource require as stacked area, only via nominal allocation line
-                df = df[[col for col in df.columns if 'resource required' not in col.lower()]]
 
             # plot the data
             fig = plt.figure(figsize=(15, 5))
@@ -597,7 +578,7 @@ class Visualise:
             raise ValueError('No harvest_id exists for forecast_id '+str(forecast_id))
 
         # NB scale forecast fte by using harvest hours per day property (default 6.4)
-        fc_totals = self.hv.proj_hrs_per_day * self.fc.project_totals[forecast_id].copy()
+        fc_totals = self.hv.proj_hrs_per_day * self.fc.project_confirmed[forecast_id].copy()
         fc_totals = fc_totals.resample(freq).sum().cumsum()
         fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
 
