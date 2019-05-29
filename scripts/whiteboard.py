@@ -4,7 +4,7 @@ import sys
 
 import pandas as pd
 
-from Visualise import Visualise
+from wimbledon.vis.Visualise import Visualise
 
 FIG_DIR = '../data/figs'
 PROJECTS_DIR = FIG_DIR + '/projects'
@@ -27,10 +27,10 @@ def whiteboard(vis, display='screen'):
     start = time.time()
 
     # make poster pdf sheets
-    sheet = vis.styled_sheet('person', display=display)
+    sheet = vis.whiteboard('person', display=display)
     save_sheet(sheet, PEOPLE_DIR, 'people')
 
-    sheet = vis.styled_sheet('project', display=display)
+    sheet = vis.whiteboard('project', display=display)
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     print('{:.1f}s'.format(time.time() - start))

@@ -7,4 +7,5 @@ pyforecast==0.1.4
 seaborn==0.9.0
 python-harvest-redux==5.0.0b0
 pdfCropMargins==0.1.4
+distinctipy
 -e .

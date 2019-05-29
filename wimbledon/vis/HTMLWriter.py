@@ -2,70 +2,15 @@
 and convert it into a styled HTML table.
 
 The primary function is make_whiteboard(df, key_type, display)"""
-import random
-from matplotlib.colors import rgb2hex
+
+from distinctipy import distinctipy
+
 import pandas as pd
 import wimbledon.vis.DataHandlers
 import string
 import re
 import sys
 import os.path
-
-
-# Functions to generate some distinct colours, inspired by:
-# https://gist.github.com/adewes/5884820
-def get_random_color(pastel_factor=0):
-    """Generate a random r,g,b colour. If pastel_factor>0 paler colours tend to be generated."""
-    return [(x + pastel_factor) / (1.0 + pastel_factor) for x in [random.uniform(0, 1.0) for i in [1, 2, 3]]]
-
-
-def color_distance(c1, c2):
-    """Value representing the visual distinction between two r,g,b colours,
-    inspired by https://www.compuphase.com/cmetric.htm"""
-    r1, g1, b1 = c1
-    r2, g2, b2 = c2
-
-    mean_r = (r1 + r2) / 2
-    delta_r = (r1 - r2) ** 2
-    delta_g = (g1 - g2) ** 2
-    delta_b = (b1 - b2) ** 2
-
-    return (2 + mean_r) * delta_r + 4 * delta_g + (3 - mean_r) * delta_b
-
-
-def generate_new_color(existing_colors, pastel_factor=0, n_attempts=1000):
-    """Generate a colour as distinct as possible from the colours defined in existing_colors (a list of (r,g,b)
-    tuples). n_attempts random colours are generated, and the one with the largest minimum colour distance """
-    max_distance = None
-    best_color = None
-    for i in range(n_attempts):
-        color = get_random_color(pastel_factor=pastel_factor)
-
-        if not existing_colors:
-            return color
-
-        else:
-            best_distance = min([color_distance(color, c) for c in existing_colors])
-
-            if not max_distance or best_distance > max_distance:
-                max_distance = best_distance
-                best_color = color
-
-    return best_color
-
-
-def get_text_color(background_color, threshold=0.6):
-    """decide whether to use black or white font
-     based on: https://stackoverflow.com/a/3943023"""
-
-    r, g, b = background_color[0], background_color[1], background_color[2]
-
-    if (r * 0.299 + g * 0.587 + b * 0.114) > threshold:
-        text_color = 'black'
-    else:
-        text_color = 'white'
-
-    return text_color
 
 
 def get_name_id(name):
@@ -135,8 +80,8 @@ def get_name_style(name, background_color=None, name_type=None):
     else:
         name_id = get_name_id(name)
 
-        text_color = get_text_color(background_color)
-        background_color = rgb2hex(background_color)
+        text_color = distinctipy.get_hex(distinctipy.get_text_color(background_color))
+        background_color = distinctipy.get_hex(background_color)
 
         if name_type == 'client':
             style = """.{name_id} {{
@@ -455,15 +400,16 @@ def get_colors(df):
     # appearing last, which helps with keeping colours distinct
     names = pd.Series(names).drop_duplicates().values
 
-    colors = {}
+    colors = dict()
 
-    # don't want white to be used as a person/project colour
+    # to avoid white, uncomment this line:
     colors['WHITE'] = (1, 1, 1)
-    # to avoid black/dark colours, uncomment this line:
-    #colors['BLACK'] = (0, 0, 0)
 
-    # colour used for resource required cells
-    #colors['RESOURCE_REQUIRED'] = (1, 0, 0)
+    # to avoid black/dark colours, uncomment this line:
+    # colors['BLACK'] = (0, 0, 0)
+
+    # to avoid red uncomment this line:
+    # colors['RED'] = (1, 0, 0)
 
     for key in names:
         if "RESOURCE REQUIRED" in key:
@@ -473,7 +419,7 @@ def get_colors(df):
         elif "DEFERRED" in key:
             continue
         else:
-            colors[key] = generate_new_color(colors.values())
+            colors[key] = distinctipy.get_colors(1, exclude_colors=list(colors.values()))[0]
 
     return colors
 
