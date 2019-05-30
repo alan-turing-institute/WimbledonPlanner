@@ -100,7 +100,7 @@ def forecast_summary(vis, display='screen'):
 
 def whiteboard():
     print('Saving Whiteboard visualisations...', end='', flush=True)
-    start=time.time()
+    start = time.time()
 
     # make poster pdf sheets
     sheet = vis.whiteboard('person', display='print')

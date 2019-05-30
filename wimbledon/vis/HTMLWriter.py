@@ -419,7 +419,7 @@ def get_colors(df):
         elif "DEFERRED" in key:
             continue
         else:
-            colors[key] = distinctipy.get_colors(1, exclude_colors=list(colors.values()))[0]
+            colors[key] = distinctipy.get_colors(1, exclude_colors=list(colors.values()))
 
     return colors
 

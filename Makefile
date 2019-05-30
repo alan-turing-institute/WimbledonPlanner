@@ -48,27 +48,27 @@ $(HARVEST_CSV) : harvest_csv ;
 
 # generate the csv data
 forecast_csv : $(VENV_ACTIVATE)
-	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd api && python3 update.py forecast
+	mkdir -p data/forecast && source $(VENV_ACTIVATE) && cd scripts && python3 update.py forecast
 
 harvest_csv : $(VENV_ACTIVATE)
-	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd api && python3 update.py harvest
+	mkdir -p data/harvest && source $(VENV_ACTIVATE) && cd scripts && python3 update.py harvest
 
 
 data/figs/.forecast_summary_timestamp : $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python3 save.py forecast && \
-	touch ../data/figs/.forecast_summary_timestamp
+	source $(VENV_ACTIVATE) && cd scripts && python3 save.py forecast && \
+	touch data/figs/.forecast_summary_timestamp
 
 data/figs/.forecast_individual_timestamp : $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python3 save.py forecast individual && \
-	touch ../data/figs/.forecast_individual_timestamp
+	source $(VENV_ACTIVATE) && cd scripts && python3 save.py forecast individual && \
+	touch data/figs/.forecast_individual_timestamp
 
 data/figs/.harvest_vs_forecast_timestamp : $(HARVEST_CSV) $(FORECAST_CSV)
-	source $(VENV_ACTIVATE) && cd vis && python3 save.py harvest && \
-	touch ../data/figs/.harvest_vs_forecast_timestamp
+	source $(VENV_ACTIVATE) && cd scripts && python3 save.py harvest && \
+	touch data/figs/.harvest_vs_forecast_timestamp
 
 data/figs/projects/projects.pdf : $(FORECAST_CSV)
 	source $(VENV_ACTIVATE) && \
-	cd vis/ && \
+	cd scripts && \
 	python3 save.py whiteboard
 
 forecast_summary: data/figs/.forecast_summary_timestamp
