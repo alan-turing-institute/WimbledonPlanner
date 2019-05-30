@@ -137,3 +137,6 @@ dmypy.json
 sql/secrets.py
 .Rproj.user
 settings.json
+
+# SQL
+*.sqlite
