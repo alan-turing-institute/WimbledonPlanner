@@ -124,6 +124,9 @@ class Forecast:
                 self.deferred_allocations = self.deferred_allocations.add(self.placeholder_allocations[idx],
                                                                           fill_value=0)
 
+        # team capacity
+        
+
     def load_csv_data(self, data_dir):
         """load data from csv files in ../data/forecast directory"""
 
