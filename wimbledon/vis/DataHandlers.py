@@ -124,8 +124,18 @@ class Forecast:
                 self.deferred_allocations = self.deferred_allocations.add(self.placeholder_allocations[idx],
                                                                           fill_value=0)
 
-        # team capacity
-        
+        # calculate team capacity: capacity in people table minus any allocations to unavailable project
+        unavailable_id = self.get_id('UNAVAILABLE', 'project')
+
+        base_capacity = self.people.weekly_capacity
+
+        self.capacity = pd.DataFrame(index=self.date_range, columns=self.people.index)
+
+        for person_id in self.people.index:
+            self.capacity[person_id] = base_capacity[person_id]
+
+            if unavailable_id in self.people_allocations[person_id].columns:
+                self.capacity[person_id] = self.capacity[person_id] - self.people_allocations[person_id][unavailable_id]
 
     def load_csv_data(self, data_dir):
         """load data from csv files in ../data/forecast directory"""
