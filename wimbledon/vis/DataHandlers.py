@@ -90,8 +90,10 @@ class Forecast:
         self.project_deferred = self.get_project_deferred()
 
         # project_confirmed: total people + institute + resource_required placeholder allocations to project
-        # project_resourcereq: resource_required allocations to each project?
+        # project_resourcereq: resource_required allocations to each project
         self.project_confirmed, self.project_resourcereq = self.get_project_required()
+
+        self.project_allocated = self.project_confirmed - self.project_resourcereq
 
         # consolidated allocations for resource required, unconfirmed, deferred (may be split over multiple placeholders
         # on Forecast)
