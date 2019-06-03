@@ -292,6 +292,9 @@ class Forecast:
         """Get the id of a project from its name"""
         return self.projects.index[self.projects.name == project_name][0]
 
+    def get_client_id(self, client_name):
+        return self.clients.index[self.clients.name == client_name][0]
+
     def get_harvest_id(self, forecast_id):
         """get the harvest id of a forecast project."""
         return self.projects.loc[forecast_id, 'harvest_id']
