@@ -12,7 +12,8 @@ def hello_world():
 
     try:
         #from wimbledon.vis.Visualise import Visualise
-        return "SUCCESS!! "#+Visualise.__name__
+        import pyforecast
+        return "SUCCESS!! "+pyforecast.__name__
     except ModuleNotFoundError:
         return '!!!!!! WIMBLEDON NOT FOUND !!!!!!!'
 
