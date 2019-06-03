@@ -14,6 +14,6 @@ def hello_world():
         #from wimbledon.vis.Visualise import Visualise
         import forecast
         return "SUCCESS!! "+forecast.__name__
-    except ModuleNotFoundError as e:
+    except Exception as e:
         return str(e)
 
