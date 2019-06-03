@@ -11,8 +11,8 @@ def hello_world():
     #whiteboard = vis.whiteboard('project')
 
     try:
-        from wimbledon.vis.Visualise import Visualise
-        return "SUCCESS!! "+Visualise.__name__
+        #from wimbledon.vis.Visualise import Visualise
+        return "SUCCESS!! "#+Visualise.__name__
     except ModuleNotFoundError:
         return '!!!!!! WIMBLEDON NOT FOUND !!!!!!!'
 
