@@ -137,6 +137,7 @@ dmypy.json
 sql/secrets.py
 .Rproj.user
 settings.json
+.harvest_credentials
 
 # SQL
 *.sqlite
