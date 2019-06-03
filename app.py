@@ -11,9 +11,8 @@ def hello_world():
     #whiteboard = vis.whiteboard('project')
 
     try:
-        #from wimbledon.vis.Visualise import Visualise
-        import forecast
-        return "SUCCESS!! "+forecast.__name__
+        from wimbledon.vis.Visualise import Visualise
+        return "SUCCESS!! "+Visualise.__name__
     except Exception as e:
         return str(e)
 
