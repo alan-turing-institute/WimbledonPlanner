@@ -12,4 +12,9 @@ def hello_world():
 
     #whiteboard = vis.whiteboard('project')
 
-    return "Hello, World!"
+    try:
+        import wimbledon
+        return "SUCCESS!! "+wimbledon.__name__
+    except ModuleNotFoundError:
+        return '!!!!!! WIMBLEDON NOT FOUND !!!!!!!'
+
