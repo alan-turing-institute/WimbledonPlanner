@@ -119,7 +119,7 @@ Rather than using make you can also run the python scripts individually yourself
 
 *Forecast summary plots:*
 ```bash
-> cd cd scripts/
+> cd scripts/
 > python save.py forecast
 ```
 
