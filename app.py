@@ -1,4 +1,5 @@
 from flask import Flask
+import traceback
 
 app = Flask(__name__)
 
@@ -13,6 +14,6 @@ def hello_world():
     try:
         from wimbledon.vis.Visualise import Visualise
         return "SUCCESS!! "+Visualise.__name__
-    except Exception as e:
-        return str(e)
+    except Exception:
+        return traceback.format_exc()
 
