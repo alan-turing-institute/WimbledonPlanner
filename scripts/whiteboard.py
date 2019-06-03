@@ -26,7 +26,7 @@ def whiteboard(vis, display='screen'):
     print('Creating Whiteboard visualisations... ', end='', flush=True)
     start = time.time()
 
-    # make poster pdf sheets
+    # make whiteboard html
     sheet = vis.whiteboard('person', display=display)
     save_sheet(sheet, PEOPLE_DIR, 'people')
 

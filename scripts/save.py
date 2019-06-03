@@ -71,21 +71,21 @@ def forecast_summary(vis, display='screen'):
     start = time.time()
 
     # sheets
-    sheet = vis.styled_sheet('person', display=display)
+    sheet = vis.whiteboard('person', display=display)
     save_sheet(sheet, PEOPLE_DIR, 'people')
 
-    sheet = vis.styled_sheet('project', display=display)
+    sheet = vis.whiteboard('project', display=display)
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     # project summary plots
     fig = vis.heatmap_allocations('PROJECT_REQUIREMENTS', 'institute')
-    save_fig(fig, PROJECTS_DIR, 'Project_All_Requirements')
+    save_fig(fig, PROJECTS_DIR, 'Project_Requirements')
 
-    fig = vis.heatmap_allocations('PROJECT_TOTALS', 'institute')
-    save_fig(fig, PROJECTS_DIR, 'Project_All_Totals')
+    fig = vis.heatmap_allocations('PROJECT_ALLOCATED', 'institute')
+    save_fig(fig, PROJECTS_DIR, 'Project_Allocated')
 
-    fig = vis.heatmap_allocations('PROJECT_NETALLOC', 'institute')
-    save_fig(fig, PROJECTS_DIR, 'Project_All_Netalloc')
+    fig = vis.heatmap_allocations('PROJECT_RESREQ', 'institute')
+    save_fig(fig, PROJECTS_DIR, 'Project_ResReq')
 
     # people summary plots
     fig = vis.heatmap_allocations('ALL_PEOPLE', 'institute')
