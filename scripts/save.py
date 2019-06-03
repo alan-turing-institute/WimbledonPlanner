@@ -30,7 +30,7 @@ import subprocess
 
 import pandas as pd
 
-from Visualise import Visualise
+from wimbledon.vis.Visualise import Visualise
 
 
 FIG_DIR = '../data/figs'
@@ -39,9 +39,9 @@ PEOPLE_DIR = FIG_DIR + '/people'
 HARVEST_DIR = FIG_DIR + '/harvest'
 
 
-def check_dir(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+def check_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 def save_fig(fig, save_dir, save_name):
@@ -71,21 +71,21 @@ def forecast_summary(vis, display='screen'):
     start = time.time()
 
     # sheets
-    sheet = vis.styled_sheet('person', display=display)
+    sheet = vis.whiteboard('person', display=display)
     save_sheet(sheet, PEOPLE_DIR, 'people')
 
-    sheet = vis.styled_sheet('project', display=display)
+    sheet = vis.whiteboard('project', display=display)
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     # project summary plots
     fig = vis.heatmap_allocations('PROJECT_REQUIREMENTS', 'institute')
-    save_fig(fig, PROJECTS_DIR, 'Project_All_Requirements')
+    save_fig(fig, PROJECTS_DIR, 'Project_Requirements')
 
-    fig = vis.heatmap_allocations('PROJECT_TOTALS', 'institute')
-    save_fig(fig, PROJECTS_DIR, 'Project_All_Totals')
+    fig = vis.heatmap_allocations('PROJECT_ALLOCATED', 'institute')
+    save_fig(fig, PROJECTS_DIR, 'Project_Allocated')
 
-    fig = vis.heatmap_allocations('PROJECT_NETALLOC', 'institute')
-    save_fig(fig, PROJECTS_DIR, 'Project_All_Netalloc')
+    fig = vis.heatmap_allocations('PROJECT_RESREQ', 'institute')
+    save_fig(fig, PROJECTS_DIR, 'Project_ResReq')
 
     # people summary plots
     fig = vis.heatmap_allocations('ALL_PEOPLE', 'institute')
@@ -100,13 +100,13 @@ def forecast_summary(vis, display='screen'):
 
 def whiteboard():
     print('Saving Whiteboard visualisations...', end='', flush=True)
-    start=time.time()
+    start = time.time()
 
     # make poster pdf sheets
-    sheet = vis.styled_sheet('person', display='print')
+    sheet = vis.whiteboard('person', display='print')
     save_sheet(sheet, PEOPLE_DIR, 'people')
 
-    sheet = vis.styled_sheet('project', display='print')
+    sheet = vis.whiteboard('project', display='print')
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     try:
@@ -115,10 +115,10 @@ def whiteboard():
         print('PDF conversion failed.')
 
     # make screen optimised sheets
-    sheet = vis.styled_sheet('person', display='screen')
+    sheet = vis.whiteboard('person', display='screen')
     save_sheet(sheet, PEOPLE_DIR, 'people')
 
-    sheet = vis.styled_sheet('project', display='screen')
+    sheet = vis.whiteboard('project', display='screen')
     save_sheet(sheet, PROJECTS_DIR, 'projects')
 
     print('{:.1f}s'.format(time.time() - start))

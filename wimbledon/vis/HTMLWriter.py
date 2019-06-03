@@ -2,73 +2,26 @@
 and convert it into a styled HTML table.
 
 The primary function is make_whiteboard(df, key_type, display)"""
-import random
-from matplotlib.colors import rgb2hex
+
+from distinctipy import distinctipy
+
 import pandas as pd
-import DataHandlers
+import wimbledon.vis.DataHandlers
 import string
 import re
 import sys
 import os.path
 
 
-# Functions to generate some distinct colours, inspired by:
-# https://gist.github.com/adewes/5884820
-def get_random_color(pastel_factor=0):
-    """Generate a random r,g,b colour. If pastel_factor>0 paler colours tend to be generated."""
-    return [(x + pastel_factor) / (1.0 + pastel_factor) for x in [random.uniform(0, 1.0) for i in [1, 2, 3]]]
-
-
-def color_distance(c1, c2):
-    """Value representing the visual distinction between two r,g,b colours,
-    inspired by https://www.compuphase.com/cmetric.htm"""
-    r1, g1, b1 = c1
-    r2, g2, b2 = c2
-
-    mean_r = (r1 + r2) / 2
-    delta_r = (r1 - r2) ** 2
-    delta_g = (g1 - g2) ** 2
-    delta_b = (b1 - b2) ** 2
-
-    return (2 + mean_r) * delta_r + 4 * delta_g + (3 - mean_r) * delta_b
-
-
-def generate_new_color(existing_colors, pastel_factor=0, n_attempts=1000):
-    """Generate a colour as distinct as possible from the colours defined in existing_colors (a list of (r,g,b)
-    tuples). n_attempts random colours are generated, and the one with the largest minimum colour distance """
-    max_distance = None
-    best_color = None
-    for i in range(n_attempts):
-        color = get_random_color(pastel_factor=pastel_factor)
-
-        if not existing_colors:
-            return color
-
-        else:
-            best_distance = min([color_distance(color, c) for c in existing_colors])
-
-            if not max_distance or best_distance > max_distance:
-                max_distance = best_distance
-                best_color = color
-
-    return best_color
-
-
-def get_text_color(background_color, threshold=0.6):
-    """decide whether to use black or white font
-     based on: https://stackoverflow.com/a/3943023"""
-
-    r, g, b = background_color[0], background_color[1], background_color[2]
-
-    if (r * 0.299 + g * 0.587 + b * 0.114) > threshold:
-        text_color = 'black'
-    else:
-        text_color = 'white'
-
-    return text_color
-
-
 def get_name_id(name):
+    """name is a string of cell contents which may include:
+    HTML tags
+    A time allocation of format (x.x)
+    Punctuation
+
+    get_name_id converts name into a style suitable for a CSS class name by removing all the above.
+    """
+
     if 'RESOURCE REQUIRED' in name:
         name_id = 'RESOURCE_REQUIRED'
     elif 'UNCONFIRMED' in name:
@@ -76,8 +29,12 @@ def get_name_id(name):
     elif 'DEFERRED' in name:
         name_id = 'DEFERRED'
     else:
-        # remove html tags and digits, if present
-        name = re.sub(r'<br>', '', name)
+        # remove everything between a < and a > (html tags)
+        name = re.sub(r"(?<=\<)(.*?)(?=\>)", '', name)
+        name = name.replace('<', '')
+        name = name.replace('>', '')
+
+        # remove time allocation of format (x.x)
         name = re.sub(r'\(\d\.\d\)', '', name)
 
         # strip punctuation (apparently quickest way: https://stackoverflow.com/a/266162)
@@ -88,6 +45,9 @@ def get_name_id(name):
 
 
 def get_name_style(name, background_color=None, name_type=None):
+    """Generate the css style class for the entity represented by string name. Pre-defined styles for
+    placeholders or generate distinct colours for other names."""
+
     if 'RESOURCE REQUIRED' in name or 'RESOURCE_REQUIRED' in name:
         style = """.RESOURCE_REQUIRED {
                   background-color: white;
@@ -120,8 +80,8 @@ def get_name_style(name, background_color=None, name_type=None):
     else:
         name_id = get_name_id(name)
 
-        text_color = get_text_color(background_color)
-        background_color = rgb2hex(background_color)
+        text_color = distinctipy.get_hex(distinctipy.get_text_color(background_color))
+        background_color = distinctipy.get_hex(background_color)
 
         if name_type == 'client':
             style = """.{name_id} {{
@@ -146,14 +106,13 @@ def get_name_style(name, background_color=None, name_type=None):
 
 
 def write_style(colors, group_colors=None, display='print'):
-    style = """<style  type="text/css" > """
+    """write the CSS to style the table"""
 
-    if display == 'print':
-        style += get_print_style()
-    elif display == 'screen':
+    style = """<style  type="text/css" > """
+    style += get_base_style()
+
+    if display == 'screen':
         style += get_screen_style()
-    else:
-        raise ValueError('display must be print or screen')
 
     for name, color in colors.items():
         style += get_name_style(name, color)
@@ -172,62 +131,9 @@ def write_style(colors, group_colors=None, display='print'):
     return style
 
 
-def get_screen_style():
-    style = """table {
-          font-size: 13;
-          font-family: neue-haas-unica, sans-serif;
-          font-style: normal;
-          font-weight: 400;
-        } td {
-          text-align:  center;
-          height:  4em;
-          padding:  1mm;
-          text-align:  center;
-        } th {
-          height:  2em;
-          padding:  1mm;
-          font-weight: 400;
-        }  th a {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }  .index:hover {
-          background-color: #ffff99;
-        }  a {
-          color: inherit;
-          text-decoration: inherit;
-         }.title {
-          height: 2em;
-          text-align:  center;
-          font-weight: 300;
-          font-size: 55;
-        } .index {
-          text-align:  center;
-          vertical-align: center;
-          font-weight: 600;
-          background-color: #dedede;
-        } .header {
-          text-align:  center;
-          vertical-align: bottom;
-          font-weight: 400;
-        } .separator {
-          height:  1.5em;
-          vertical-align: bottom;
-          padding:  0mm;
-        } .colwidth {
-          background-color:  white;
-          color: white;
-          height: 2em;
-        } .blank {
-          background-color:  white;
-        }"""
+def get_base_style():
+    """css used for general table style: fonts, alignments, sizes etc."""
 
-    return style
-
-
-def get_print_style():
     style = """table {
           font-size: 13;
           font-family: neue-haas-unica, sans-serif;
@@ -240,12 +146,14 @@ def get_print_style():
           padding:  2mm;
           font-family:  Helvetica;
           text-align:  center;
+          background-color: white;
         } th {
           height:  3em;
           white-space:  nowrap;
           padding:  2mm;
           font-family:  Helvetica;
           font-weight: 400;
+          background-color: white;
         }  th a {
           width: 100%;
           height: 100%;
@@ -262,6 +170,7 @@ def get_print_style():
           font-family:  Helvetica;
           font-weight: 300;
           font-size: 55;
+          background-color: white;
         } .index {
           text-align:  center;
           vertical-align: center;
@@ -272,11 +181,13 @@ def get_print_style():
           font-weight: 400;
           text-align:  center;
           vertical-align: bottom;
+          background-color: white;
         } .separator {
           height:  2em;
           vertical-align: bottom;
           padding:  0mm;
           font-weight: bold;
+          background-color: white;
         } .colwidth {
           background-color:  white;
           color: white;
@@ -288,7 +199,40 @@ def get_print_style():
     return style
 
 
+def get_screen_style():
+    """additional css used for screen display mode to:
+    * Freeze row and column headers and add scroll bars
+    * Highlight index group (project/person name) on hover (for project sheet - click sends to GitHub issue)
+    """
+
+    style = """ div.container {
+          overflow: scroll;
+          max-height: 100%;
+          max-width: 100%;
+        } thead th {
+          position: sticky;
+          top: 0;
+        } tbody th {
+          position: sticky;
+          left: 0;
+        } .index {
+          position: sticky;
+          left: 120;
+        }  th a {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }  .index:hover {
+          background-color: #ffff99;
+        }"""
+
+    return style
+
+
 def write_header(columns, title='Research Engineering Project Allocations'):
+    """write the table header (title and column names)"""
 
     header = """<thead> <tr>
         <th></th>
@@ -310,6 +254,8 @@ def write_header(columns, title='Research Engineering Project Allocations'):
 
 
 def get_separator(columns=None):
+    """blank row used to get visible separation between row groups (i.e. gap between people/projects)"""
+
     if columns is None:
         separator = """<tr class="separator">
         </tr> """
@@ -347,11 +293,17 @@ def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
 
 
 def write_table(df, title, display='print'):
+    """creates the html for the whiteboard visualisation using:
+    df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
+    (programme, project) for the project sheet, and cell values of format "name (allocation)"
+    """
+
     if display == 'print':
         table = """<table cellspacing="5mm"; border-collapse:collapse;>
         """
     elif display == 'screen':
-        table = """<table cellspacing="2mm"; border-collapse:collapse;>
+        table = """<div class="container">
+        <table cellspacing="2mm"; border-collapse:collapse;>
         """
     else:
         raise ValueError('display must be print or screen')
@@ -382,12 +334,12 @@ def write_table(df, title, display='print'):
         for index_idx, index_group in enumerate(index_groups):
             index_name, index_content = index_group
 
-            n_people = len(index_content)
+            n_index = len(index_content)
 
-            table += """<th class="index" rowspan={n_people}>{index_name}</th>
-            """.format(n_people=n_people, index_name=index_name)
+            table += """<th class="index" rowspan={n_index}>{index_name}</th>
+            """.format(n_index=n_index, index_name=index_name)
 
-            for i in range(n_people):
+            for i in range(n_index):
                 row_content = index_content.iloc[i].values
 
                 for cell in row_content:
@@ -401,12 +353,15 @@ def write_table(df, title, display='print'):
 
                 table += """</tr>"""
 
-                if i < n_people-1:
+                if i < n_index-1:
                     table += """
                     <tr>"""
 
             if index_idx+1 < n_index_groups:
                 table += get_separator()
+                table += """
+                            <tr>"""
+
         # end of inner loop over client projects
 
         if group_idx+1 < n_groups:
@@ -419,10 +374,16 @@ def write_table(df, title, display='print'):
     table += """</tbody>
        </table>"""
 
+    if display == 'screen':
+        table += """
+        </div>"""
+
     return table
 
 
 def get_colors(df):
+    """generate distinct colours for all unique names in the cells of df"""
+
     # remove time allocation/html tags at end of names
     strip_df = df.copy(deep=True)
     for col in strip_df:
@@ -439,15 +400,16 @@ def get_colors(df):
     # appearing last, which helps with keeping colours distinct
     names = pd.Series(names).drop_duplicates().values
 
-    colors = {}
+    colors = dict()
 
-    # don't want white to be used as a person/project colour
+    # to avoid white, uncomment this line:
     colors['WHITE'] = (1, 1, 1)
-    # to avoid black/dark colours, uncomment this line:
-    #colors['BLACK'] = (0, 0, 0)
 
-    # colour used for resource required cells
-    #colors['RESOURCE_REQUIRED'] = (1, 0, 0)
+    # to avoid black/dark colours, uncomment this line:
+    # colors['BLACK'] = (0, 0, 0)
+
+    # to avoid red uncomment this line:
+    # colors['RED'] = (1, 0, 0)
 
     for key in names:
         if "RESOURCE REQUIRED" in key:
@@ -457,12 +419,13 @@ def get_colors(df):
         elif "DEFERRED" in key:
             continue
         else:
-            colors[key] = generate_new_color(colors.values())
+            colors[key] = distinctipy.get_colors(1, exclude_colors=list(colors.values()))[0]
 
     return colors
 
 
 def get_group_colors(df):
+    """colour index groups (project programme area or people role) using Turing colours from the brand guidelines"""
     clients = df.index.get_level_values(0).unique()
 
     # secondary colours from Turing design guidelines
@@ -475,6 +438,16 @@ def get_group_colors(df):
 
 
 def make_whiteboard(df, key_type, display):
+    """Main function to generate the whiteboard visualisation - string containing CSS and HTML code.
+
+    df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
+    (programme, project) for the project sheet, and cell values of format "name (allocation)"
+
+    key_type: whether this is a project or person visualisation (only used to pick title)
+
+    display: whether to optimise the visualisation for display on a screen or for printing
+    """
+
     colors = get_colors(df)
 
     group_colors = get_group_colors(df)
@@ -506,11 +479,11 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    fc = DataHandlers.Forecast()
-    df = fc.spreadsheet_sheet(key_type,
-                              pd.datetime(2019, 3, 1),
-                              pd.datetime(2020, 4, 1),
-                              'MS')
+    fc = wimbledon.vis.DataHandlers.Forecast()
+    df = fc.whiteboard(key_type,
+                       pd.datetime.now() - pd.Timedelta('30 days'),
+                       pd.datetime.now() + pd.Timedelta('365 days'),
+                       'MS')
 
     html = make_whiteboard(df, key_type, display)
 

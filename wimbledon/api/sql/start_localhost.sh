@@ -4,7 +4,7 @@ online=$?
 
 if [[ ${online} -ne 0 ]]; then
     echo "attempting to start server"
-    pg_ctl start -l ../data/sql/logfile -D ../data/sql
+    pg_ctl start -D /usr/local/var/postgres -l logfile
 fi
 
 pg_isready -q -h localhost
