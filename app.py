@@ -1,7 +1,5 @@
 from flask import Flask
 
-#from wimbledon.vis.Visualise import Visualise
-
 app = Flask(__name__)
 
 
@@ -13,8 +11,8 @@ def hello_world():
     #whiteboard = vis.whiteboard('project')
 
     try:
-        import wimbledon
-        return "SUCCESS!! "+wimbledon.__name__
+        from wimbledon.vis.Visualise import Visualise
+        return "SUCCESS!! "+Visualise.__name__
     except ModuleNotFoundError:
         return '!!!!!! WIMBLEDON NOT FOUND !!!!!!!'
 
