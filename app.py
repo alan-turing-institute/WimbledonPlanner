@@ -1,6 +1,6 @@
 from flask import Flask
 
-from wimbledon.vis.Visualise import Visualise
+#from wimbledon.vis.Visualise import Visualise
 
 app = Flask(__name__)
 
