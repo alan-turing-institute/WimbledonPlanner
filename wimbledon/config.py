@@ -1,5 +1,6 @@
 import json
 import os.path
+import os
 import wimbledon
 
 CONFIG_DIR = os.path.expanduser('~/.wimbledon')
@@ -60,27 +61,40 @@ def set_harvest_credentials(harvest_account_id,
 def get_harvest_credentials():
     """
     Load Harvest credentials from ~/.wimbledon/.harvest_credentials, which should be a json file containing the keys
-    harvest_account_id, forecast_account_id and access_token.
+    harvest_account_id, forecast_account_id and access_token, or from HARVEST_ACCOUNT_ID, FORECAST_ACCOUNT_ID and
+    HARVEST_ACCESS_TOKEN environment variables.
 
     :return:
     """
-
     try:
-        with open(HARVEST_CREDENTIALS_PATH, 'r') as f:
-            harvest_credentials = json.load(f)
-    except FileNotFoundError:
-        raise FileNotFoundError('No Harvest credentials found. Please create the file '+ HARVEST_CREDENTIALS_PATH)
+        # check environment variables
+        harvest_credentials = dict()
+        harvest_credentials['harvest_account_id'] = os.environ['HARVEST_ACCOUNT_ID']
+        harvest_credentials['forecast_account_id'] = os.environ['FORECAST_ACCOUNT_ID']
+        harvest_credentials['access_token'] = os.environ['HARVEST_ACCESS_TOKEN']
 
-    keys = harvest_credentials.keys()
+    except KeyError:
+        # check ~/.wimbledon/.harvest_credentials
+        try:
+            with open(HARVEST_CREDENTIALS_PATH, 'r') as f:
+                harvest_credentials = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError('No Harvest credentials found. Please create the file '+ HARVEST_CREDENTIALS_PATH)
 
-    assert "harvest_account_id" in keys and len(harvest_credentials["harvest_account_id"]) > 0, \
-        "harvest_account_id not set in " + HARVEST_CREDENTIALS_PATH
+        keys = harvest_credentials.keys()
 
-    assert "forecast_account_id" in keys and len(harvest_credentials["forecast_account_id"]) > 0, \
-        "forecast_account_id not set in " + HARVEST_CREDENTIALS_PATH
+        assert "harvest_account_id" in keys, \
+            "harvest_account_id not present in " + HARVEST_CREDENTIALS_PATH
 
-    assert "access_token" in keys and len(harvest_credentials["access_token"]) > 0, \
-        "access_token not set in " + HARVEST_CREDENTIALS_PATH
+        assert "forecast_account_id" in keys, \
+            "forecast_account_id not present in " + HARVEST_CREDENTIALS_PATH
+
+        assert "access_token" in keys, \
+            "access_token not present in " + HARVEST_CREDENTIALS_PATH
+
+    assert len(harvest_credentials["harvest_account_id"]) > 0, "harvest_account_id invalid"
+    assert len(harvest_credentials["forecast_account_id"]) > 0, "forecast_account_id invalid"
+    assert len(harvest_credentials["access_token"]) > 0, "access_token invalid"
 
     return harvest_credentials
 
