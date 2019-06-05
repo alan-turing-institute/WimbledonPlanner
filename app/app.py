@@ -16,7 +16,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return 'HELLO WORLD!'
+    try:
+        return os.environ['FORECAST_ACCOUNT_ID']
+
+    except:
+        return 'NO ENV VARIABLE'
 
 
 @app.route('/update')
@@ -50,7 +54,7 @@ def projects():
 
 @app.route('/people')
 def people():
-    
+
     if not os.path.isfile('../data/figs/projects/people.html'):
         update()
 
