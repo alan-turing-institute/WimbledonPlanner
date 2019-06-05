@@ -23,7 +23,8 @@ def extract_name(text):
 class Visualise:
 
     def __init__(self, init_forecast=True, init_harvest=True,
-                 start_date=None, end_date=None, freq=None, hrs_per_day=None):
+                 start_date=None, end_date=None, freq=None, hrs_per_day=None,
+                 data_source='api', data_dir=None):
 
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -34,12 +35,13 @@ class Visualise:
         # only initiate forecast and harvest objects if requested - to have option to be quicker
         # TODO: Deal with case where hv/fc hasn't been initiated but a function tries to use them.
         if init_forecast:
-            self.fc = DataHandlers.Forecast(hrs_per_day=hrs_per_day)
+            self.fc = DataHandlers.Forecast(hrs_per_day=hrs_per_day,
+                                            data_source=data_source, data_dir=data_dir+'/forecast')
         else:
             self.fc = None
 
         if init_harvest:
-            self.hv = DataHandlers.Harvest()
+            self.hv = DataHandlers.Harvest(data_source=data_source, data_dir=data_dir+'/harvest')
         else:
             self.hv = None
 
