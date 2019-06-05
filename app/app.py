@@ -39,6 +39,9 @@ def update():
 @app.route('/projects')
 def projects():
 
+    if not os.path.isfile('../data/figs/projects/projects.html'):
+        update()
+
     with open('../data/figs/projects/projects.html', 'r') as f:
         whiteboard = f.read()
 
@@ -47,6 +50,9 @@ def projects():
 
 @app.route('/people')
 def people():
+    
+    if not os.path.isfile('../data/figs/projects/people.html'):
+        update()
 
     with open('../data/figs/people/people.html', 'r') as f:
         whiteboard = f.read()
