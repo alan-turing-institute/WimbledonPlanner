@@ -6,6 +6,8 @@ from wimbledon.api.DataUpdater import update_to_csv
 import os
 import traceback
 
+DATA_DIR = '/WimbledonPlanner/data'
+
 # set working directory
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -23,16 +25,16 @@ def home():
 @app.route('/update')
 def update():
     try:
-        update_to_csv('../data', run_forecast=True, run_harvest=False)
+        update_to_csv(DATA_DIR, run_forecast=True, run_harvest=False)
 
         vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
 
         whiteboard = vis.whiteboard('project')
-        with open('../data/figs/projects/projects.html', 'w') as f:
+        with open(DATA_DIR+'/figs/projects/projects.html', 'w') as f:
             f.write(whiteboard)
 
         whiteboard = vis.whiteboard('person')
-        with open('../data/figs/people/people.html', 'w') as f:
+        with open(DATA_DIR+'/figs/people/people.html', 'w') as f:
             f.write(whiteboard)
 
         return 'DATA UPDATED!'
@@ -44,10 +46,10 @@ def update():
 @app.route('/projects')
 def projects():
     try:
-        if not os.path.isfile('../data/figs/projects/projects.html'):
+        if not os.path.isfile(DATA_DIR+'/figs/projects/projects.html'):
             update()
 
-        with open('../data/figs/projects/projects.html', 'r') as f:
+        with open(DATA_DIR+'/figs/projects/projects.html', 'r') as f:
             whiteboard = f.read()
 
         return whiteboard
@@ -59,10 +61,10 @@ def projects():
 @app.route('/people')
 def people():
     try:
-        if not os.path.isfile('../data/figs/projects/people.html'):
+        if not os.path.isfile(DATA_DIR+'/figs/projects/people.html'):
             update()
 
-        with open('../data/figs/people/people.html', 'r') as f:
+        with open(DATA_DIR+'/figs/people/people.html', 'r') as f:
             whiteboard = f.read()
 
         return whiteboard
