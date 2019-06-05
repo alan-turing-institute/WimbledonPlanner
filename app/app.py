@@ -52,3 +52,7 @@ def people():
         whiteboard = f.read()
 
     return whiteboard
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int("8000"))
