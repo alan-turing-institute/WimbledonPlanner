@@ -4,6 +4,7 @@ from wimbledon.vis.Visualise import Visualise
 from wimbledon.api.DataUpdater import update_to_csv
 
 import os
+import traceback
 
 # set working directory
 abspath = os.path.abspath(__file__)
@@ -16,52 +17,58 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    try:
-        return os.environ['FORECAST_ACCOUNT_ID']
-
-    except:
-        return 'NO ENV VARIABLE'
+    return 'HELLO WORLD! Browse to /people /projects or /update'
 
 
 @app.route('/update')
 def update():
-    update_to_csv('../data', run_forecast=True, run_harvest=False)
+    try:
+        update_to_csv('../data', run_forecast=True, run_harvest=False)
 
-    vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
+        vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
 
-    whiteboard = vis.whiteboard('project')
-    with open('../data/figs/projects/projects.html', 'w') as f:
-        f.write(whiteboard)
+        whiteboard = vis.whiteboard('project')
+        with open('../data/figs/projects/projects.html', 'w') as f:
+            f.write(whiteboard)
 
-    whiteboard = vis.whiteboard('person')
-    with open('../data/figs/people/people.html', 'w') as f:
-        f.write(whiteboard)
+        whiteboard = vis.whiteboard('person')
+        with open('../data/figs/people/people.html', 'w') as f:
+            f.write(whiteboard)
 
-    return 'DATA UPDATED!'
+        return 'DATA UPDATED!'
+
+    except:
+        return traceback.format_exc()
 
 
 @app.route('/projects')
 def projects():
+    try:
+        if not os.path.isfile('../data/figs/projects/projects.html'):
+            update()
 
-    if not os.path.isfile('../data/figs/projects/projects.html'):
-        update()
+        with open('../data/figs/projects/projects.html', 'r') as f:
+            whiteboard = f.read()
 
-    with open('../data/figs/projects/projects.html', 'r') as f:
-        whiteboard = f.read()
+        return whiteboard
 
-    return whiteboard
+    except:
+        return traceback.format_exc()
 
 
 @app.route('/people')
 def people():
+    try:
+        if not os.path.isfile('../data/figs/projects/people.html'):
+            update()
 
-    if not os.path.isfile('../data/figs/projects/people.html'):
-        update()
+        with open('../data/figs/people/people.html', 'r') as f:
+            whiteboard = f.read()
 
-    with open('../data/figs/people/people.html', 'r') as f:
-        whiteboard = f.read()
+        return whiteboard
 
-    return whiteboard
+    except:
+        return traceback.format_exc()
 
 
 if __name__ == "__main__":
