@@ -20,10 +20,12 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     return """
-    {script_path}<br>
-    {walk}<br>
-    HELLO WORLD! Browse to /people /projects or /update
-    """.format(script_path=abspath, walk=str([x[0] for x in os.walk('/WimbledonPlanner')]))
+    WimbledonPlanner: Hut23 Project Planning<br>
+    Browse to:<br>
+     * /projects for projects whiteboard
+     * /people for people whiteboard
+     * /update to update the whiteboards (slow!)
+    """
 
 
 @app.route('/update')
@@ -65,7 +67,7 @@ def projects():
 @app.route('/people')
 def people():
     try:
-        if not os.path.isfile(DATA_DIR+'/figs/projects/people.html'):
+        if not os.path.isfile(DATA_DIR+'/figs/people/people.html'):
             update()
 
         with open(DATA_DIR+'/figs/people/people.html', 'r') as f:
