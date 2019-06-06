@@ -13,6 +13,12 @@ import time
 
 import sqlalchemy as sqla
 import subprocess
+import os
+
+
+def check_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 '''
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -346,12 +352,16 @@ def get_harvest():
 
 def update_to_csv(data_dir, run_forecast=True, run_harvest=True):
     if run_forecast:
+        check_dir(data_dir+'/forecast')
+
         forecast_data = get_forecast()
 
         for (key, df) in forecast_data.items():
             df.to_csv(data_dir+'/forecast/'+key+'.csv')
 
     if run_harvest:
+        check_dir(data_dir + '/harvest')
+
         harvest_data = get_harvest()
 
         for (key, df) in harvest_data.items():
