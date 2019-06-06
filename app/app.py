@@ -19,7 +19,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return 'HELLO WORLD! Browse to /people /projects or /update'
+    return """
+    {script_path}<br>
+    {walk}<br>
+    HELLO WORLD! Browse to /people /projects or /update
+    """.format(script_path=abspath, walk=str([x[0] for x in os.walk('/WimbledonPlanner')]))
 
 
 @app.route('/update')

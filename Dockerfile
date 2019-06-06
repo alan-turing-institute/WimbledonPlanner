@@ -10,7 +10,6 @@ RUN apt-get update \
         wget \
         tcptraceroute \
         git \
-        apt-utils \
         ghostscript \
         wkhtmltopdf \
     && pip install --upgrade pip \
