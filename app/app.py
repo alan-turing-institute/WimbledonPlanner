@@ -22,8 +22,8 @@ def home():
     return """
     WimbledonPlanner: Hut23 Project Planning<br>
     Browse to:<br>
-     * /projects for projects whiteboard
-     * /people for people whiteboard
+     * /projects for projects whiteboard<br>
+     * /people for people whiteboard<br>
      * /update to update the whiteboards (slow!)
     """
 

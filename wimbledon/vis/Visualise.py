@@ -24,7 +24,7 @@ class Visualise:
 
     def __init__(self, init_forecast=True, init_harvest=True,
                  start_date=None, end_date=None, freq=None, hrs_per_day=None,
-                 data_source='api', data_dir=None):
+                 data_source='api', data_dir=''):
 
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
 

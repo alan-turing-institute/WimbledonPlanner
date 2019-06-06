@@ -40,7 +40,7 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
 
 class Forecast:
     """Load and group Forecast data"""
-    def __init__(self, data_source='api', data_dir=None, hrs_per_day=None):
+    def __init__(self, data_source='api', data_dir='', hrs_per_day=None):
 
         if data_source == 'api':
             data = wimbledon.api.DataUpdater.get_forecast()
@@ -700,7 +700,7 @@ class Forecast:
 class Harvest:
     """Load and group Harvest data"""
 
-    def __init__(self, data_source='api', data_dir=None, proj_hrs_per_day=None):
+    def __init__(self, data_source='api', data_dir='', proj_hrs_per_day=None):
         self.data_source = data_source
 
         if data_source == 'api':
