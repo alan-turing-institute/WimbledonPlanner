@@ -3,11 +3,13 @@
 Project Wimbledon is an attempt to fix and possibly automate the REG group's
 planning and billing process.
 
-Recent versions of the "whiteboard" visualisation can be found on SharePoint here:
+Recent versions of the "whiteboard" visualisation can be found here:
 
-* [Projects sheet](https://thealanturininstitute.sharepoint.com/:u:/s/ResearchEngineering/EawBPLOCSQVHvmQNwuz5Nd8Bv8leoZ5TjFXRE_TUtwvo7A?e=gUr6GO)
+* [Projects sheet](https://wimbledon-planner.azurewebsites.net/projects)
 
-* [People sheet](https://thealanturininstitute.sharepoint.com/:u:/s/ResearchEngineering/EfI1jsHdKkNLsUoMa6lOc2gBgyPOtKigueTbnYXwHtFxnQ?e=VQkdTV)
+* [People sheet](https://wimbledon-planner.azurewebsites.net/people)
+
+To update the versions hosted here go to https://wimbledon-planner.azurewebsites.net/update. This will take a couple of minutes after which you should get the message "DATA UPDATED!".
 
 ## Requirements
 
@@ -29,9 +31,6 @@ You may also need to install ghostscript with:
 
 ## Configuration
 
-The file `api/secrets.py` must be created, containing the API tokens/authorisation info for Harvest and Forecast.
-This file should contain two dictionaries as follows:
-
 Wimbledon requires a Harvest account ID and token as part of its configuration. This is stored in the file 
 `~/.wimbledon/.harvest_credentials`, which is a json file with the following structure:
 ```json
@@ -41,6 +40,7 @@ Wimbledon requires a Harvest account ID and token as part of its configuration. 
 ```
 
 You can either create this file yourself or use the `set_harvest_credentials` function in `wimbledon/config.py`.
+Alternatively (e.g. for the Azure app) they can be stored in the environment variables `HARVEST_ACCOUNT_ID`, `FORECAST_ACCOUNT_ID` and `HARVEST_ACCESS_TOKEN`.
 
 To get the tokens:
 1) Go to https://id.getharvest.com/developers and login (ask Oliver about making an account if you don't have one).
