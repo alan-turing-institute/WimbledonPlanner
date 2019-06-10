@@ -22,9 +22,11 @@ The wimbledon-planner app has been set to only allow connections from the Turing
 1. Click `Networking` in the menu on the left (under Settings).
 1. Click `Configure Access Restrictions` (under Access Restrictions).
 1. For `193.60.220.240` (Turing LAN) and `193.60.220.253` (Turing WiFi) click `Add Rule` and add an allow rule.
-1. On the `<NAME>.scm.azurewebsites.net` tab tick "Same restrictions as `<NAME>.azurewebsites.net`.
+1. On the `<NAME>.scm.azurewebsites.net` tab tick "Same restrictions as `<NAME>.azurewebsites.net`".
 
 ## Passing Secrets to the Container from a Key Vault
+
+You may need the container to have access to tokens or other secrets (e.g. Harvest/Forecast credentials for the wimbledon web app). These can be passed to the web app container from a key vault without them needing to be typed anywhere in code.
 
 ### Create a system managed identity for the web-app
 1. Go to your app service's overview page in the Azure portal.
