@@ -1,9 +1,10 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 
 from wimbledon.vis.Visualise import Visualise
 from wimbledon.api.DataUpdater import update_to_csv
 
 import os
+import zipfile
 
 # set working directory
 abspath = os.path.abspath(__file__)
@@ -43,6 +44,15 @@ def projects():
         whiteboard = f.read()
 
     return whiteboard
+
+
+@app.route('/download')
+def download():
+    with zipfile.ZipFile('../data/whiteboard.zip', 'w') as zipf:
+        zipf.write('../data/figs/projects/projects.html', 'projects.html')
+        zipf.write('../data/figs/people/people.html', 'people.html')
+
+    return send_from_directory('../data', 'whiteboard.zip')
 
 
 @app.route('/people')
