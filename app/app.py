@@ -8,7 +8,8 @@ import zipfile
 import traceback
 import subprocess
 
-DATA_DIR = '/WimbledonPlanner/data'
+HOME_DIR = '/WimbledonPlanner'
+DATA_DIR = HOME_DIR + '/data'
 
 # set working directory
 abspath = os.path.abspath(__file__)
@@ -17,6 +18,11 @@ os.chdir(dname)
 
 # create app
 app = Flask(__name__)
+
+
+def check_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 @app.route('/')
@@ -39,9 +45,12 @@ def update():
         vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
 
         whiteboard = vis.whiteboard('project')
+
+        check_dir(DATA_DIR+'/figs/projects')
         with open(DATA_DIR+'/figs/projects/projects.html', 'w') as f:
             f.write(whiteboard)
 
+        check_dir(DATA_DIR + '/figs/people')
         whiteboard = vis.whiteboard('person')
         with open(DATA_DIR+'/figs/people/people.html', 'w') as f:
             f.write(whiteboard)
@@ -70,7 +79,7 @@ def projects():
 @app.route('/download')
 def download():
     try:
-        subprocess.call(["sh", "../scripts/whiteboard_to_pdf.sh"])
+        subprocess.call(["sh", HOME_DIR+"/scripts/whiteboard_to_pdf.sh"])
 
         with zipfile.ZipFile(DATA_DIR+'/whiteboard.zip', 'w') as zipf:
             zipf.write(DATA_DIR+'/figs/projects/projects.html', 'projects.html')
