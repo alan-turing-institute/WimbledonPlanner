@@ -69,15 +69,19 @@ def projects():
 
 @app.route('/download')
 def download():
-    subprocess.call(["sh", "../scripts/whiteboard_to_pdf.sh"])
+    try:
+        subprocess.call(["sh", "../scripts/whiteboard_to_pdf.sh"])
 
-    with zipfile.ZipFile(DATA_DIR+'/whiteboard.zip', 'w') as zipf:
-        zipf.write(DATA_DIR+'/figs/projects/projects.html', 'projects.html')
-        zipf.write(DATA_DIR+'/figs/people/people.html', 'people.html')
-        zipf.write(DATA_DIR + '/figs/projects/projects.pdf', 'projects.pdf')
-        zipf.write(DATA_DIR + '/figs/people/people.pdf', 'people.pdf')
+        with zipfile.ZipFile(DATA_DIR+'/whiteboard.zip', 'w') as zipf:
+            zipf.write(DATA_DIR+'/figs/projects/projects.html', 'projects.html')
+            zipf.write(DATA_DIR+'/figs/people/people.html', 'people.html')
+            zipf.write(DATA_DIR + '/figs/projects/projects.pdf', 'projects.pdf')
+            zipf.write(DATA_DIR + '/figs/people/people.pdf', 'people.pdf')
 
-    return send_from_directory(DATA_DIR, 'whiteboard.zip')
+        return send_from_directory(DATA_DIR, 'whiteboard.zip')
+
+    except:
+        return traceback.format_exc()
 
 
 @app.route('/people')
