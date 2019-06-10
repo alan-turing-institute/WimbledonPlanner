@@ -10,7 +10,6 @@ RUN apt-get update \
         wget \
         tcptraceroute \
         git \
-        apt-utils \
         ghostscript \
         wkhtmltopdf \
     && pip install --upgrade pip \
@@ -30,6 +29,8 @@ COPY . /WimbledonPlanner
 
 RUN mkdir -p /WimbledonPlanner/data/figs/projects
 RUN mkdir -p /WimbledonPlanner/data/figs/people
+RUN mkdir -p /WimbledonPlanner/data/forecast
+RUN mkdir -p /WimbledonPlanner/data/harvest
 
 # Install python requirements
 RUN cd /WimbledonPlanner && pip install -r requirements.txt

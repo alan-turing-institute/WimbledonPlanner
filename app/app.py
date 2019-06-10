@@ -5,6 +5,9 @@ from wimbledon.api.DataUpdater import update_to_csv
 
 import os
 import zipfile
+import traceback
+
+DATA_DIR = '/WimbledonPlanner/data'
 
 # set working directory
 abspath = os.path.abspath(__file__)
@@ -17,51 +20,73 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return 'HELLO WORLD!'
+    return """
+    WimbledonPlanner: Hut23 Project Planning<br>
+    Browse to:<br>
+     * /projects for projects whiteboard<br>
+     * /people for people whiteboard<br>
+     * /update to update the whiteboards (slow!)
+    """
 
 
 @app.route('/update')
 def update():
-    update_to_csv('../data', run_forecast=True, run_harvest=False)
+    try:
+        update_to_csv(DATA_DIR, run_forecast=True, run_harvest=False)
 
-    vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
+        vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
 
-    whiteboard = vis.whiteboard('project')
-    with open('../data/figs/projects/projects.html', 'w') as f:
-        f.write(whiteboard)
+        whiteboard = vis.whiteboard('project')
+        with open(DATA_DIR+'/figs/projects/projects.html', 'w') as f:
+            f.write(whiteboard)
 
-    whiteboard = vis.whiteboard('person')
-    with open('../data/figs/people/people.html', 'w') as f:
-        f.write(whiteboard)
+        whiteboard = vis.whiteboard('person')
+        with open(DATA_DIR+'/figs/people/people.html', 'w') as f:
+            f.write(whiteboard)
 
-    return 'DATA UPDATED!'
+        return 'DATA UPDATED!'
+
+    except:
+        return traceback.format_exc()
 
 
 @app.route('/projects')
 def projects():
+    try:
+        if not os.path.isfile(DATA_DIR+'/figs/projects/projects.html'):
+            update()
 
-    with open('../data/figs/projects/projects.html', 'r') as f:
-        whiteboard = f.read()
+        with open(DATA_DIR+'/figs/projects/projects.html', 'r') as f:
+            whiteboard = f.read()
 
-    return whiteboard
+        return whiteboard
+
+    except:
+        return traceback.format_exc()
 
 
 @app.route('/download')
 def download():
-    with zipfile.ZipFile('../data/whiteboard.zip', 'w') as zipf:
-        zipf.write('../data/figs/projects/projects.html', 'projects.html')
-        zipf.write('../data/figs/people/people.html', 'people.html')
+    with zipfile.ZipFile(DATA_DIR+'/whiteboard.zip', 'w') as zipf:
+        zipf.write(DATA_DIR+'/figs/projects/projects.html', 'projects.html')
+        zipf.write(DATA_DIR+'/figs/people/people.html', 'people.html')
 
-    return send_from_directory('../data', 'whiteboard.zip')
+    return send_from_directory(DATA_DIR, 'whiteboard.zip')
 
 
 @app.route('/people')
 def people():
+    try:
+        if not os.path.isfile(DATA_DIR+'/figs/people/people.html'):
+            update()
 
-    with open('../data/figs/people/people.html', 'r') as f:
-        whiteboard = f.read()
+        with open(DATA_DIR+'/figs/people/people.html', 'r') as f:
+            whiteboard = f.read()
 
-    return whiteboard
+        return whiteboard
+
+    except:
+        return traceback.format_exc()
 
 
 if __name__ == "__main__":
