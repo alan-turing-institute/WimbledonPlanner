@@ -8,7 +8,9 @@
 1. Search for "App Services" or select it from the menu on the left.
 1. Click Add or Create app service
 1. Choose a subscription, resource group and name. Your web-site will be `<NAME>.azurewebsites.net`.
-1. Choose to publish a `Docker image` running on `Linux`. If you only need to run simple code you can choose a code app service instead, which uses one of the readymade docker images defined [here](https://github.com/Azure-App-Service/python) (for python).
+1. Choose to publish a `Docker image` running on `Linux`. If you only need to run simple code (e.g. you only need pip installable packages) you can choose a code app service instead, which uses one of the readymade docker images defined [here](https://github.com/Azure-App-Service/python) (for python). For wimbledon this didn't work as:
+   1. The default container doesn't have git installed, and wimbledon requires some python packages to be installed via `pip install git+<repo>`.
+   1. Wimbledon requires some command-line tools, e.g. `wkhtmltopdf`.
 1. Pick region (e.g. Western Europe)
 1. Pick/create a new App Service plan - this is the resources assigned to the web app server. Click on "change size" to configure.
 1. Click Review & Create
