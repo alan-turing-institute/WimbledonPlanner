@@ -9,7 +9,6 @@ import traceback
 import subprocess
 
 HOME_DIR = '/WimbledonPlanner'
-HOME_DIR = '..'
 DATA_DIR = HOME_DIR + '/data'
 
 # set working directory
@@ -81,7 +80,7 @@ def projects():
 def download():
     try:
         cmd = 'sh {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=HOME_DIR)
-        subprocess.run(cmd, shell=True, check=True)
+        subprocess.run(cmd, shell=True, check=True, capture_output=True)
 
         with zipfile.ZipFile(DATA_DIR+'/whiteboard.zip', 'w') as zipf:
             zipf.write(DATA_DIR+'/figs/projects/projects.html', 'projects.html')
