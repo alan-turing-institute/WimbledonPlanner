@@ -114,7 +114,7 @@ Your Docker images can be hosted on [DockerHub](https://hub.docker.com/). To do 
 
 You can set up DockerHub to rebuild your image whenever you make a new commit to master in yur GitHub repo, and also to trigger Azure to update the app service automatically when there is a new build available in docker hub. I have the automated build working, but not the automated redeployment on Azure (possibly as I've blocked all IPs except the Turing).
 
-**To set up automated build on DockerHub:**
+### To set up automated build on DockerHub:
 1. Go to your account settings on DockerHub.
 1. Under "Linked Accounts" click connect by GitHub, and follow through steps to authenticate DockerHub with your GitHub account.
 1. Browse to your DockerHub repository.
@@ -126,7 +126,7 @@ You can set up DockerHub to rebuild your image whenever you make a new commit to
 
 Now if you make a new commit to your GitHub repo and then browse to your DockerHub repo, you should see a build pending (and then success/failure logs when done).
 
-**To set up automated redeployment on Azure:**
+### To set up automated redeployment on Azure:
 1. Browse to your app service's page in the Azure portal.
 1. Click on "Container Settings" in the lefthand menu.
 1. Set "Continuous Deployment" to "On" and copy the webhook URL.
