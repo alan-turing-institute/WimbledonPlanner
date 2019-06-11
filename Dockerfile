@@ -22,6 +22,19 @@ RUN apt-get update \
 EXPOSE 8000
 ENV PORT 8000
 
+# SSH setup
+ENV SSH_PORT 2222
+
+# setup SSH
+RUN mkdir -p /home/LogFiles \
+     && echo "root:Docker!" | chpasswd \
+     && echo "cd /home" >> /etc/bash.bashrc
+
+COPY sshd_config /etc/ssh/
+RUN sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
+RUN service ssh start
+RUN eval $(printenv | awk -F= '{print "export " $1"="$2 }' >> /etc/profile)
+
 # Copy files
 RUN mkdir /WimbledonPlanner
 WORKDIR /WimbledonPlanner

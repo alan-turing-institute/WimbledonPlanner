@@ -88,7 +88,7 @@ def download():
             zipf.write(DATA_DIR + '/figs/projects/projects.pdf', 'projects.pdf')
             zipf.write(DATA_DIR + '/figs/people/people.pdf', 'people.pdf')
 
-        return send_from_directory(DATA_DIR, 'whiteboard.zip')
+        return send_from_directory(DATA_DIR, 'whiteboard.zip', as_attachment=True)
 
     except:
         return traceback.format_exc()
