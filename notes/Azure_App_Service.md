@@ -106,4 +106,34 @@ Your Docker images can be hosted on [DockerHub](https://hub.docker.com/). To do 
 
 ## Updating the image on the web app
 
+1. Run `docker build` and then `docker push` on the local copy of your repo (see "Creating a Docker image on DockerHub" section above for details).
+1. Browse to your App Service's page in the Azure portal.
+1. I've had some mixed success with triggering the App Service to update, but some combination of restarting, stopping, starting and browsing to the app service's url seems to force it to pull the new image.
+
 ## Set up Automated Docker builds and Azure deployment
+
+You can set up DockerHub to rebuild your image whenever you make a new commit to master in yur GitHub repo, and also to trigger Azure to update the app service automatically when there is a new build available in docker hub. I have the automated build working, but not the automated redeployment on Azure (possibly as I've blocked all IPs except the Turing).
+
+**To set up automated build on DockerHub:**
+1. Go to your account settings on DockerHub.
+1. Under "Linked Accounts" click connect by GitHub, and follow through steps to authenticate DockerHub with your GitHub account.
+1. Browse to your DockerHub repository.
+1. Click on "Builds"
+1. Click "Configure Automated Builds".
+1. Pick the GitHub repository containing the Dockerfile you want to build from the dropdown lists.
+1. If necessary, configure the settings (by default: rebuild on every commit to master).
+1. Click Save.
+
+Now if you make a new commit to your GitHub repo and then browse to your DockerHub repo, you should see a build pending (and then success/failure logs when done).
+
+**To set up automated redeployment on Azure:**
+1. Browse to your app service's page in the Azure portal.
+1. Click on "Container Settings" in the lefthand menu.
+1. Set "Continuous Deployment" to "On" and copy the webhook URL.
+1. Click "Save".
+1. Browse to your DockerHub repository.
+1. Click on "Webhooks"
+1. Choose some meaningful name (e.g. "Azure") and paste the URL copied before into the webhook URL field.
+1. Click the "+".
+
+In principle DockerHub should now trigger your App Service to update whenever a new image build is available. For me the webhook always fails (can look at the history from the webhooks page on DockerHub), I suspect because I've only authenticated Turing IPs to access the App Service although DockerHub provides no way that I can see to debug why a webhook has failed.
