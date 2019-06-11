@@ -66,6 +66,18 @@ You may need the container to have access to tokens or other secrets (e.g. Harve
 
 ### Pass secrets to the web app container
 
+1. Browse to your app service's page in the Azure portal.
+1. Click on configuration in the lefthand menu.
+1. Click "New Application Setting".
+1. The `Name` field defines the name of the environment variable that will be available in the container.
+1. The `Value` field should take the following format: `@Microsoft.KeyVault(SecretUri=<YOUR_SECRET_URI>)`. To get the secret URI:
+   1. Go to your Key Vault's page in the Azure portal.
+   1. Click on Secrets in the lefthand menu.
+   1. Click on the Secret you want to pass as an environment variable.
+   1. Click on the version you want to use.
+   1. Copy the URI from the "Secret Identifier" field.
+1. Repeat for all secrets you want to be available in the container.
+
 ## Creating a docker image
 
 ## Updating the image on the web app
