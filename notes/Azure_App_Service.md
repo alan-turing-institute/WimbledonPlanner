@@ -80,12 +80,11 @@ You may need the container to have access to tokens or other secrets (e.g. Harve
 
 ## Creating a Docker image on DockerHub
 
-Your web app will run in a docker container on your Azure app service. The container setup is defined by the `Dockerfile`, by default a file with that name in the root folder of your repo. The `Dockerfile` defines the OS environment used in the image, e.g. some linux distribution and some python version, installation of any required tools, port setup, copying of files from the repo to the container, and the command to run after the container has been setup. For help with Dockerfiles see:
+Your web app will run in a docker container on your Azure app service. The container setup is defined by the `Dockerfile`, by default a file with that name in the root folder of your repo. The `Dockerfile` defines the OS environment used in the image, e.g. some linux distribution and some python version, installation of any required tools, port setup, copying of files from the repo to the container, and the command to run after the container has been setup, e.g. to start the web server. 
 
+For help with Dockerfiles see:
 * [Docker documentation](https://docs.docker.com/get-started/)
-
 * [Default Azure Python 3.7 Dockerfile](https://github.com/Azure-App-Service/python/blob/master/3.7.0/Dockerfile)
-
 * [Wimbledon Planner Dockerfile](https://github.com/alan-turing-institute/WimbledonPlanner/blob/master/Dockerfile)
 
 Your Docker images can be hosted on [DockerHub](https://hub.docker.com/). To do this:
@@ -96,6 +95,14 @@ Your Docker images can be hosted on [DockerHub](https://hub.docker.com/). To do 
 1. To push your (already built) docker image to the repo run `docker push <DOCKERHUB_USERNAME>/<REPO_NAME>`
 
 ## Configure the App Service to Use the Docker Image
+
+1. Browse to your App Service's page in the Azure portal.
+1. Click on "Container Settings" in the lefthand menu.
+1. Select the "Single Container" tab.
+1. Select "Docker Hub" as the Image source.
+1. In the Image and optional tag field write: `<DOCKERHUB_USERNAME>/<REPO_NAME>:latest`.
+1. Click Save.
+1. The app service should now start to pull the Docker image and then run it - try refreshing the logs in the Container Settings page after a couple of minutes to see if something is happening. Once successful you should see a message along the lines of `Container <NAME>_0 for site <NAME> initialized successfully and is ready to serve requests.` If not try restarting (or manually stopping and then starting) the app service from its overview page in the portal.
 
 ## Updating the image on the web app
 
