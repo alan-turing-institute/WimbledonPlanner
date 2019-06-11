@@ -23,17 +23,10 @@ EXPOSE 8000
 ENV PORT 8000
 
 # SSH setup
-ENV SSH_PORT 2222
-
-# setup SSH
-RUN mkdir -p /home/LogFiles \
-     && echo "root:Docker!" | chpasswd \
-     && echo "cd /home" >> /etc/bash.bashrc
-
+RUN echo "root:Docker!" | chpasswd
 COPY sshd_config /etc/ssh/
-RUN sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
-RUN service ssh start
-RUN eval $(printenv | awk -F= '{print "export " $1"="$2 }' >> /etc/profile)
+EXPOSE 80 2222
+RUN /usr/sbin/sshd
 
 # Copy files
 RUN mkdir /WimbledonPlanner
