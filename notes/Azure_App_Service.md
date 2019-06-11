@@ -1,5 +1,7 @@
 # Creating a Web App on Azure
 
+The instructions below assume you already have a GitHub repo containing a script that runs some kind of app/local server which you want to host on the web with Azure.
+
 ## Create an App Service
 
 "App Service" on Azure is the way to create Azure web apps. To create one:
