@@ -78,6 +78,25 @@ You may need the container to have access to tokens or other secrets (e.g. Harve
    1. Copy the URI from the "Secret Identifier" field.
 1. Repeat for all secrets you want to be available in the container.
 
-## Creating a docker image
+## Creating a Docker image on DockerHub
+
+Your web app will run in a docker container on your Azure app service. The container setup is defined by the `Dockerfile`, by default a file with that name in the root folder of your repo. The `Dockerfile` defines the OS environment used in the image, e.g. some linux distribution and some python version, installation of any required tools, port setup, copying of files from the repo to the container, and the command to run after the container has been setup. For help with Dockerfiles see:
+
+* [Docker documentation](https://docs.docker.com/get-started/)
+
+* [Default Azure Python 3.7 Dockerfile](https://github.com/Azure-App-Service/python/blob/master/3.7.0/Dockerfile)
+
+* [Wimbledon Planner Dockerfile](https://github.com/alan-turing-institute/WimbledonPlanner/blob/master/Dockerfile)
+
+Your Docker images can be hosted on [DockerHub](https://hub.docker.com/). To do this:
+1. Make a DockerHub account: https://hub.docker.com/signup
+1. From your account page go to repositories and then click `Create Repository`. Give this the name you want and make it a **public repository** (if you need a private repository you'll need to figure out more authentication steps, plus may want to consider Azure container registry instead of Dockerhub).
+1. Download and install Docker Desktop: https://www.docker.com/products/docker-desktop
+1. To build your docker image locally, in the root folder of your repo (assuming you have your Dockerfile there), run `docker build . -t <DOCKERHUB_USERNAME>/<REPO_NAME>`
+1. To push your (already built) docker image to the repo run `docker push <DOCKERHUB_USERNAME>/<REPO_NAME>`
+
+## Configure the App Service to Use the Docker Image
 
 ## Updating the image on the web app
+
+## Set up Automated Docker builds and Azure deployment
