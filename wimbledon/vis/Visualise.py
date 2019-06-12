@@ -91,14 +91,15 @@ class Visualise:
                    start_date=None,
                    end_date=None,
                    freq=None,
-                   display='screen'):
+                   display='screen',
+                   update_timestamp=None):
         """Create an HTML table in the style of the whiteboard with cells coloured by name"""
 
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
         sheet = self.fc.whiteboard(key_type, start_date, end_date, freq)
 
-        html = HTMLWriter.make_whiteboard(sheet, key_type, display)
+        html = HTMLWriter.make_whiteboard(sheet, key_type, display, update_timestamp=update_timestamp)
 
         return html
 

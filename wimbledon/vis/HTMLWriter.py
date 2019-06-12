@@ -437,7 +437,7 @@ def get_group_colors(df):
     return group_colors
 
 
-def make_whiteboard(df, key_type, display):
+def make_whiteboard(df, key_type, display, update_timestamp=None):
     """Main function to generate the whiteboard visualisation - string containing CSS and HTML code.
 
     df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
@@ -456,6 +456,9 @@ def make_whiteboard(df, key_type, display):
         title = 'Research Engineering Project Allocations'
     elif key_type == 'person':
         title = 'Research Engineering Person Allocations'
+
+    if update_timestamp is not None:
+        title += ' (' + update_timestamp + ')'
 
     html = write_style(colors, group_colors, display=display)
     html += write_table(df, title, display=display)

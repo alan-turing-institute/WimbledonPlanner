@@ -8,7 +8,10 @@ import zipfile
 import traceback
 import subprocess
 
+from datetime import datetime
+
 HOME_DIR = '/WimbledonPlanner'
+HOME_DIR = '..'
 DATA_DIR = HOME_DIR + '/data'
 
 # set working directory
@@ -27,14 +30,21 @@ def check_dir(directory):
 
 @app.route('/')
 def home():
+    if os.path.isfile(DATA_DIR + '/.last_update'):
+        with open(DATA_DIR + '/.last_update', 'r') as f:
+            updated_at = f.read()
+    else:
+        updated_at = 'Never'
+
     return """
     WimbledonPlanner: Hut23 Project Planning<br>
+    Last Updated: {updated_at}<br><br>
     Browse to:<br>
      * /projects for projects whiteboard<br>
      * /people for people whiteboard<br>
      * /update to update the whiteboards (slow!)<br>
-     * /download to download the whiteboard visualisations
-    """
+     * /download to download the whiteboard visualisations     
+    """.format(updated_at=updated_at)
 
 
 @app.route('/update')
@@ -44,18 +54,22 @@ def update():
 
         vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
 
-        whiteboard = vis.whiteboard('project')
+        updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
+        whiteboard = vis.whiteboard('project', update_timestamp=updated_at)
         check_dir(DATA_DIR+'/figs/projects')
         with open(DATA_DIR+'/figs/projects/projects.html', 'w') as f:
             f.write(whiteboard)
 
+        whiteboard = vis.whiteboard('person', update_timestamp=updated_at)
         check_dir(DATA_DIR + '/figs/people')
-        whiteboard = vis.whiteboard('person')
         with open(DATA_DIR+'/figs/people/people.html', 'w') as f:
             f.write(whiteboard)
 
-        return 'DATA UPDATED!'
+        with open(DATA_DIR+'/.last_update', 'w') as f:
+            f.write(updated_at)
+
+        return 'DATA UPDATED! ' + updated_at
 
     except:
         return traceback.format_exc()
@@ -68,6 +82,21 @@ def projects():
             update()
 
         with open(DATA_DIR+'/figs/projects/projects.html', 'r') as f:
+            whiteboard = f.read()
+
+        return whiteboard
+
+    except:
+        return traceback.format_exc()
+
+
+@app.route('/people')
+def people():
+    try:
+        if not os.path.isfile(DATA_DIR+'/figs/people/people.html'):
+            update()
+
+        with open(DATA_DIR+'/figs/people/people.html', 'r') as f:
             whiteboard = f.read()
 
         return whiteboard
@@ -89,21 +118,6 @@ def download():
             zipf.write(DATA_DIR + '/figs/people/people.pdf', 'people.pdf')
 
         return send_from_directory(DATA_DIR, 'whiteboard.zip', as_attachment=True)
-
-    except:
-        return traceback.format_exc()
-
-
-@app.route('/people')
-def people():
-    try:
-        if not os.path.isfile(DATA_DIR+'/figs/people/people.html'):
-            update()
-
-        with open(DATA_DIR+'/figs/people/people.html', 'r') as f:
-            whiteboard = f.read()
-
-        return whiteboard
 
     except:
         return traceback.format_exc()
