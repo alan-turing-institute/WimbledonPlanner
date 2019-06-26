@@ -141,3 +141,5 @@ settings.json
 
 # SQL
 *.sqlite
+*.token
+*.token

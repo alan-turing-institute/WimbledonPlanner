@@ -36,4 +36,4 @@ RUN mkdir -p /WimbledonPlanner/data/harvest
 RUN cd /WimbledonPlanner && pip install -r requirements.txt
 
 # Start the app
-ENTRYPOINT cd /WimbledonPlanner/app && python app.py
+ENTRYPOINT cd /WimbledonPlanner/app && python app.py /WimbledonPlanner
