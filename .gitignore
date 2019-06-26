@@ -5,6 +5,8 @@ api/secrets.py
 api/forecast_cache.sqlite
 /data/
 tmp.*
+*.token
+*.secrets
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -141,5 +143,3 @@ settings.json
 
 # SQL
 *.sqlite
-*.token
-*.token

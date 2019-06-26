@@ -11,12 +11,20 @@ RUN apt-get update \
         tcptraceroute \
         git \
         ghostscript \
-        wkhtmltopdf \
+        xz-utils \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
     && pip install virtualenv \
     && pip install flask
+
+# Install wkhmltopdf from source (get an older version with apt-get)
+RUN mkdir /tmpwk \
+    && cd /tmpwk \
+    && wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+    && tar vxf "wkhtmltox-0.12.4_linux-generic-amd64.tar.xz" \
+    && cp wkhtmltox/bin/wk* /usr/local/bin/ \
+    && cd && rm -r /tmpwk
 
 # Port setup
 EXPOSE 8000

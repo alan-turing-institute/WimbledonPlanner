@@ -1,11 +1,18 @@
 #!/bin/bash
 cd $(cd -P -- "$(dirname -- "$0")" && pwd -P)
+
+pwd
+ls
+
 if [[ "$?" != "0" ]]; then
     echo "[Error] cd ../data/figs/projects failed!"
     exit 10
 fi
 
 cd ../data/figs/projects
+pwd
+ls
+
 if [[ "$?" != "0" ]]; then
     echo "[Error] cd ../data/figs/projects failed!"
     exit 11
@@ -30,6 +37,9 @@ if [[ "$?" != "0" ]]; then
 fi
 
 cd ../people
+pwd
+ls
+
 if [[ "$?" != "0" ]]; then
     echo "[Error] cd ../people failed!"
     exit 15
