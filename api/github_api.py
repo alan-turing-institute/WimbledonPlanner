@@ -4,7 +4,7 @@ import requests
 import json
 
 with open('github.token', 'r') as f:
-    token = f.read().strip()
+    token = f.read()
 
 headers = {"Authorization": "Bearer " + token}
 
@@ -24,7 +24,7 @@ query = """
           number
           title
           url
-
+          
           reactionGroups {
             content
             users(first:20) {
@@ -34,8 +34,8 @@ query = """
                         name
                     }
                 }
-            }
-            }
+            }   
+            }    
     }
   }
 }
@@ -57,3 +57,4 @@ emojis = {'CONFUSED': '😕',
           'ROCKET': '🚀',
           'THUMBS_DOWN': '👎',
           'THUMBS_UP': '👍'}
+
