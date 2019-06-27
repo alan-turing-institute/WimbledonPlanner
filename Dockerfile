@@ -14,7 +14,7 @@ RUN apt-get update \
         xz-utils \
         libxext6 \
         libfontconfig1 \
-        libxrender1
+        libxrender1 \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
