@@ -12,6 +12,9 @@ RUN apt-get update \
         git \
         ghostscript \
         xz-utils \
+        libxext6 \
+        libfontconfig1 \
+        libxrender1
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
@@ -19,6 +22,7 @@ RUN apt-get update \
     && pip install flask
 
 # Install wkhmltopdf from source (get an older version with apt-get)
+# Other dependencies for wkhtmltopdf installed above: ghostscript, libext6, libfontconfig1, libxrender1, xz-utils
 RUN mkdir /tmpwk \
     && cd /tmpwk \
     && wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \

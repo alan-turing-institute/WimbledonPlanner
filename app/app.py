@@ -100,7 +100,7 @@ def people():
 def download():
 
     try:
-        cmd = 'sh {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
+        cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
 
         if result.returncode is not 0:
