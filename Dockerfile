@@ -15,6 +15,9 @@ RUN apt-get update \
         libxext6 \
         libfontconfig1 \
         libxrender1 \
+        fontconfig \
+        xfonts-base \
+        xfonts-75dpi \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
@@ -22,13 +25,13 @@ RUN apt-get update \
     && pip install flask
 
 # Install wkhmltopdf from source (get an older version with apt-get)
-# Other dependencies for wkhtmltopdf installed above: ghostscript, libext6, libfontconfig1, libxrender1, xz-utils
+# Other dependencies for wkhtmltopdf installed above: ghostscript, libext6, libfontconfig1, libxrender1, xz-utils,
+# fontconfig
 RUN mkdir /tmpwk \
     && cd /tmpwk \
-    && wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
-    && tar vxf "wkhtmltox-0.12.4_linux-generic-amd64.tar.xz" \
-    && cp wkhtmltox/bin/wk* /usr/local/bin/ \
-    && cd && rm -r /tmpwk
+    && wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.stretch_amd64.deb \
+    && dpkg -i  wkhtmltox_0.12.5-1.stretch_amd64.deb \
+    && apt -f install
 
 # Port setup
 EXPOSE 8000
