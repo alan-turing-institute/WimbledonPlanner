@@ -47,6 +47,7 @@ def update():
 
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
+        # Versions to display on web-site
         whiteboard = vis.whiteboard('project', update_timestamp=updated_at)
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
         with open(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'w') as f:
@@ -98,7 +99,6 @@ def people():
 
 @app.route('/download')
 def download():
-
     try:
         cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
