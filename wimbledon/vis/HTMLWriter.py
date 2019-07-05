@@ -49,20 +49,25 @@ def get_name_style(name, background_color=None, name_type=None):
     placeholders or generate distinct colours for other names."""
 
     if 'RESOURCE REQUIRED' in name or 'RESOURCE_REQUIRED' in name:
-        style = """.RESOURCE_REQUIRED {
-                  background-color: white;
-                  color: red;
-                  font-weight: 600;
-                  border: 1px solid red;
-                } """
+        style = """
+        .RESOURCE_REQUIRED {
+            background-color: white;
+            color: red;
+            font-weight: 600;
+            border: 1px solid red;
+        } 
+        """
 
     elif 'UNCONFIRMED' in name:
-        style = """.UNCONFIRMED {
-                          background-color: white;
-                          color: gray;
-                          font-weight: 600;
-                          border: 1px solid gray;
-                } """
+        style = """
+        .UNCONFIRMED {
+            background-color: white;
+            color: gray;
+            font-weight: 600;
+            border: 1px solid gray;
+        }
+        """
+
     elif 'DEFERRED' in name:
         style = """.DEFERRED {
                           background-color: white;
@@ -160,9 +165,7 @@ def get_base_style():
           display: flex;
           align-items: center;
           justify-content: center;
-        }  .index:hover {
-          background-color: #ffff99;
-        }  a {
+        } a {
           color: inherit;
           text-decoration: inherit;
          } .title {

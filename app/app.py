@@ -11,10 +11,16 @@ import sys
 
 from datetime import datetime
 
+# Initialise Flask App
 app = Flask(__name__)
 
 
 def check_dir(directory):
+    """Check whether a directory exists, if not make it.
+    
+    Arguments:
+        directory {str} -- path to desired directory.
+    """
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -40,14 +46,25 @@ def home():
 
 @app.route('/update')
 def update():
+    """Query the Forecast API for the latest data and update the whiteboard visualisations.
+    
+    Raises:
+        ValueError: Traceback of what went wrong if something fails during update process.
+    
+    Returns:
+        str -- a data updated message (or error string if failed)
+    """
     try:
-        update_to_csv(app.config.get('DATA_DIR'), run_forecast=True, run_harvest=False)
-
-        vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
-
+        # time update was triggered
+        # TODO: make this timezone robust (e.g. make it UK time not local system time?)
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
-        # Versions to display on web-site
+        # get updated data from Forecast API
+        update_to_csv(app.config.get('DATA_DIR'), run_forecast=True, run_harvest=False)
+
+        # Generate whiteboards
+        vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
+
         whiteboard = vis.whiteboard('project', update_timestamp=updated_at)
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
         with open(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'w') as f:
@@ -58,6 +75,21 @@ def update():
         with open(app.config.get('DATA_DIR')+'/figs/people/people.html', 'w') as f:
             f.write(whiteboard)
 
+        # convert html to pdf
+        cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
+        result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
+
+        if result.returncode is not 0:
+            raise ValueError('whiteboard_to_pdf.sh returned with code '+str(result.returncode))
+
+        # create zip of whiteboard files
+        with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
+            zipf.write(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'projects.html')
+            zipf.write(app.config.get('DATA_DIR')+'/figs/people/people.html', 'people.html')
+            zipf.write(app.config.get('DATA_DIR') + '/figs/projects/projects.pdf', 'projects.pdf')
+            zipf.write(app.config.get('DATA_DIR') + '/figs/people/people.pdf', 'people.pdf')
+
+        # save update time to file if everything was successful
         with open(app.config.get('DATA_DIR')+'/.last_update', 'w') as f:
             f.write(updated_at)
 
@@ -69,6 +101,11 @@ def update():
 
 @app.route('/projects')
 def projects():
+    """Get the projects whiteboard.
+    
+    Returns:
+        str -- HTML representation of the projects whiteboard.
+    """
     try:
         if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/projects/projects.html'):
             update()
@@ -84,6 +121,11 @@ def projects():
 
 @app.route('/people')
 def people():
+    """Get the people whiteboard
+    
+    Returns:
+        str -- HTML representation of the people whiteboard.
+    """
     try:
         if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/people/people.html'):
             update()
@@ -99,20 +141,21 @@ def people():
 
 @app.route('/download')
 def download():
+    """Get a zip of whiteboard files.
+    
+    Returns:
+        Flask response -- Flask representation of zip file to deliver.
+    """
     try:
-        cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
-        result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
-
-        if result.returncode is not 0:
-            raise ValueError('whiteboard_to_pdf.sh returned with code '+str(result.returncode))
-
-        with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
-            zipf.write(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'projects.html')
-            zipf.write(app.config.get('DATA_DIR')+'/figs/people/people.html', 'people.html')
-            zipf.write(app.config.get('DATA_DIR') + '/figs/projects/projects.pdf', 'projects.pdf')
-            zipf.write(app.config.get('DATA_DIR') + '/figs/people/people.pdf', 'people.pdf')
-
-        return send_from_directory(app.config.get('DATA_DIR'), 'whiteboard.zip', as_attachment=True)
+        response = send_from_directory(app.config.get('DATA_DIR'), 'whiteboard.zip', as_attachment=True)
+        
+        # change headers to stop browser from delivering cached version
+        response.headers['Last-Modified'] = datetime.now()
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        
+        return response 
 
     except:
         return traceback.format_exc()
