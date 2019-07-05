@@ -110,30 +110,37 @@ def get_name_style(name, background_color=None, name_type=None):
     return style
 
 
-def write_style(colors, group_colors=None, display='print'):
+def write_style(df, display='print'):
     """write the CSS to style the table"""
 
-    style = """<style  type="text/css" > """
-    style += get_base_style()
+    if display == 'nostyle':
+        return ''
 
-    if display == 'screen':
-        style += get_screen_style()
+    else:
+        style = """<style  type="text/css" > """
+        style += get_base_style()
 
-    for name, color in colors.items():
-        style += get_name_style(name, color)
+        if display == 'screen':
+            style += get_screen_style()
 
-    style += get_name_style('RESOURCE REQUIRED')
-    style += get_name_style('UNCONFIRMED')
-    style += get_name_style('DEFERRED')
-    style += get_name_style('UNAVAILABLE')
+        colors = get_colors(df)
 
-    if group_colors is not None:
+        for name, color in colors.items():
+            style += get_name_style(name, color)
+
+        style += get_name_style('RESOURCE REQUIRED')
+        style += get_name_style('UNCONFIRMED')
+        style += get_name_style('DEFERRED')
+        style += get_name_style('UNAVAILABLE')
+
+        group_colors = get_group_colors(df)
+
         for client, color in group_colors.items():
             style += get_name_style(client, color, name_type='client')
 
-    style += '</style>'
+        style += '</style>'
 
-    return style
+        return style
 
 
 def get_base_style():
@@ -144,6 +151,8 @@ def get_base_style():
           font-family: neue-haas-unica, sans-serif;
           font-style: normal;
           font-weight: 400;
+          border-spacing: 1mm;
+          border-collapse: separate;
        } td {
           text-align:  center;
           height:  3em;
@@ -295,21 +304,16 @@ def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
     return html
 
 
-def write_table(df, title, display='print'):
+def write_table(df, title):
     """creates the html for the whiteboard visualisation using:
     df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
     (programme, project) for the project sheet, and cell values of format "name (allocation)"
     """
 
-    if display == 'print':
-        table = """<table cellspacing="5mm"; border-collapse:collapse;>
-        """
-    elif display == 'screen':
-        table = """<div class="container">
-        <table cellspacing="2mm"; border-collapse:collapse;>
-        """
-    else:
-        raise ValueError('display must be print or screen')
+    table = """
+    <div class="container">
+        <table>
+    """
 
     table += write_header(df.columns, title=title)
 
@@ -374,12 +378,10 @@ def write_table(df, title, display='print'):
         else:
             table += fix_colwidth(df.shape[1])
 
-    table += """</tbody>
-       </table>"""
-
-    if display == 'screen':
-        table += """
-        </div>"""
+    table += """
+            </tbody>
+        </table>
+    </div>"""
 
     return table
 
@@ -451,10 +453,6 @@ def make_whiteboard(df, key_type, display, update_timestamp=None):
     display: whether to optimise the visualisation for display on a screen or for printing
     """
 
-    colors = get_colors(df)
-
-    group_colors = get_group_colors(df)
-
     if key_type == 'project':
         title = 'Research Engineering Project Allocations'
     elif key_type == 'person':
@@ -463,8 +461,8 @@ def make_whiteboard(df, key_type, display, update_timestamp=None):
     if update_timestamp is not None:
         title += ' (' + update_timestamp + ')'
 
-    html = write_style(colors, group_colors, display=display)
-    html += write_table(df, title, display=display)
+    html = write_style(df, display=display)
+    html += write_table(df, title)
 
     return html
 
@@ -474,10 +472,10 @@ if __name__ == '__main__':
     display = sys.argv[2]
 
     if key_type == 'person':
-        save_dir = '../data/figs/people'
+        save_dir = '../../data/figs/people'
         file_name = 'people.html'
     elif key_type == 'project':
-        save_dir = '../data/figs/projects'
+        save_dir = '../../data/figs/projects'
         file_name = 'projects.html'
     else:
         raise ValueError('first argument (key_type) must be project or person')
@@ -485,13 +483,18 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    print('MAKE FORECAST OBJECT')
     fc = wimbledon.vis.DataHandlers.Forecast()
+
+    print('GET WHITEBOARD DATAFRAME')
     df = fc.whiteboard(key_type,
                        pd.datetime.now() - pd.Timedelta('30 days'),
                        pd.datetime.now() + pd.Timedelta('365 days'),
                        'MS')
 
+    print('GET FORMATTED HTML WHITEBOARD')
     html = make_whiteboard(df, key_type, display)
 
+    print('SAVE WHITEBOARD')
     with open(save_dir+'/'+file_name, 'w') as f:
         f.write(html)

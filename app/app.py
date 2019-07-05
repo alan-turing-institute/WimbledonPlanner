@@ -65,27 +65,36 @@ def update():
         # Generate whiteboards
         vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
 
-        whiteboard = vis.whiteboard('project', update_timestamp=updated_at)
+        whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
+
+        # Save whiteboards to file
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
+
         with open(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'w') as f:
-            f.write(whiteboard)
+            f.write(whiteboards['project_print'])
 
-        whiteboard = vis.whiteboard('person', update_timestamp=updated_at)
+        with open(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'w') as f:
+            f.write(whiteboards['project_screen'])
+
         check_dir(app.config.get('DATA_DIR') + '/figs/people')
-        with open(app.config.get('DATA_DIR')+'/figs/people/people.html', 'w') as f:
-            f.write(whiteboard)
 
-        # convert html to pdf
+        with open(app.config.get('DATA_DIR')+'/figs/people/people.html', 'w') as f:
+            f.write(whiteboards['person_print'])
+
+        with open(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'w') as f:
+            f.write(whiteboards['person_screen'])
+
+        # convert print version html to pdf
         cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
 
         if result.returncode is not 0:
             raise ValueError('whiteboard_to_pdf.sh returned with code '+str(result.returncode))
 
-        # create zip of whiteboard files
+        # create zip of print version whiteboard files
         with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
-            zipf.write(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'projects.html')
-            zipf.write(app.config.get('DATA_DIR')+'/figs/people/people.html', 'people.html')
+            zipf.write(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'projects.html')
+            zipf.write(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'people.html')
             zipf.write(app.config.get('DATA_DIR') + '/figs/projects/projects.pdf', 'projects.pdf')
             zipf.write(app.config.get('DATA_DIR') + '/figs/people/people.pdf', 'people.pdf')
 
@@ -107,10 +116,10 @@ def projects():
         str -- HTML representation of the projects whiteboard.
     """
     try:
-        if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/projects/projects.html'):
+        if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html'):
             update()
 
-        with open(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'r') as f:
+        with open(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'r') as f:
             whiteboard = f.read()
 
         return whiteboard
@@ -127,10 +136,10 @@ def people():
         str -- HTML representation of the people whiteboard.
     """
     try:
-        if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/people/people.html'):
+        if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/people/person_screen.html'):
             update()
 
-        with open(app.config.get('DATA_DIR')+'/figs/people/people.html', 'r') as f:
+        with open(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'r') as f:
             whiteboard = f.read()
 
         return whiteboard

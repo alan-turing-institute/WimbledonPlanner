@@ -103,6 +103,52 @@ class Visualise:
 
         return html
 
+    def all_whiteboards(self, start_date=None, end_date=None, freq=None, update_timestamp=None):
+        """Generate the project and people whiteboards styled for display on screen and for printing.
+        
+        Keyword Arguments:
+            start_date {datetime} -- start date for whiteboard (default: 1 month before today)
+            end_date {datetime} -- end date for whiteboard (default: 1 year after today)
+            freq {str} -- Frequency of columns, as pandas time frequency string (default: 'MS' for month start)
+            update_timestamp {str} -- time data was obtained (default: {None})
+        """
+
+        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+
+        whiteboards = dict()
+
+        # ########
+        # PROJECTS
+        # ########
+        # get unstyled whiteboard
+        sheet = self.fc.whiteboard('project', start_date, end_date, freq)
+        whiteboard_raw = HTMLWriter.make_whiteboard(sheet, 'project', 'nostyle', update_timestamp=update_timestamp)
+       
+        # add screen style
+        style = HTMLWriter.write_style(sheet, display='screen')
+        whiteboards['project_screen'] = style + whiteboard_raw
+        
+        # add print style
+        style = HTMLWriter.write_style(sheet, display='print')
+        whiteboards['project_print'] = style + whiteboard_raw
+
+        # ######
+        # PEOPLE
+        # ######
+        # get unstyled whiteboard
+        sheet = self.fc.whiteboard('person', start_date, end_date, freq)
+        whiteboard_raw = HTMLWriter.make_whiteboard(sheet, 'person', 'nostyle', update_timestamp=update_timestamp)
+       
+        # add screen style
+        style = HTMLWriter.write_style(sheet, display='screen')
+        whiteboards['person_screen'] = style + whiteboard_raw
+        
+        # add print style
+        style = HTMLWriter.write_style(sheet, display='print')
+        whiteboards['person_print'] = style + whiteboard_raw
+
+        return whiteboards    
+
     def get_allocations(self, id_value, id_type, start_date, end_date, freq):
 
         if id_type == 'person':
