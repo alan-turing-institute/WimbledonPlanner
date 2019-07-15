@@ -65,7 +65,7 @@ def update():
 
         # get updated data from Forecast API
         update_to_csv(app.config.get('DATA_DIR'), run_forecast=True,
-                                     run_harvest=False)
+                      run_harvest=False)
 
         # Generate whiteboards
         vis = Visualise(init_harvest=False, data_source='csv',
