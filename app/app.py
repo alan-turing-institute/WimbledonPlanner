@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 def check_dir(directory):
     """Check whether a directory exists, if not make it.
-    
+
     Arguments:
         directory {str} -- path to desired directory.
     """
@@ -40,34 +40,40 @@ def home():
      * <a href="/projects">/projects</a> for projects whiteboard<br>
      * <a href="/people">/people</a> for people whiteboard<br>
      * <a href="/update">/update</a> to update the whiteboards (slow!)<br>
-     * <a href="/download">/download</a> to download the whiteboard visualisations     
+     * <a href="/download">/download</a> to download the whiteboard
+      visualisations
     """.format(updated_at=updated_at)
 
 
 @app.route('/update')
 def update():
-    """Query the Forecast API for the latest data and update the whiteboard visualisations.
-    
+    """Query the Forecast API for the latest data and update the whiteboard
+    visualisations.
+   
     Raises:
-        ValueError: Traceback of what went wrong if something fails during update process.
-    
+        ValueError: Traceback of what went wrong if something fails during
+         update process.
+
     Returns:
         str -- a data updated message (or error string if failed)
     """
     try:
         # time update was triggered
-        # TODO: make this timezone robust (e.g. make it UK time not local system time?)
+        # TODO: make this timezone robust (e.g. make it UK time not local
+        #  system time?)
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
-        # get updated data from Forecast API
-        update_to_csv(app.config.get('DATA_DIR'), run_forecast=True, run_harvest=False)
+        # get updated data from Forecast API
+        update_to_csv(app.config.get('DATA_DIR'), run_forecast=True,
+                                     run_harvest=False)
 
         # Generate whiteboards
-        vis = Visualise(init_harvest=False, data_source='csv', data_dir='../data')
+        vis = Visualise(init_harvest=False, data_source='csv',
+                        data_dir='../data')
 
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
 
-        # Save whiteboards to file
+        # Save whiteboards to file
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
 
         with open(app.config.get('DATA_DIR')+'/figs/projects/projects.html', 'w') as f:
@@ -163,8 +169,8 @@ def download():
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
-        
-        return response 
+
+        return response
 
     except:
         return traceback.format_exc()

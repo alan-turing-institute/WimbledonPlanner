@@ -642,7 +642,14 @@ class Forecast:
             sheet.index.rename('row', 2, inplace=True)
 
             sheet.sort_values(by=['client_name', 'project_name', 'row'], inplace=True)
+            
+            # Move REG projects to end
+            clients = client_name.unique()
+            reg = sorted([client for client in clients if 'REG' in client])
+            others = sorted([client for client in clients if 'REG' not in client])
+            sheet = sheet.reindex(others+reg, level=0)
 
+            # Remove index headings
             sheet.index.rename([None, None, None], inplace=True)
 
             # Get GitHub issue numbers, add as hrefs

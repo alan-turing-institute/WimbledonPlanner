@@ -105,7 +105,7 @@ class Visualise:
 
     def all_whiteboards(self, start_date=None, end_date=None, freq=None, update_timestamp=None):
         """Generate the project and people whiteboards styled for display on screen and for printing.
-        
+
         Keyword Arguments:
             start_date {datetime} -- start date for whiteboard (default: 1 month before today)
             end_date {datetime} -- end date for whiteboard (default: 1 year after today)
@@ -142,12 +142,12 @@ class Visualise:
         # add screen style
         style = HTMLWriter.write_style(sheet, display='screen')
         whiteboards['person_screen'] = style + whiteboard_raw
-        
+               
         # add print style
         style = HTMLWriter.write_style(sheet, display='print')
         whiteboards['person_print'] = style + whiteboard_raw
 
-        return whiteboards    
+        return whiteboards
 
     def get_allocations(self, id_value, id_type, start_date, end_date, freq):
 
@@ -179,7 +179,8 @@ class Visualise:
                 df = self.fc.project_confirmed.copy()
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = DataHandlers.select_date_range(df, start_date, end_date,
+                                                    drop_zero_cols=True)
 
                 # replace person ids with names
                 df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]

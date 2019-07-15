@@ -55,7 +55,7 @@ def get_name_style(name, background_color=None, name_type=None):
             color: red;
             font-weight: 600;
             border: 1px solid red;
-        } 
+        }
         """
 
     elif 'UNCONFIRMED' in name:
@@ -95,7 +95,7 @@ def get_name_style(name, background_color=None, name_type=None):
               font-weight: 600;
               font-size: 16;
               white-space:  normal;
-              width: 300px; 
+              width: 300px;
             }} """.format(name_id=name_id,
                           text_color=text_color,
                           background_color=background_color)
