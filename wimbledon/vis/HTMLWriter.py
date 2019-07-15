@@ -430,15 +430,11 @@ def get_colors(df):
 
 
 def get_group_colors(df):
-    """colour index groups (project programme area or people role) using Turing colours from the brand guidelines"""
-    clients = df.index.get_level_values(0).unique()
+    """colour index groups (project programme area or people role)"""
+    groups = df.index.get_level_values(0).unique()
+    colors = distinctipy.get_colors(len(groups))
 
-    # secondary colours from Turing design guidelines
-    turing_colors = [(0, 0.49, 1), (1, 0.49, 0), (0, 1, 0.49), (1, 0, 0.49),
-                     (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1),
-                     (0.49, 0, 1), (0, 1, 0)]
-
-    group_colors = {clients[idx]: turing_colors[idx % len(turing_colors)] for idx in range(len(clients))}
+    group_colors = {groups[idx]: colors[idx] for idx in range(len(groups))}
     return group_colors
 
 
