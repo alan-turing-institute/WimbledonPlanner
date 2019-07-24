@@ -58,6 +58,15 @@ Browse to the `WimbledonPlanner/scripts` directory then double click on `run_whi
  whiteboard visualisations from the latest Forecast data. The visualisastions are saved in `data/figs/projects` 
  and `data/figs/people`.
 
+## Interactive Notebooks
+
+The Jupyter notebooks `visualise_forecast.ipynb` and `visualise_harvest.ipynb` in the `notebooks` directory get the
+ latest Harvest/Forecast data and display the visualisations, including some interactive widgets
+  to customise/display plots for individual projects, individual people etc. 
+  
+ The `reg_capacity_vs_demand.ipynb` notebook creates the capacity vs. demand history plot originally used for the
+  Trustee board report.
+
 ## Usage with make
 
 To create a python venv with requirements installed, download the latest Forecast and Harvest data, and save
@@ -84,15 +93,6 @@ Or to update the Forecast data and save the whiteboard visualisations only:
 
 The above `make forecast` and `make whiteboard` are much quicker than `make` (few seconds rather than few minutes), 
 and always trigger the data to be updated (i.e. the initial `make clean` step is not required on subsequent runs.)
-
-## Interactive Notebooks
-
-The Jupyter notebooks `visualise_forecast.ipynb` and `visualise_harvest.ipynb` in the `notebooks` directory get the
- latest Harvest/Forecast data and display the visualisations, including some interactive widgets
-  to customise/display plots for individual projects, individual people etc. 
-  
- The `reg_capacity_vs_demand.ipynb` notebook creates the capacity vs. demand history plot originally used for the
-  Trustee board report.
 
 ## Usage with Python
 
