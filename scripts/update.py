@@ -1,4 +1,4 @@
-"""Run this script from the command line whilst in the api directory to update harvest and forecast data.
+"""Run this script fto update harvest and forecast data.
 Usage:
 Update forecast data:
 python update.py forecast
@@ -23,16 +23,20 @@ for arg in sys.argv[1:]:
         print('='*50)
         print('UPDATING HARVEST')
         print('='*50)
-        wimbledon.api.DataUpdater.update_to_csv('../data', run_forecast=False, run_harvest=True)
+        wimbledon.api.DataUpdater.update_to_csv('../data',
+                                                run_forecast=False,
+                                                run_harvest=True)
 
     elif arg == 'forecast':
         print('='*50)
         print('UPDATING FORECAST')
         print('='*50)
-        wimbledon.api.DataUpdater.update_to_csv('../data', run_forecast=True, run_harvest=False)
+        wimbledon.api.DataUpdater.update_to_csv('../data',
+                                                run_forecast=True,
+                                                run_harvest=False)
 
     else:
-        raise ValueError('Invalid argument. Valid options are harvest and forecast.')
+        raise ValueError('Argument should be harvest or forecast.')
 
 print('='*50)
 print('TOTAL UPDATE TIME: {:.1f}s'.format(time.time() - start))
