@@ -7,4 +7,4 @@ fi
 
 initdb -D /usr/local/var/postgres
 
-sh start_localhost.sh
+bash start_localhost.sh

@@ -7,6 +7,18 @@ import sqlalchemy.orm as orm
 import re
 import pandas as pd
 import numpy as np
+from datetime import datetime
+
+# Database setup
+driver = 'postgresql'
+host = 'localhost'
+db = 'wimbledon'
+
+engine = sqla.create_engine(driver + '://' + host + '/' + db)
+schema.Base.metadata.create_all(engine)
+
+Session = orm.sessionmaker(bind=engine)
+session = Session()
 
 
 def to_type_or_none(value, typefn):
@@ -20,6 +32,11 @@ def to_type_or_none(value, typefn):
     except:
         return None
 
+
+def string_to_date(string, fmt='%Y-%m-%d'):
+    return datetime.strptime(string, fmt).date()
+
+# Get Forecast data
 print('=' * 50)
 print('FORECAST')
 print('=' * 50)
@@ -38,6 +55,9 @@ names = list(map(lambda x: to_type_or_none(x, str), names))
 
 clients = [schema.Client(id=ids[i], name=names[i]) for i in range(len(ids))]
 
+session.add_all(clients)
+session.commit()
+
 print(clients)
 
 # Association
@@ -55,6 +75,10 @@ association_groups = {'Placeholder': 0,
 
 associations = [schema.Association(id=idx, name=name)
                 for name, idx in association_groups.items()]
+
+session.add_all(associations)
+session.commit()
+
 print(associations)
 
 # Person
@@ -83,6 +107,10 @@ associations = list(map(lambda x: to_type_or_none(x, int), associations))
 
 people = [schema.Person(id=ids[i], name=names[i], association=associations[i])
           for i in range(len(ids))]
+
+session.add_all(people)
+session.commit()
+
 print(people)
 
 # Placeholders
@@ -103,6 +131,10 @@ placeholders = [schema.Person(id=ids[i],
                               name=names[i],
                               association=associations[i])
                 for i in range(len(ids))]
+
+session.add_all(placeholders)
+session.commit()
+
 print(placeholders)
 
 # Project
@@ -119,8 +151,13 @@ names = list(map(lambda x: to_type_or_none(x, str), names))
 clients = fc['projects'].client_id.values
 clients = list(map(lambda x: to_type_or_none(x, int), clients))
 
-start_dates = pd.to_datetime(fc['projects'].start_date).dt.date.values
-end_dates = pd.to_datetime(fc['projects'].end_date).dt.date.values
+start_dates = fc['projects'].start_date
+start_dates = list(map(lambda x: to_type_or_none(x, string_to_date),
+                       start_dates))
+
+end_dates = fc['projects'].end_date
+end_dates = list(map(lambda x: to_type_or_none(x, string_to_date),
+                     end_dates))
 
 githubs = []
 for string in fc['projects'].tags:
@@ -140,6 +177,10 @@ projects = [schema.Project(id=ids[i],
                            end_date=end_dates[i],
                            github=githubs[i])
             for i in range(len(ids))]
+
+session.add_all(projects)
+session.commit()
+
 print(projects)
 
 # Assignment
@@ -156,8 +197,13 @@ projects = list(map(lambda x: to_type_or_none(x, int), projects))
 people = fc['assignments'].person_id.values
 people = list(map(lambda x: to_type_or_none(x, int), people))
 
-start_dates = pd.to_datetime(fc['assignments'].start_date).dt.date.values
-end_dates = pd.to_datetime(fc['assignments'].end_date).dt.date.values
+start_dates = fc['assignments'].start_date
+start_dates = list(map(lambda x: to_type_or_none(x, string_to_date),
+                       start_dates))
+
+end_dates = fc['assignments'].end_date
+end_dates = list(map(lambda x: to_type_or_none(x, string_to_date),
+                     end_dates))
 
 allocations = fc['assignments'].allocation.values
 allocations = list(map(lambda x: to_type_or_none(x, int), allocations))
@@ -169,6 +215,9 @@ assignments = [schema.Assignment(id=ids[i],
                                  end_date=end_dates[i],
                                  allocation=allocations[i])
                for i in range(len(ids))]
+
+session.add_all(assignments)
+session.commit()
 
 print(assignments)
 
@@ -189,23 +238,3 @@ print(tasks)
 
 # TimeEntry
 """
-
-# Send to database
-driver = 'postgresql'
-host = 'localhost'
-db = 'wimbledon'
-
-engine = sqla.create_engine(driver + '://' + host + '/' + db)
-schema.Base.metadata.create_all(engine)
-
-Session = orm.sessionmaker(bind=engine)
-session = Session()
-
-session.add_all(clients)
-session.add_all(associations)
-session.add_all(people)
-session.add_all(placeholders)
-session.add_all(projects)
-session.add_all(assignments)
-
-session.commit()

@@ -24,7 +24,7 @@ if [[ "$1" = "localhost" ]]; then
 fi
 
 echo "Deleting original database"
-sh delete_db.sh --config ${config}
+bash delete_db.sh --config ${config}
 
 echo "Recreating database schema"
-sh create_schema.sh --config ${config}
+bash create_schema.sh --config ${config}
