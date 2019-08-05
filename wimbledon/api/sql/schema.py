@@ -1,98 +1,59 @@
 import sqlalchemy as sqla
-import sqlalchemy.ext.declarative as decl
-import sqlalchemy.orm as orm
 
-Base = decl.declarative_base()
+metadata = sqla.MetaData()
 
+clients = sqla.Table('clients', metadata,
+                     sqla.Column('id', sqla.Integer, primary_key=True),
+                     sqla.Column('name', sqla.String))
 
-class Client(Base):
-    __tablename__ = 'clients'
+associations = sqla.Table('associations', metadata,
+                          sqla.Column('id', sqla.Integer, primary_key=True),
+                          sqla.Column('name', sqla.String))
 
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
+tasks = sqla.Table('tasks', metadata,
+                   sqla.Column('id', sqla.Integer, primary_key=True),
+                   sqla.Column('name', sqla.String))
 
-    def __repr__(self):
-        return "<Client(name='{:s}')>".format(self.name)
+people = sqla.Table('people', metadata,
+                    sqla.Column('id', sqla.Integer, primary_key=True),
+                    sqla.Column('name', sqla.String),
+                    sqla.Column('association', sqla.Integer,
+                                sqla.ForeignKey('associations.id')))
 
+projects = sqla.Table('projects', metadata,
+                      sqla.Column('id', sqla.Integer, primary_key=True),
+                      sqla.Column('name', sqla.String),
+                      sqla.Column('client', sqla.Integer,
+                                  sqla.ForeignKey('clients.id')),
+                      sqla.Column('github', sqla.Integer),
+                      sqla.Column('start_date', sqla.Date),
+                      sqla.Column('end_date', sqla.Date))
 
-class Association(Base):
-    __tablename__ = 'associations'
+assignments = sqla.Table('assignments', metadata,
+                         sqla.Column('id', sqla.Integer, primary_key=True),
+                         sqla.Column('project', sqla.Integer,
+                                     sqla.ForeignKey('projects.id')),
+                         sqla.Column('person', sqla.Integer,
+                                     sqla.ForeignKey('people.id')),
+                         sqla.Column('start_date', sqla.Date),
+                         sqla.Column('end_date', sqla.Date),
+                         sqla.Column('allocation', sqla.Integer))
 
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-
-    def __repr__(self):
-        return "<Association(name='{:s}')>".format(self.name)
-
-
-class Task(Base):
-    __tablename__ = 'tasks'
-
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-
-    def __repr__(self):
-        return "<Task(name='{0}')>".format(self.name)
-
-
-class Person(Base):
-    __tablename__ = 'people'
-
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-    association = sqla.Column(sqla.Integer, sqla.ForeignKey('associations.id'))
-
-    def __repr__(self):
-        return "<Person(name='{0}')>".format(self.name)
-
-
-class Project(Base):
-    __tablename__ = 'projects'
-
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    name = sqla.Column(sqla.String)
-    client = sqla.Column(sqla.Integer, sqla.ForeignKey('clients.id'))
-    github = sqla.Column(sqla.Integer)
-    start_date = sqla.Column(sqla.Date)
-    end_date = sqla.Column(sqla.Date)
-
-    def __repr__(self):
-        return "<Project(name='{0}')>".format(self.name)
-
-
-class Assignment(Base):
-    __tablename__ = 'assignments'
-
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    project = sqla.Column(sqla.Integer, sqla.ForeignKey('projects.id'))
-    person = sqla.Column(sqla.Integer, sqla.ForeignKey('people.id'))
-    start_date = sqla.Column(sqla.Date)
-    end_date = sqla.Column(sqla.Date)
-    allocation = sqla.Column(sqla.Integer)
-
-    def __repr__(self):
-        return ("<Assignment(project='{0}', person='{1}')>"
-                .format(self.project, self.person))
-
-
-class TimeEntry(Base):
-    __tablename__ = 'time_entries'
-
-    id = sqla.Column(sqla.Integer, primary_key=True)
-    project = sqla.Column(sqla.Integer, sqla.ForeignKey('projects.id'))
-    person = sqla.Column(sqla.Integer, sqla.ForeignKey('people.id'))
-    task = sqla.Column(sqla.Integer, sqla.ForeignKey('tasks.id'))
-    date = sqla.Column(sqla.Date)
-    hours = sqla.Column(sqla.Integer)
-
-    def __repr__(self):
-        return ("<Assignment(project='{0}', person='{1}')>"
-                .format(self.project, self.person))
+time_entries = sqla.Table('time_entries', metadata,
+                          sqla.Column('id', sqla.Integer, primary_key=True),
+                          sqla.Column('project', sqla.Integer,
+                                      sqla.ForeignKey('projects.id')),
+                          sqla.Column('person', sqla.Integer,
+                                      sqla.ForeignKey('people.id')),
+                          sqla.Column('task', sqla.Integer,
+                                      sqla.ForeignKey('tasks.id')),
+                          sqla.Column('date', sqla.Date),
+                          sqla.Column('hours', sqla.Integer))
 
 
 def create_schema(driver='postgresql', host='localhost', db='wimbledon'):
     engine = sqla.create_engine(driver + '://' + host + '/' + db)
-    Base.metadata.create_all(engine)
+    metadata.create_all(engine)
 
 
 if __name__ == '__main__':
