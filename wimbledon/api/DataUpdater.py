@@ -20,11 +20,8 @@ def check_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-'''
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-'''
 
-
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 def get_db_connection():
     config = wimbledon.config.get_sql_config()
 
@@ -95,10 +92,7 @@ def df_to_sql(connection, schema, table_name, df):
 
     df.to_sql(table_name, connection, schema=schema, if_exists='append')
 
-
-'''
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!! /SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-'''
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!! /SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 def get_forecast():

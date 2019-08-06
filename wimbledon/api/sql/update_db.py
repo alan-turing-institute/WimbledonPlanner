@@ -7,13 +7,11 @@ import sys
 import pandas as pd
 
 import wimbledon.config
-"""
-Make database connection
-"""
 
 
 # function to load csv and insert it to database
-def csv_to_sql(file_path, schema, table_name, usecols, parse_dates, ints_with_nan, index_col='id'):
+def csv_to_sql(file_path, schema, table_name, usecols, parse_dates,
+               ints_with_nan, index_col='id'):
     csv = pd.read_csv(file_path,
                       usecols=usecols,
                       index_col=index_col,
@@ -21,11 +19,18 @@ def csv_to_sql(file_path, schema, table_name, usecols, parse_dates, ints_with_na
                       infer_datetime_format=True)
     """
     Function to load csv and insert it to database.
+    
     schema: forecast or harvest
+    
     table_name: name of csv file and of corresponding table in database
+    
     usecols: which columns from csv to send to database
+    
     parse_dates: which columns in usecols are dates
-    ints_with_nan: which columns in usecols are integers but may be interpreted as floats due to missing values
+    
+    ints_with_nan: which columns in usecols are integers but may be interpreted
+    as floats due to missing values
+    
     index_col: which column is the index
     """
 
@@ -51,11 +56,7 @@ def csv_to_sql(file_path, schema, table_name, usecols, parse_dates, ints_with_na
     print(df.head())
 
 
-"""
-Update Harvest Tables
-"""
-
-
+# Update Harvest Tables
 def update_harvest(data_dir):
     csv_to_sql(data_dir+'/clients.csv',
                'harvest', 'clients',
@@ -114,11 +115,7 @@ def update_harvest(data_dir):
                index_col='id')
 
 
-"""
-Update Forecast Tables
-"""
-
-
+# Update Forecast Tables
 def update_forecast(data_dir):
     csv_to_sql(data_dir+'/clients.csv',
                'forecast', 'clients',
