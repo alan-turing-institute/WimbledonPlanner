@@ -22,14 +22,66 @@ def to_type_or_none(value, typefn):
         return None
 
 
-def prep_data(series, typefn):
+def prep_data(series, typefn, convert_dict=None):
     """converts each element in series (a pandas series) using
-    to_type_or_none with typefn"""
+    to_type_or_none with typefn.
+    optionally change values in given series, e.g. to
+    replace forecast ids with harvest ids.
+    convert_dict is an {old_value:new_value dict}"""
+    if convert_dict:
+        series = series.replace(convert_dict)
+        
     return list(map(lambda x: to_type_or_none(x, typefn), series.values))
 
 
 def string_to_date(string, fmt='%Y-%m-%d'):
     return datetime.strptime(string, fmt).date()
+
+
+def convert_index(df):
+    """
+    1. If a harvest_user_id column is present, use that instead
+    of the original index.
+    2. If harvest_user_id is not present, or missing/nan, use the
+    original index value.
+    3. Convert the indices to ints.
+    """
+    if 'harvest_user_id' in df.columns or 'harvest_id' in df.columns:
+        # the original index -> generally forecast ids
+        fc_idx = df.index
+
+        if 'harvest_user_id' in df.columns:
+            hv = df['harvest_user_id']
+        else:
+            hv = df['harvest_id']
+
+        # the desired index -> the harvest ids
+        ids = hv
+        # also keep a dictionary that can be used to convert
+        # between forecast and harvest ids
+        fc_to_hv_dict = hv.to_dict()
+
+        # replace any missing harvest ids with the original
+        # (forecast) ids
+        ids[ids.isnull()] = fc_idx[ids.isnull()].values
+
+    else:
+        ids = df.index
+        fc_to_hv_dict = None
+
+    ids = prep_data(ids, int)
+
+    return ids, fc_to_hv_dict
+
+
+def combine_people_placeholders(people, placeholders):
+    """replace all null values in people (pandas series)
+    with value from placeholders. E.g. to get one column
+    of ids for assignments.
+    people and placeholders should share same index, i.e.
+    columns from same dataframe."""
+    people[people.isnull()] = placeholders[people.isnull()].values
+    return people
 
 
 def make_upsert(table, data, index_elements=['id'], exclude_columns=['id']):
@@ -90,7 +142,7 @@ if __name__ == '__main__':
     print('CLIENTS')
     print('-' * 50)
 
-    ids = prep_data(fc['clients'].index, int)
+    ids, fc_to_hv_clients = convert_index(fc['clients'])
     names = prep_data(fc['clients'].name, str)
 
     clients = [{'id': ids[i],
@@ -119,8 +171,7 @@ if __name__ == '__main__':
     print('PEOPLE')
     print('-' * 50)
 
-    ids = prep_data(fc['people'].index, int)
-
+    ids, fc_to_hv_people = convert_index(fc['people'])
     names = prep_data(fc['people'].first_name + ' ' +
                       fc['people'].last_name, str)
 
@@ -141,7 +192,7 @@ if __name__ == '__main__':
     print('PLACHEOLDERS')
     print('-' * 50)
 
-    ids = prep_data(fc['placeholders'].index, int)
+    ids, _ = convert_index(fc['placeholders'])
     names = prep_data(fc['placeholders'].name, str)
     associations = prep_data(fc['placeholders'].roles.apply(get_assoc_group),
                              int)
@@ -153,7 +204,7 @@ if __name__ == '__main__':
 
     upsert_stmt = make_upsert(schema.people, placeholders)
     conn.execute(upsert_stmt)
-    
+
     print(placeholders)
 
     # Project
@@ -161,9 +212,11 @@ if __name__ == '__main__':
     print('PROJECTS')
     print('-' * 50)
 
-    ids = prep_data(fc['projects'].index, int)
+    ids, fc_to_hv_projects = convert_index(fc['projects'])
     names = prep_data(fc['projects'].name, str)
-    clients = prep_data(fc['projects'].client_id, int)
+    # NB: convert forecast client idx to harvest idx
+    clients = prep_data(fc['projects'].client_id, int,
+                        convert_dict=fc_to_hv_clients)
     start_dates = prep_data(fc['projects'].start_date, string_to_date)
     end_dates = prep_data(fc['projects'].end_date, string_to_date)
 
@@ -194,9 +247,15 @@ if __name__ == '__main__':
     print('ASSIGNMENTS')
     print('-' * 50)
 
-    ids = prep_data(fc['assignments'].index, int)
-    projects = prep_data(fc['assignments'].project_id, int)
-    people = prep_data(fc['assignments'].person_id, int)
+    ids, _ = convert_index(fc['assignments'])
+    # NB: convert forecast project idx to harvest idx
+    projects = prep_data(fc['assignments'].project_id, int, convert_dict=fc_to_hv_projects)
+    # NB: combine people and placeholder ids
+    # and convert forecast person idx to harvest idx
+    people = combine_people_placeholders(fc['assignments'].person_id,
+                                         fc['assignments'].placeholder_id)
+    people = prep_data(people, int, convert_dict=fc_to_hv_people)
+
     start_dates = prep_data(fc['assignments'].start_date, string_to_date)
     end_dates = prep_data(fc['assignments'].end_date, string_to_date)
     allocations = prep_data(fc['assignments'].allocation, int)
@@ -214,7 +273,6 @@ if __name__ == '__main__':
 
     print(assignments)
 
-    """
     print('=' * 50)
     print('HARVEST')
     print('=' * 50)
@@ -224,12 +282,18 @@ if __name__ == '__main__':
     print('-' * 50)
     print('TASKS')
     print('-' * 50)
-    ids = hv['tasks'].index.values
-    names = hv['tasks'].name.values
-    tasks = [schema.Task(id=ids[i], name=names[i]) for i in range(len(ids))]
+    ids, _ = convert_index(hv['tasks'])
+    names = prep_data(hv['tasks'].name, 'str')
+    tasks = [dict(id=ids[i],
+                  name=names[i])
+             for i in range(len(ids))]
+    
+    upsert_stmt = make_upsert(schema.tasks, tasks)
+    conn.execute(upsert_stmt)
+    
     print(tasks)
 
     # TimeEntry
-    """
+    
     
     conn.close()
