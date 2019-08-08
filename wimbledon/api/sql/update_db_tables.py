@@ -131,6 +131,110 @@ if __name__ == '__main__':
     engine = sqla.create_engine(driver + '://' + host + '/' + db)
     conn = engine.connect()
 
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    print('=' * 50)
+    print('HARVEST')
+    print('=' * 50)
+    hv = DataUpdater.get_harvest()
+
+    # Client
+    print('-' * 50)
+    print('CLIENTS')
+    print('-' * 50)
+
+    ids, _ = convert_index(hv['clients'])
+    names = prep_data(hv['clients'].name, str)
+
+    clients = [{'id': ids[i],
+                'name': names[i]}
+               for i in range(len(ids))]
+
+    upsert_stmt = make_upsert(schema.clients, clients)
+    conn.execute(upsert_stmt)
+
+    print(clients)
+
+    # Person
+    print('-' * 50)
+    print('PEOPLE')
+    print('-' * 50)
+
+    ids, fc_to_hv_people = convert_index(hv['users'])
+    names = prep_data(hv['users'].first_name + ' ' +
+                      hv['users'].last_name, str)
+
+    people = [dict(id=ids[i],
+                   name=names[i])
+              for i in range(len(ids))]
+
+    upsert_stmt = make_upsert(schema.people, people)
+    conn.execute(upsert_stmt)
+
+    print(people)
+
+    # Project
+    print('-' * 50)
+    print('PROJECTS')
+    print('-' * 50)
+
+    ids, _ = convert_index(hv['projects'])
+    names = prep_data(hv['projects'].name, str)
+    # NB: convert forecast client idx to harvest idx
+    clients = prep_data(hv['projects']['client.id'], int)
+    start_dates = prep_data(hv['projects']['starts_on'], string_to_date)
+    end_dates = prep_data(hv['projects']['ends_on'], string_to_date)
+    
+    projects = [dict(id=ids[i],
+                     name=names[i],
+                     client=clients[i],
+                     start_date=start_dates[i],
+                     end_date=end_dates[i])
+                for i in range(len(ids))]
+
+    upsert_stmt = make_upsert(schema.projects, projects)
+    conn.execute(upsert_stmt)
+
+    print(projects)
+    
+    # Task
+    print('-' * 50)
+    print('TASKS')
+    print('-' * 50)
+    ids, _ = convert_index(hv['tasks'])
+    names = prep_data(hv['tasks'].name, str)
+
+    tasks = [dict(id=ids[i],
+                  name=names[i])
+             for i in range(len(ids))]
+
+    upsert_stmt = make_upsert(schema.tasks, tasks)
+    conn.execute(upsert_stmt)
+
+    print(tasks)
+
+    # TimeEntry
+    print('-' * 50)
+    print('TIME ENTRIES')
+    print('-' * 50)
+    ids, _ = convert_index(hv['time_entries'])
+    projects = prep_data(hv['time_entries']['project.id'], int)
+    people = prep_data(hv['time_entries']['user.id'], int)
+    tasks = prep_data(hv['time_entries']['task.id'], int)
+    dates = prep_data(hv['time_entries']['spent_date'], string_to_date)
+    hours = prep_data(hv['time_entries']['hours'], int)
+
+    time_entries = [dict(id=ids[i],
+                         project=projects[i],
+                         person=people[i],
+                         task=tasks[i],
+                         date=dates[i],
+                         hours=hours[i])
+                    for i in range(len(ids))]
+
+    upsert_stmt = make_upsert(schema.time_entries, time_entries)
+    conn.execute(upsert_stmt)
+    
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # Get Forecast data
     print('=' * 50)
     print('FORECAST')
@@ -249,7 +353,8 @@ if __name__ == '__main__':
 
     ids, _ = convert_index(fc['assignments'])
     # NB: convert forecast project idx to harvest idx
-    projects = prep_data(fc['assignments'].project_id, int, convert_dict=fc_to_hv_projects)
+    projects = prep_data(fc['assignments'].project_id, int,
+                         convert_dict=fc_to_hv_projects)
     # NB: combine people and placeholder ids
     # and convert forecast person idx to harvest idx
     people = combine_people_placeholders(fc['assignments'].person_id,
@@ -272,28 +377,6 @@ if __name__ == '__main__':
     conn.execute(upsert_stmt)
 
     print(assignments)
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    print('=' * 50)
-    print('HARVEST')
-    print('=' * 50)
-    hv = DataUpdater.get_harvest()
-
-    # Task
-    print('-' * 50)
-    print('TASKS')
-    print('-' * 50)
-    ids, _ = convert_index(hv['tasks'])
-    names = prep_data(hv['tasks'].name, 'str')
-    tasks = [dict(id=ids[i],
-                  name=names[i])
-             for i in range(len(ids))]
-    
-    upsert_stmt = make_upsert(schema.tasks, tasks)
-    conn.execute(upsert_stmt)
-    
-    print(tasks)
-
-    # TimeEntry
-    
-    
     conn.close()
