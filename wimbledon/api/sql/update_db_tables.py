@@ -80,28 +80,10 @@ def combine_people_placeholders(people, placeholders):
     of ids for assignments.
     people and placeholders should share same index, i.e.
     columns from same dataframe."""
+
     people[people.isnull()] = placeholders[people.isnull()].values
+
     return people
-
-
-def make_upsert(table, data, index_elements=['id'], exclude_columns=['id']):
-    """
-    table: sqlalchemy table ojbect
-    data: list of {colname: value} dicts
-    index_elements: index columns to check for conflicts on
-    exclude_columns: don't update these columns
-    """
-
-    insert_stmt = psql_insert(table).values(data)
-
-    update_columns = {col.name: col for col in insert_stmt.excluded
-                      if col.name not in exclude_columns}
-
-    upsert_stmt = insert_stmt.on_conflict_do_update(
-                    index_elements=index_elements,
-                    set_=update_columns)
-
-    return upsert_stmt
 
 
 association_groups = {'Placeholder': 0,
@@ -122,12 +104,42 @@ def get_assoc_group(role_str):
     return association_groups['Placeholder']
 
 
-if __name__ == '__main__':
-    # Database setup
-    driver = 'postgresql'
-    host = 'localhost'
-    db = 'wimbledon'
+def make_upsert(table, data, conn,
+                index_elements=['id'], exclude_columns=['id']):
+    """
+    table: sqlalchemy table ojbect
+    data: list of {colname: value} dicts
+    conn: db connection to execute upsert on
+    index_elements: index columns to check for conflicts on
+    exclude_columns: don't update these columns
+    """
+    print('First row in data:', data[0])
 
+    insert_stmt = psql_insert(table).values(data)
+
+    update_columns = {col.name: col for col in insert_stmt.excluded
+                      if col.name not in exclude_columns}
+
+    upsert_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=index_elements,
+                    set_=update_columns)
+
+    r = conn.execute(upsert_stmt)
+    
+    print(r.rowcount, 'rows added/updated in', table.name)
+
+
+def delete_not_in_harvest(table, ids, conn):
+    """
+    delete ids in our database that are not present in the
+    harvest/forecast database.
+    """
+    delete_stmt = table.delete().where(table.c.id.notin_(ids))
+    r = conn.execute(delete_stmt)
+    print(r.rowcount, 'rows deleted from', table.name)
+
+
+def update_db(driver, host, db):
     engine = sqla.create_engine(driver + '://' + host + '/' + db)
     conn = engine.connect()
 
@@ -142,97 +154,84 @@ if __name__ == '__main__':
     print('CLIENTS')
     print('-' * 50)
 
-    ids, _ = convert_index(hv['clients'])
+    client_hv_ids, _ = convert_index(hv['clients'])
     names = prep_data(hv['clients'].name, str)
 
-    clients = [{'id': ids[i],
+    clients = [{'id': client_hv_ids[i],
                 'name': names[i]}
-               for i in range(len(ids))]
+               for i in range(len(client_hv_ids))]
 
-    upsert_stmt = make_upsert(schema.clients, clients)
-    conn.execute(upsert_stmt)
-
-    print(clients)
+    make_upsert(schema.clients, clients, conn)
 
     # Person
     print('-' * 50)
     print('PEOPLE')
     print('-' * 50)
 
-    ids, fc_to_hv_people = convert_index(hv['users'])
+    people_hv_ids, fc_to_hv_people = convert_index(hv['users'])
     names = prep_data(hv['users'].first_name + ' ' +
                       hv['users'].last_name, str)
 
-    people = [dict(id=ids[i],
+    people = [dict(id=people_hv_ids[i],
                    name=names[i])
-              for i in range(len(ids))]
+              for i in range(len(people_hv_ids))]
 
-    upsert_stmt = make_upsert(schema.people, people)
-    conn.execute(upsert_stmt)
-
-    print(people)
-
+    make_upsert(schema.people, people, conn)
+    
     # Project
     print('-' * 50)
     print('PROJECTS')
     print('-' * 50)
 
-    ids, _ = convert_index(hv['projects'])
+    project_hv_ids, _ = convert_index(hv['projects'])
     names = prep_data(hv['projects'].name, str)
     # NB: convert forecast client idx to harvest idx
     clients = prep_data(hv['projects']['client.id'], int)
     start_dates = prep_data(hv['projects']['starts_on'], string_to_date)
     end_dates = prep_data(hv['projects']['ends_on'], string_to_date)
     
-    projects = [dict(id=ids[i],
+    projects = [dict(id=project_hv_ids[i],
                      name=names[i],
                      client=clients[i],
                      start_date=start_dates[i],
                      end_date=end_dates[i])
-                for i in range(len(ids))]
+                for i in range(len(project_hv_ids))]
 
-    upsert_stmt = make_upsert(schema.projects, projects)
-    conn.execute(upsert_stmt)
-
-    print(projects)
+    make_upsert(schema.projects, projects, conn)
     
     # Task
     print('-' * 50)
     print('TASKS')
     print('-' * 50)
-    ids, _ = convert_index(hv['tasks'])
+    task_ids, _ = convert_index(hv['tasks'])
     names = prep_data(hv['tasks'].name, str)
 
-    tasks = [dict(id=ids[i],
+    tasks = [dict(id=task_ids[i],
                   name=names[i])
-             for i in range(len(ids))]
+             for i in range(len(task_ids))]
 
-    upsert_stmt = make_upsert(schema.tasks, tasks)
-    conn.execute(upsert_stmt)
-
-    print(tasks)
+    make_upsert(schema.tasks, tasks, conn)
 
     # TimeEntry
     print('-' * 50)
     print('TIME ENTRIES')
     print('-' * 50)
-    ids, _ = convert_index(hv['time_entries'])
+    time_entry_ids, _ = convert_index(hv['time_entries'])
     projects = prep_data(hv['time_entries']['project.id'], int)
     people = prep_data(hv['time_entries']['user.id'], int)
     tasks = prep_data(hv['time_entries']['task.id'], int)
     dates = prep_data(hv['time_entries']['spent_date'], string_to_date)
     hours = prep_data(hv['time_entries']['hours'], int)
 
-    time_entries = [dict(id=ids[i],
+    time_entries = [dict(id=time_entry_ids[i],
                          project=projects[i],
                          person=people[i],
                          task=tasks[i],
                          date=dates[i],
                          hours=hours[i])
-                    for i in range(len(ids))]
+                    for i in range(len(time_entry_ids))]
 
-    upsert_stmt = make_upsert(schema.time_entries, time_entries)
-    conn.execute(upsert_stmt)
+    make_upsert(schema.time_entries, time_entries, conn)
     
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # Get Forecast data
@@ -246,17 +245,14 @@ if __name__ == '__main__':
     print('CLIENTS')
     print('-' * 50)
 
-    ids, fc_to_hv_clients = convert_index(fc['clients'])
+    client_fc_ids, fc_to_hv_clients = convert_index(fc['clients'])
     names = prep_data(fc['clients'].name, str)
 
-    clients = [{'id': ids[i],
+    clients = [{'id': client_fc_ids[i],
                 'name': names[i]}
-               for i in range(len(ids))]
+               for i in range(len(client_fc_ids))]
 
-    upsert_stmt = make_upsert(schema.clients, clients)
-    conn.execute(upsert_stmt)
-
-    print(clients)
+    make_upsert(schema.clients, clients, conn)
 
     # Association
     print('-' * 50)
@@ -265,58 +261,49 @@ if __name__ == '__main__':
     associations = [dict(id=idx, name=name)
                     for name, idx in association_groups.items()]
 
-    upsert_stmt = make_upsert(schema.associations, associations)
-    conn.execute(upsert_stmt)
-
-    print(associations)
+    make_upsert(schema.associations, associations, conn)
 
     # Person
     print('-' * 50)
     print('PEOPLE')
     print('-' * 50)
 
-    ids, fc_to_hv_people = convert_index(fc['people'])
+    people_fc_ids, fc_to_hv_people = convert_index(fc['people'])
     names = prep_data(fc['people'].first_name + ' ' +
                       fc['people'].last_name, str)
 
     associations = prep_data(fc['people'].roles.apply(get_assoc_group), int)
 
-    people = [dict(id=ids[i],
+    people = [dict(id=people_fc_ids[i],
                    name=names[i],
                    association=associations[i])
-              for i in range(len(ids))]
+              for i in range(len(people_fc_ids))]
 
-    upsert_stmt = make_upsert(schema.people, people)
-    conn.execute(upsert_stmt)
-
-    print(people)
+    make_upsert(schema.people, people, conn)
 
     # Placeholders
     print('-' * 50)
     print('PLACHEOLDERS')
     print('-' * 50)
 
-    ids, _ = convert_index(fc['placeholders'])
+    placeholder_ids, _ = convert_index(fc['placeholders'])
     names = prep_data(fc['placeholders'].name, str)
     associations = prep_data(fc['placeholders'].roles.apply(get_assoc_group),
                              int)
 
-    placeholders = [dict(id=ids[i],
+    placeholders = [dict(id=placeholder_ids[i],
                          name=names[i],
                          association=associations[i])
-                    for i in range(len(ids))]
+                    for i in range(len(placeholder_ids))]
 
-    upsert_stmt = make_upsert(schema.people, placeholders)
-    conn.execute(upsert_stmt)
-
-    print(placeholders)
+    make_upsert(schema.people, placeholders, conn)
 
     # Project
     print('-' * 50)
     print('PROJECTS')
     print('-' * 50)
 
-    ids, fc_to_hv_projects = convert_index(fc['projects'])
+    project_fc_ids, fc_to_hv_projects = convert_index(fc['projects'])
     names = prep_data(fc['projects'].name, str)
     # NB: convert forecast client idx to harvest idx
     clients = prep_data(fc['projects'].client_id, int,
@@ -333,25 +320,22 @@ if __name__ == '__main__':
         else:
             githubs.append(None)
 
-    projects = [dict(id=ids[i],
+    projects = [dict(id=project_fc_ids[i],
                      name=names[i],
                      client=clients[i],
                      start_date=start_dates[i],
                      end_date=end_dates[i],
                      github=githubs[i])
-                for i in range(len(ids))]
+                for i in range(len(project_fc_ids))]
 
-    upsert_stmt = make_upsert(schema.projects, projects)
-    conn.execute(upsert_stmt)
-
-    print(projects)
+    make_upsert(schema.projects, projects, conn)
 
     # Assignment
     print('-' * 50)
     print('ASSIGNMENTS')
     print('-' * 50)
 
-    ids, _ = convert_index(fc['assignments'])
+    assignment_ids, _ = convert_index(fc['assignments'])
     # NB: convert forecast project idx to harvest idx
     projects = prep_data(fc['assignments'].project_id, int,
                          convert_dict=fc_to_hv_projects)
@@ -365,18 +349,50 @@ if __name__ == '__main__':
     end_dates = prep_data(fc['assignments'].end_date, string_to_date)
     allocations = prep_data(fc['assignments'].allocation, int)
 
-    assignments = [dict(id=ids[i],
+    assignments = [dict(id=assignment_ids[i],
                         project=projects[i],
                         person=people[i],
                         start_date=start_dates[i],
                         end_date=end_dates[i],
                         allocation=allocations[i])
-                   for i in range(len(ids))]
+                   for i in range(len(assignment_ids))]
 
-    upsert_stmt = make_upsert(schema.assignments, assignments)
-    conn.execute(upsert_stmt)
+    make_upsert(schema.assignments, assignments, conn)
 
-    print(assignments)
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    print('-' * 50)
+    print('DELETIONS - Rows no longer in Harvest/Forecast')
+    print('-' * 50)
+    # Delete ids that are no longer in Forecast/Harvest
+    # NB: ORDER IS IMPORTANT!! E.g. Must delete assignments to a project before
+    # that project can be deleted.
+    delete_not_in_harvest(schema.assignments, assignment_ids, conn)
+
+    delete_not_in_harvest(schema.time_entries, time_entry_ids, conn)
+
+    delete_not_in_harvest(schema.projects,
+                          project_fc_ids + project_hv_ids,
+                          conn)
+
+    delete_not_in_harvest(schema.people,
+                          placeholder_ids + people_fc_ids + people_hv_ids,
+                          conn)
+
+    delete_not_in_harvest(schema.clients,
+                          client_fc_ids + client_hv_ids,
+                          conn)
+    
+    delete_not_in_harvest(schema.tasks, task_ids, conn)
 
     conn.close()
+
+
+if __name__ == '__main__':
+    # Database setup
+    driver = 'postgresql'
+    host = 'localhost'
+    db = 'wimbledon'
+
+    # disable SettingWithCopyWarning
+    with pd.option_context('mode.chained_assignment', None):
+        update_db(driver, host, db)
