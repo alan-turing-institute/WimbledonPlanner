@@ -13,7 +13,7 @@ python update.py harvest forecast
 """
 
 import sys
-import wimbledon.api.DataUpdater
+import wimbledon.harvest.api_interface
 import time
 
 start = time.time()
@@ -23,17 +23,17 @@ for arg in sys.argv[1:]:
         print('='*50)
         print('UPDATING HARVEST')
         print('='*50)
-        wimbledon.api.DataUpdater.update_to_csv('../data',
-                                                run_forecast=False,
-                                                run_harvest=True)
+        wimbledon.harvest.api_interface.update_to_csv('../data',
+                                                      run_forecast=False,
+                                                      run_harvest=True)
 
     elif arg == 'forecast':
         print('='*50)
         print('UPDATING FORECAST')
         print('='*50)
-        wimbledon.api.DataUpdater.update_to_csv('../data',
-                                                run_forecast=True,
-                                                run_harvest=False)
+        wimbledon.harvest.api_interface.update_to_csv('../data',
+                                                      run_forecast=True,
+                                                      run_harvest=False)
 
     else:
         raise ValueError('Argument should be harvest or forecast.')

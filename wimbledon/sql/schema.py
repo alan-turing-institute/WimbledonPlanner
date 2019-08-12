@@ -1,5 +1,5 @@
 import sqlalchemy as sqla
-import wimbledon.api.sql.db_utils as db_utils
+import wimbledon.sql.db_utils as db_utils
 
 metadata = sqla.MetaData()
 
@@ -56,8 +56,9 @@ def create_schema(engine=None):
     if engine is None:
         engine = db_utils.get_db_engine()
 
-    print('Creating database schema on ', engine.url)
+    print('Creating database schema on ', engine.url, '...')
     metadata.create_all(engine)
+    print('Done.')
 
 
 if __name__ == '__main__':

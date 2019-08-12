@@ -1,5 +1,5 @@
-import wimbledon.api.sql.schema as schema
-from wimbledon.api import DataUpdater
+import wimbledon.sql.schema as schema
+from wimbledon.harvest import api_interface
 import wimbledon.api.sql.db_utils as db_utils
 
 import sqlalchemy as sqla
@@ -112,7 +112,7 @@ def update_db(conn=None):
     print('=' * 50)
     print('HARVEST')
     print('=' * 50)
-    hv = DataUpdater.get_harvest()
+    hv = api_interface.get_harvest()
 
     # Client
     print('-' * 50)
@@ -203,7 +203,7 @@ def update_db(conn=None):
     print('=' * 50)
     print('FORECAST')
     print('=' * 50)
-    fc = DataUpdater.get_forecast()
+    fc = api_interface.get_forecast()
 
     # Client
     print('-' * 50)

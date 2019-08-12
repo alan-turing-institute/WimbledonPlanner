@@ -21,80 +21,6 @@ def check_dir(directory):
         os.makedirs(directory)
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!! SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-def get_db_connection():
-    config = wimbledon.config.get_sql_config()
-
-    if config['host'] == 'localhost':
-        url = sqla.engine.url.URL(drivername=config['drivername'],
-                                  host=config['host'],
-                                  database=config['database'])
-
-        subprocess.call(['sh', 'make_clean_db.sh', '--config', 'localhost'],
-                        cwd=wimbledon.config.get_wimbledon_path()+'/api/sql')
-
-    else:
-        url = sqla.engine.url.URL(drivername=config['drivername'],
-                                  username=config['username'],
-                                  password=config['password'],
-                                  host=config['host'],
-                                  database=config['database'])
-
-        subprocess.call(['sh', 'make_clean_db.sh', '--config', 'azure'],
-                        cwd=wimbledon.config.get_wimbledon_path()+'/api/sql')
-
-    engine = sqla.create_engine(url)
-    connection = engine.connect()
-
-    return connection
-
-
-# function to load csv and insert it to database
-def df_to_sql(connection, schema, table_name, df):
-
-    """
-    Function to send df to database.
-    schema: forecast or harvest
-    table_name: name of table in database
-    usecols: which columns from df to send to database
-    parse_dates: which columns in usecols are dates
-    ints_with_nan: which columns in usecols are integers but may be interpreted as floats due to missing values
-    index_col: which column is the index
-    """
-
-    ints_with_nan = ['harvest_id', 'client_id', 'harvest_role_id', 'harvest_user_id',
-                     'person_id', 'placeholder_id', 'project_id', 'client.id',
-                     'user.id', 'project.id', 'task.id']
-
-    for col in ints_with_nan:
-        if col in df.columns:
-            # Integer columns with NaN: Requires pandas 0.24 (otherwise ids end up as floats)
-            df[col] = df[col].astype('Int64')
-
-    parse_dates = ['start_date', 'end_date', 'date', 'starts_on', 'ends_on', 'spent_date']
-
-    for col in parse_dates:
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], infer_datetime_format=True)
-
-    df.columns = df.columns.str.replace('.', '_')
-
-    query = """
-    SELECT * FROM information_schema.columns 
-    WHERE table_schema='{schema}' AND table_name='{table_name};'
-    """.format(schema=schema, table_name=table_name)
-
-    columns = connection.execute(query).fetchall()
-    columns = [col[3] for col in columns]
-    usecols = [col for col in columns if col in df.columns]
-
-    df = df[usecols]
-
-    df.to_sql(table_name, connection, schema=schema, if_exists='append')
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!! /SQL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 def get_forecast():
     """
     Extract forecast data from its API using the pyforecast package.
@@ -360,16 +286,3 @@ def update_to_csv(data_dir, run_forecast=True, run_harvest=True):
 
         for (key, df) in harvest_data.items():
             df.to_csv(data_dir+'/harvest/'+key+'.csv')
-
-
-def update_to_sql():
-    forecast_data = get_forecast()
-    harvest_data = get_harvest()
-
-    connection = get_db_connection()
-
-    for (key, df) in harvest_data.items():
-        df_to_sql(connection, 'harvest', key, df)
-
-    for (key, df) in forecast_data.items():
-        df_to_sql(connection, 'forecast', key, df)

@@ -9,7 +9,9 @@ import numpy as np
 
 import wimbledon.config
 import wimbledon.harvest.api_interface
-import wimbledon.sql.update_db
+from wimbledon.sql import update_db
+from wimbledon.sql import query_db
+
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date
@@ -40,26 +42,24 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
     return df_slice
 
 
-class Forecast:
+class Wimbledon:
     """Load and group Forecast data"""
-    def __init__(self, data_source='api', data_dir='', hrs_per_day=None):
+    def __init__(self,
+                 update_db=False,
+                 work_hrs_per_day=None,
+                 proj_hrs_per_day=None):
 
-        if data_source == 'api':
-            data = wimbledon.harvest.api_interface.get_forecast()
+        if update_db:
+            update_db()
 
-            self.people = data['people']
-            self.projects = data['projects']
-            self.placeholders = data['placeholders']
-            self.assignments = data['assignments']
-            self.clients = data['clients']
-
-        elif data_source == 'csv':
-            self.people, self.projects, self.placeholders, self.assignments, self.clients = self.load_csv_data(data_dir)
-
-        elif data_source == 'sql':
-            self.people, self.projects, self.placeholders, self.assignments, self.clients = self.load_sql_data()
-        else:
-            raise ValueError('data_source must be api, csv, sql')
+        data = query_db.get_data()
+        self.people = data['people']
+        self.projects = data['projects']
+        self.assignments = data['assignments']
+        self.clients = data['clients']
+        self.tasks = data['tasks']
+        self.time_entries = data['time_entries']
+        self.associations = data['associations']
 
         # Find the earliest and latest date in the data, create a range
         # of weekdays between these dates
@@ -68,11 +68,17 @@ class Forecast:
                             self.assignments['end_date'].max()
                           )
 
-        # 1 FTE hours per day for projects
-        if hrs_per_day is None:
-            self.hrs_per_day = 8
+        # 1 FTE hours per day
+        if work_hrs_per_day is None:
+            self.work_hrs_per_day = 8
         else:
-            self.hrs_per_day = hrs_per_day
+            self.work_hrs_per_day = work_hrs_per_day
+        
+        # hours per day nominally for projects
+        if proj_hrs_per_day is None:
+            self.proj_hrs_per_day = 6.4
+        else:
+            self.proj_hrs_per_day = proj_hrs_per_day
 
         # Convert allocations to FTE equivalents, construct some columns from tags etc
         self.process_data()
@@ -173,120 +179,29 @@ class Forecast:
 
         return people, projects, placeholders, assignments, clients
 
-    def load_sql_data(self):
-        """load data from sql database defined by ../sql/config.json, which must be a json containing
-        host: the server name (url)
-        database: the name of the database on the server
-        drivername: the type of database it is, e.g. postgresql"""
-
-        config = wimbledon.config.get_sql_config()
-
-        if config['host'] == 'localhost':
-            url = sqla.engine.url.URL(drivername=config['drivername'],
-                                      host=config['host'],
-                                      database=config['database'])
-
-            subprocess.call(['sh', '../sql/start_localhost.sh'], cwd='../sql')
-
-        else:
-            with open(os.path.expanduser("~/.pgpass"), 'r') as f:
-                secrets = None
-                for line in f:
-                    if config['host'] in line:
-                        secrets = line.strip().split(':')
-                        break
-
-            if secrets is None:
-                raise ValueError('did not find ' + config.wimbledon_config['host'] + ' in ~/.pgpass')
-
-            url = sqla.engine.url.URL(drivername=config['drivername'],
-                                      username=secrets[-2],
-                                      password=secrets[-1],
-                                      host=config['host'],
-                                      database=config['database'])
-
-        engine = sqla.create_engine(url)
-
-        connection = engine.connect()
-
-        people = pd.read_sql_table('people', connection, schema='forecast',
-                                   index_col='id')
-
-        clients = pd.read_sql_table('clients', connection, schema='forecast',
-                                    index_col='id')
-
-        projects = pd.read_sql_table('projects', connection, schema='forecast',
-                                     index_col='id',
-                                     parse_dates=['start_date', 'end_date'])
-
-        placeholders = pd.read_sql_table('placeholders', connection, schema='forecast',
-                                         index_col='id')
-
-        assignments = pd.read_sql_table('assignments', connection, schema='forecast',
-                                        index_col='id',
-                                        parse_dates=['start_date', 'end_date'])
-
-        return people, projects, placeholders, assignments, clients
-
     def process_data(self):
-        # assign missing capacities as 1 FTE, given by self.hrs_per_day, 5 days per week
-        self.people['weekly_capacity'].fillna(self.hrs_per_day * 5 * 60 * 60, inplace=True)
+        # assign missing capacities as 1 FTE, given by self.work_hrs_per_day, 5 days per week
+        self.people['weekly_capacity'].fillna(self.work_hrs_per_day * 5 * 60 * 60, inplace=True)
 
-        # convert capacity into FTE at self.hrs_per_day hours per day
-        self.people['weekly_capacity'] = self.people['weekly_capacity'] / (self.hrs_per_day * 5 * 60 * 60)
-
-        self.people['full_name'] = self.people['first_name'] + ' ' + self.people['last_name']
+        # convert capacity into FTE at self.work_hrs_per_day hours per day
+        self.people['weekly_capacity'] = self.people['weekly_capacity'] / (self.work_hrs_per_day * 5 * 60 * 60)
 
         # remove project managers
         self.people = self.people[self.people.roles != "['Research Project Manager']"]
 
-        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.hrs_per_day)
-        self.assignments['allocation'] = self.assignments['allocation'] / (self.hrs_per_day * 60 * 60)
-
-        # project colon separated tags to columns
-        for idx, row in self.projects.iterrows():
-            tags = re.findall(r"(?<=\')(.*?)(?=[\'\,])", str(row['tags']))
-
-            for tag in tags:
-                if ':' in tag:
-                    split_tag = tag.split(':')
-                    column = split_tag[0].strip()
-                    value = split_tag[1].strip()
-
-                    self.projects.loc[idx, column] = value
-
-        # project/placeholder: extract capacity group
-        def association_group(role_str):
-            if 'REG Director' in role_str:
-                return 'REG Director'
-            elif 'REG Principal' in role_str:
-                return 'REG Principal'
-            elif 'REG Senior' in role_str:
-                return 'REG Senior'
-            elif 'REG Permanent' in role_str:
-                return 'REG Permanent'
-            elif 'REG FTC' in role_str:
-                return 'REG FTC'
-            elif 'REG Associate' in role_str:
-                return 'REG Associate'
-            elif 'University Partner' in role_str:
-                return 'University Partner'
-            else:
-                return 'Placeholder'
-
-        self.people['association_group'] = self.people['roles'].apply(association_group)
-        self.placeholders['association_group'] = self.placeholders['roles'].apply(association_group)
+        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.work_hrs_per_day)
+        self.assignments['allocation'] = self.assignments['allocation'] / (self.work_hrs_per_day * 60 * 60)
 
     def get_person_name(self, person_id):
-        """Get the full name of someone from their person_id"""
-        return self.people.loc[person_id, 'first_name'] + ' ' + self.people.loc[person_id, 'last_name']
+        """Get the name of someone from their person_id"""
+        return self.people.loc[person_id, 'name']
 
-    def get_person_id(self, full_name):
+    def get_person_id(self, name):
         """Get the person_id of someone from their first_name and last_name."""
-        person_id = self.people.loc[(self.people['full_name'] == full_name)]
+        person_id = self.people.loc[(self.people['name'] == name)]
 
         if len(person_id) != 1:
-            raise ValueError('Could not unique person with name ' + full_name)
+            raise ValueError('Could not unique person with name ' + name)
 
         return person_id.index[0]
 
@@ -301,18 +216,6 @@ class Forecast:
     def get_client_id(self, client_name):
         return self.clients.index[self.clients.name == client_name][0]
 
-    def get_harvest_id(self, forecast_id):
-        """get the harvest id of a forecast project."""
-        return self.projects.loc[forecast_id, 'harvest_id']
-
-    def get_placeholder_name(self, placeholder_id):
-        """Get the name of a placeholder from its id"""
-        return self.placeholders.loc[placeholder_id, 'name']
-
-    def get_placeholder_id(self, placeholder_name):
-        """Get the id of a placeholder from its name"""
-        return self.placeholders.index[self.placeholders.name == placeholder_name][0]
-
     def get_name(self, id_value, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
         'person', 'project' or 'placeholder'"""
@@ -326,10 +229,9 @@ class Forecast:
 
         elif id_type == 'project':
             return self.get_project_name(id_value)
-        elif id_type == 'placeholder':
-            return self.get_placeholder_name(id_value)
+
         else:
-            raise ValueError('id_type must be person, project or placeholder')
+            raise ValueError('id_type must be person or project')
 
     def get_id(self, name, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
@@ -344,10 +246,9 @@ class Forecast:
 
         elif id_type == 'project':
             return self.get_project_id(name)
-        elif id_type == 'placeholder':
-            return self.get_placeholder_id(name)
+
         else:
-            raise ValueError('id_type must be person, project or placeholder')
+            raise ValueError('id_type must be person or project')
 
     def get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,
@@ -365,14 +266,8 @@ class Forecast:
             id_values = self.projects.index
             ref_column = 'person_id'
 
-        elif id_column == 'placeholder':
-            grouped_allocations = self.assignments.groupby(
-                ['placeholder_id', 'project_id', 'start_date', 'end_date']).allocation.sum()
-            id_values = self.placeholders.index
-            ref_column = 'project_id'
-
         else:
-            raise ValueError('id_column must be person, project or placeholder')
+            raise ValueError('id_column must be person or project')
 
         allocations = {}
 

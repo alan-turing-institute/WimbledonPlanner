@@ -1,7 +1,7 @@
 from flask import Flask, send_from_directory
 
 from wimbledon.vis.Visualise import Visualise
-from wimbledon.api.DataUpdater import update_to_csv
+from wimbledon.harvest.api_interface import update_to_csv
 
 import os
 import zipfile
