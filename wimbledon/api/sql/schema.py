@@ -1,4 +1,5 @@
 import sqlalchemy as sqla
+import wimbledon.api.sql.db_utils as db_utils
 
 metadata = sqla.MetaData()
 
@@ -51,8 +52,11 @@ time_entries = sqla.Table('time_entries', metadata,
                           sqla.Column('hours', sqla.Integer))
 
 
-def create_schema(driver='postgresql', host='localhost', db='wimbledon'):
-    engine = sqla.create_engine(driver + '://' + host + '/' + db)
+def create_schema(engine=None):
+    if engine is None:
+        engine = db_utils.get_db_engine()
+
+    print('Creating database schema on ', engine.url)
     metadata.create_all(engine)
 
 

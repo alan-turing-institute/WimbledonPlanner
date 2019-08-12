@@ -40,7 +40,13 @@ while [[ "$1" != "" ]]; do
 done
 
 if [[ "$1" = "localhost" ]]; then
-    sh start_localhost.sh
+    pg_isready -q -h localhost
+    online=$?
+
+    if [[ ${online} -ne 0 ]]; then
+        echo "attempting to start server"
+        pg_ctl start -D /usr/local/var/postgres -l logfile
+    fi
 fi
 
 psql --host=${host} --port=${port} --username=${username} --dbname=${dbname} -f delete_db.sql

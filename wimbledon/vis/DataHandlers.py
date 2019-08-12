@@ -12,7 +12,8 @@ import wimbledon.api.DataUpdater
 
 
 def get_business_days(start_date, end_date):
-    """Get a daily time series between start_date and end_date excluding weekends and public holidays."""
+    """Get a daily time series between start_date and end_date
+    excluding weekends and public holidays."""
 
     date_range = pd.date_range(start=start_date,
                                end=end_date,
@@ -20,7 +21,8 @@ def get_business_days(start_date, end_date):
 
     # remove public holidays
     pub_hols = holidays.England()
-    date_range = pd.to_datetime([date for date in date_range if date not in pub_hols])
+    date_range = pd.to_datetime([date for date in date_range
+                                 if date not in pub_hols])
 
     return date_range
 
@@ -59,8 +61,12 @@ class Forecast:
         else:
             raise ValueError('data_source must be api, csv, sql')
 
-        # Find the earliest and latest date in the data, create a range of weekdays between these dates
-        self.date_range = get_business_days(self.assignments['start_date'].min(), self.assignments['end_date'].max())
+        # Find the earliest and latest date in the data, create a range
+        # of weekdays between these dates
+        self.date_range = get_business_days(
+                            self.assignments['start_date'].min(),
+                            self.assignments['end_date'].max()
+                          )
 
         # 1 FTE hours per day for projects
         if hrs_per_day is None:
