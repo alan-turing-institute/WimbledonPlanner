@@ -59,7 +59,7 @@ def convert_index(df):
         ids = hv
         # also keep a dictionary that can be used to convert
         # between forecast and harvest ids
-        fc_to_hv_dict = hv.to_dict()
+        fc_to_hv_dict = hv.dropna().to_dict()
 
         # replace any missing harvest ids with the original
         # (forecast) ids

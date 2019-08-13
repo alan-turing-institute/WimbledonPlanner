@@ -5,25 +5,25 @@ metadata = sqla.MetaData()
 
 clients = sqla.Table('clients', metadata,
                      sqla.Column('id', sqla.Integer, primary_key=True),
-                     sqla.Column('name', sqla.String))
+                     sqla.Column('name', sqla.String, nullable=False))
 
 associations = sqla.Table('associations', metadata,
                           sqla.Column('id', sqla.Integer, primary_key=True),
-                          sqla.Column('name', sqla.String))
+                          sqla.Column('name', sqla.String, nullable=False))
 
 tasks = sqla.Table('tasks', metadata,
                    sqla.Column('id', sqla.Integer, primary_key=True),
-                   sqla.Column('name', sqla.String))
+                   sqla.Column('name', sqla.String, nullable=False))
 
 people = sqla.Table('people', metadata,
                     sqla.Column('id', sqla.Integer, primary_key=True),
-                    sqla.Column('name', sqla.String),
+                    sqla.Column('name', sqla.String, nullable=False),
                     sqla.Column('association', sqla.Integer,
                                 sqla.ForeignKey('associations.id')))
 
 projects = sqla.Table('projects', metadata,
                       sqla.Column('id', sqla.Integer, primary_key=True),
-                      sqla.Column('name', sqla.String),
+                      sqla.Column('name', sqla.String, nullable=False),
                       sqla.Column('client', sqla.Integer,
                                   sqla.ForeignKey('clients.id')),
                       sqla.Column('github', sqla.Integer),
@@ -33,23 +33,29 @@ projects = sqla.Table('projects', metadata,
 assignments = sqla.Table('assignments', metadata,
                          sqla.Column('id', sqla.Integer, primary_key=True),
                          sqla.Column('project', sqla.Integer,
-                                     sqla.ForeignKey('projects.id')),
+                                     sqla.ForeignKey('projects.id'),
+                                     nullable=False),
                          sqla.Column('person', sqla.Integer,
-                                     sqla.ForeignKey('people.id')),
-                         sqla.Column('start_date', sqla.Date),
+                                     sqla.ForeignKey('people.id'),
+                                     nullable=False),
+                         sqla.Column('start_date', sqla.Date,
+                                     nullable=False),
                          sqla.Column('end_date', sqla.Date),
-                         sqla.Column('allocation', sqla.Integer))
+                         sqla.Column('allocation', sqla.Integer,
+                                     nullable=False))
 
 time_entries = sqla.Table('time_entries', metadata,
                           sqla.Column('id', sqla.Integer, primary_key=True),
                           sqla.Column('project', sqla.Integer,
-                                      sqla.ForeignKey('projects.id')),
+                                      sqla.ForeignKey('projects.id'),
+                                      nullable=False),
                           sqla.Column('person', sqla.Integer,
-                                      sqla.ForeignKey('people.id')),
+                                      sqla.ForeignKey('people.id'),
+                                      nullable=False),
                           sqla.Column('task', sqla.Integer,
                                       sqla.ForeignKey('tasks.id')),
-                          sqla.Column('date', sqla.Date),
-                          sqla.Column('hours', sqla.Integer))
+                          sqla.Column('date', sqla.Date, nullable=False),
+                          sqla.Column('hours', sqla.Integer, nullable=False))
 
 
 def create_schema(engine=None):
