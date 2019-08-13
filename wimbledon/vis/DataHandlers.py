@@ -9,7 +9,7 @@ import numpy as np
 
 import wimbledon.config
 import wimbledon.harvest.api_interface
-import wimbledon.sql.update_db
+
 
 def get_business_days(start_date, end_date):
     """Get a daily time series between start_date and end_date

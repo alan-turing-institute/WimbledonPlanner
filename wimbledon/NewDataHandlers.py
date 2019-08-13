@@ -8,8 +8,7 @@ import re
 import numpy as np
 
 import wimbledon.config
-import wimbledon.harvest.api_interface
-from wimbledon.sql import update_db
+from wimbledon.harvest.db_interface import update_db
 from wimbledon.sql import query_db
 
 
@@ -47,20 +46,24 @@ class Wimbledon:
     def __init__(self,
                  update_db=False,
                  work_hrs_per_day=None,
-                 proj_hrs_per_day=None):
+                 proj_hrs_per_day=None,
+                 conn=None,
+                 with_time_entries=True):
 
         if update_db:
             update_db()
 
-        data = query_db.get_data()
+        data = query_db.get_data(conn=conn,
+                                 with_time_entries=with_time_entries)
         self.people = data['people']
         self.projects = data['projects']
         self.assignments = data['assignments']
         self.clients = data['clients']
-        self.tasks = data['tasks']
-        self.time_entries = data['time_entries']
         self.associations = data['associations']
-
+        if with_time_entries:
+            self.tasks = data['tasks']
+            self.time_entries = data['time_entries']
+                
         # Find the earliest and latest date in the data, create a range
         # of weekdays between these dates
         self.date_range = get_business_days(
@@ -80,12 +83,34 @@ class Wimbledon:
         else:
             self.proj_hrs_per_day = proj_hrs_per_day
 
-        # Convert allocations to FTE equivalents, construct some columns from tags etc
-        self.process_data()
+        # TODO remove project managers
+        # self.people = self.people[self.people.roles != "['Research Project Manager']"]
 
+        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.work_hrs_per_day)
+        self.assignments['allocation'] = (self.assignments['allocation'] /
+                                          (self.work_hrs_per_day * 60 * 60))
+        
         # people_allocations: dict with key person_id, contains df of (date, project_id) with allocation
         # people_totals: df of (date, person_id) with total allocations
         self.people_allocations, self.people_totals = self.get_allocations('person')
+       
+        # resource required, unconfirmed, deferred allocations
+        self.resourcereq_allocations = self.get_person_allocations('RESOURCE REQUIRED')
+        self.unconfirmed_allocations = self.get_person_allocations('UNCONFIRMED')
+        self.deferred_allocations = self.get_person_allocations('DEFERRED')
+ 
+        # calculate team capacity: capacity in people table minus any allocations to unavailable project
+        unavailable_id = self.get_project_id('UNAVAILABLE')
+        base_capacity = 1.0
+
+        self.capacity = pd.DataFrame(base_capacity,
+                                     index=self.date_range,
+                                     columns=self.people.index)
+
+        for person_id in self.people.index:
+            if unavailable_id in self.people_allocations[person_id].columns:
+                self.capacity[person_id] = (self.capacity[person_id] -
+                                            self.people_allocations[person_id][unavailable_id])
 
         # project_allocations: dict with key project_id, contains df of (date, person_id) with allocation
         # project_confirmed: df of (date, project_id) with total allocations across PEOPLE ONLY
@@ -97,66 +122,16 @@ class Wimbledon:
         # project_deferred:  df of (date, project_id) with total allocation to deferred placeholders
         self.project_deferred = self.get_project_deferred()
 
-        # project_confirmed: total people + institute + resource_required placeholder allocations to project
         # project_resourcereq: resource_required allocations to each project
-        self.project_confirmed, self.project_resourcereq = self.get_project_required()
+        self.project_resourcereq = self.get_project_required()
 
-        self.project_allocated = self.project_confirmed - self.project_resourcereq
+        # project_confirmed: should not include unconfirmed or deferred totals
+        self.project_confirmed = (self.project_confirmed -
+                                  self.project_unconfirmed -
+                                  self.project_deferred)
 
-        # consolidated allocations for resource required, unconfirmed, deferred (may be split over multiple placeholders
-        # on Forecast)
-        resreq_idx = [idx for idx in self.placeholders.index
-                      if 'resource required' in self.placeholders.loc[idx, 'name'].lower()]
-
-        self.resourcereq_allocations = self.placeholder_allocations[resreq_idx[0]]
-        if len(resreq_idx) > 1:
-            for idx in resreq_idx[1:]:
-                self.resourcereq_allocations = self.resourcereq_allocations.add(self.placeholder_allocations[idx],
-                                                                                fill_value=0)
-
-        unconf_idx = [idx for idx in self.placeholders.index
-                      if 'unconfirmed' in self.placeholders.loc[idx, 'name'].lower()]
-
-        self.unconfirmed_allocations = self.placeholder_allocations[unconf_idx[0]]
-        if len(unconf_idx) > 1:
-            for idx in unconf_idx[1:]:
-                self.unconfirmed_allocations = self.unconfirmed_allocations.add(self.placeholder_allocations[idx],
-                                                                                fill_value=0)
-
-        defer_idx = [idx for idx in self.placeholders.index
-                     if 'deferred' in self.placeholders.loc[idx, 'name'].lower()]
-
-        self.deferred_allocations = self.placeholder_allocations[defer_idx[0]]
-        if len(defer_idx) > 1:
-            for idx in defer_idx[1:]:
-                self.deferred_allocations = self.deferred_allocations.add(self.placeholder_allocations[idx],
-                                                                          fill_value=0)
-
-        # calculate team capacity: capacity in people table minus any allocations to unavailable project
-        unavailable_id = self.get_id('UNAVAILABLE', 'project')
-
-        base_capacity = self.people.weekly_capacity
-
-        self.capacity = pd.DataFrame(index=self.date_range, columns=self.people.index)
-
-        for person_id in self.people.index:
-            self.capacity[person_id] = base_capacity[person_id]
-
-            if unavailable_id in self.people_allocations[person_id].columns:
-                self.capacity[person_id] = self.capacity[person_id] - self.people_allocations[person_id][unavailable_id]
-
-    def process_data(self):
-        # assign missing capacities as 1 FTE, given by self.work_hrs_per_day, 5 days per week
-        self.people['weekly_capacity'].fillna(self.work_hrs_per_day * 5 * 60 * 60, inplace=True)
-
-        # convert capacity into FTE at self.work_hrs_per_day hours per day
-        self.people['weekly_capacity'] = self.people['weekly_capacity'] / (self.work_hrs_per_day * 5 * 60 * 60)
-
-        # remove project managers
-        self.people = self.people[self.people.roles != "['Research Project Manager']"]
-
-        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.work_hrs_per_day)
-        self.assignments['allocation'] = self.assignments['allocation'] / (self.work_hrs_per_day * 60 * 60)
+        self.project_allocated = (self.project_confirmed -
+                                  self.project_resourcereq)
 
     def get_person_name(self, person_id):
         """Get the name of someone from their person_id"""
@@ -217,20 +192,21 @@ class Wimbledon:
             raise ValueError('id_type must be person or project')
 
     def get_allocations(self, id_column):
-        """For each unique value in id_column, create a dataframe where the rows are dates,
-        the columns are projects/people/placeholders depending on id_column, and the values are
-        time allocations for that date. id_column can be 'person', 'project', or 'placeholder'."""
+        """For each unique value in id_column, create a dataframe where
+        the rows are dates, the columns are projects/people depending on
+        id_column, and the values are time allocations for that date.
+        id_column can be 'person' or 'project'."""
         if id_column == 'person':
             grouped_allocations = self.assignments.groupby(
-                ['person_id', 'project_id', 'start_date', 'end_date']).allocation.sum()
+                ['person', 'project', 'start_date', 'end_date']).allocation.sum()
             id_values = self.people.index
-            ref_column = 'project_id'
+            ref_column = 'project'
 
         elif id_column == 'project':
             grouped_allocations = self.assignments.groupby(
-                ['project_id', 'person_id', 'start_date', 'end_date']).allocation.sum()
+                ['project', 'person', 'start_date', 'end_date']).allocation.sum()
             id_values = self.projects.index
-            ref_column = 'person_id'
+            ref_column = 'person'
 
         else:
             raise ValueError('id_column must be person or project')
@@ -248,15 +224,19 @@ class Wimbledon:
                 id_allocs = id_allocs.reset_index()
 
                 # Initialise dataframe to store results
-                id_alloc_days = pd.DataFrame(index=self.date_range, columns=id_allocs[ref_column].unique())
+                id_alloc_days = pd.DataFrame(index=self.date_range,
+                                             columns=id_allocs[ref_column].unique())
                 id_alloc_days.fillna(0, inplace=True)
 
                 # Loop over each assignment
                 for _, row in id_allocs.iterrows():
-                    # Create the range of business days that this assignment corresponds to
-                    dates = get_business_days(row['start_date'], row['end_date'])
+                    # Create the range of business days that this assignment
+                    # corresponds to
+                    dates = get_business_days(row['start_date'],
+                                              row['end_date'])
 
-                    # Add the allocation to the corresponding project for the range of dates.
+                    # Add the allocation to the corresponding project for the
+                    # range of dates.
                     id_alloc_days.loc[dates, row[ref_column]] += row['allocation']
 
             else:
@@ -275,67 +255,60 @@ class Wimbledon:
 
         return allocations, totals
 
+    def get_person_allocations(self, name):
+        idx = self.get_person_id(name)
+        return self.people_allocations[idx]
+
     def get_project_unconfirmed(self):
         """Get unconfirmed project requirements"""
 
-        project_unconf_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('unconfirmed')].index
+        unconf_idx = self.get_person_id('UNCONFIRMED')
 
-        project_unconfirmed = pd.DataFrame(index=self.date_range, columns=self.projects.index)
-        project_unconfirmed[:] = 0
+        project_unconfirmed = pd.DataFrame(0,
+                                           index=self.date_range,
+                                           columns=self.projects.index)
 
-        for idx in project_unconf_ids:
-            allocs = self.placeholder_allocations[idx]
+        allocs = self.people_allocations[unconf_idx]
 
-            for project in allocs.columns:
-                project_unconfirmed[project] += allocs[project]
+        for project in allocs.columns:
+            project_unconfirmed[project] += allocs[project]
 
         return project_unconfirmed
 
     def get_project_deferred(self):
         """Get deferred project allocations"""
 
-        project_defer_ids = self.placeholders[self.placeholders.name.str.lower().str.contains('deferred')].index
+        defer_idx = self.get_person_id('DEFERRED')
 
-        project_deferred = pd.DataFrame(index=self.date_range, columns=self.projects.index)
-        project_deferred[:] = 0
+        project_deferred = pd.DataFrame(0,
+                                        index=self.date_range,
+                                        columns=self.projects.index)
 
-        for idx in project_defer_ids:
-            allocs = self.placeholder_allocations[idx]
+        allocs = self.people_allocations[defer_idx]
 
-            for project in allocs.columns:
-                project_deferred[project] += allocs[project]
+        for project in allocs.columns:
+            project_deferred[project] += allocs[project]
 
         return project_deferred
 
     def get_project_required(self):
-        """Get amount of additional resource that needs to be required over time, i.e. difference between
-        project requirements and project allocations."""
-        # Project requirements = Project assignments + Resource required assignments
-        project_confirmed = self.project_confirmed.copy(deep=True)
+        """Get resource required (i.e. needs someone assigned)
+        for all projects."""
 
-        project_resourcereq = pd.DataFrame(index=self.date_range, columns=self.projects.index)
-        project_resourcereq[:] = 0
+        resreq_idx = self.get_person_id('RESOURCE REQUIRED')
 
-        # add resource req info from placeholders
-        resource_req_ids = []
-        for idx in self.placeholders.index:
-            name = self.placeholders.loc[idx, 'name'].lower()
+        project_resreq = pd.DataFrame(0,
+                                      index=self.date_range,
+                                      columns=self.projects.index)
 
-            if 'resource required' in name:
-                resource_req_ids.append(idx)
+        allocs = self.people_allocations[resreq_idx]
 
-        for idx in resource_req_ids:
-            allocs = self.placeholder_allocations[idx]
+        for project in allocs.columns:
+            project_resreq[project] += allocs[project]
 
-            for project in allocs.columns:
-                project_confirmed[project] += allocs[project]
+        return project_resreq
 
-                if 'resource required' in self.placeholders.loc[idx, 'name'].lower():
-                    project_resourcereq[project] += allocs[project]
-
-        return project_confirmed, project_resourcereq
-
-    def whiteboard(self, key_type, start_date, end_date, freq, add_placeholders=True):
+    def whiteboard(self, key_type, start_date, end_date, freq):
         """Create the raw, unstyled, whiteboard visualisation.
 
          Dataframe with the rows being key_type (project or person ids), the columns
@@ -347,46 +320,8 @@ class Wimbledon:
             # copy to prevent overwriting original
             data_dict = deepcopy(self.project_allocations)
 
-            mask = (self.project_resourcereq.index >= start_date) & (self.project_resourcereq.index <= end_date)
-            resreq = self.project_resourcereq.loc[mask]
-            unconfirmed = self.project_unconfirmed.loc[mask]
-            deferred = self.project_deferred.loc[mask]
-
-            if add_placeholders:
-                # add placeholders to data_dict, excluding resource required placeholders
-                placeholder_ids = []
-                for idx in self.placeholders.index:
-                    name = self.placeholders.loc[idx, 'name'].lower()
-                    if 'resource required' in name:
-                        continue
-                    elif 'unconfirmed' in name:
-                        continue
-                    elif 'deferred' in name:
-                        continue
-                    else:
-                        placeholder_ids.append(idx)
-
-                for placeholder_id in placeholder_ids:
-                    for project_id in self.placeholder_allocations[placeholder_id].columns:
-                        data_dict[project_id].loc[:, placeholder_id] = self.placeholder_allocations[placeholder_id][project_id].copy()
-
         elif key_type == 'person':
             data_dict = deepcopy(self.people_allocations)
-
-            if add_placeholders:
-                # add institute/misc placeholders to data_dict (not resource required, unavailable or deferred)
-                placeholder_ids = [idx for idx in self.placeholders.index
-                                   if 'resource required' not in self.placeholders.loc[idx, 'name'].lower() and
-                                      'unconfirmed' not in self.placeholders.loc[idx, 'name'].lower() and
-                                      'deferred' not in self.placeholders.loc[idx, 'name'].lower()]
-
-                for idx in placeholder_ids:
-                    # copy needed to prevent overwriting original placeholder_allocations df later
-                    data_dict[idx] = self.placeholder_allocations[idx].copy()
-
-                data_dict['Resource Required'] = self.resourcereq_allocations.copy()
-                data_dict['Unconfirmed'] = self.unconfirmed_allocations.copy()
-                data_dict['Deferred'] = self.deferred_allocations.copy()
 
         else:
             return ValueError('key type must be person or project')
@@ -407,20 +342,16 @@ class Wimbledon:
                     # don't display allocations to unavailable project
                     continue
 
-                df.columns = [self.get_name(person_id, 'person') for person_id in df.columns]
+                df.columns = [self.get_name(person_id, 'person')
+                              for person_id in df.columns]
+                
                 df.columns.name = self.get_name(key, 'project')
 
-                df['RESOURCE REQUIRED'] = resreq[key].copy()
-                df['UNCONFIRMED'] = unconfirmed[key].copy()
-                df['DEFERRED'] = deferred[key].copy()
-
             elif key_type == 'person':
-                df.columns = [self.get_name(project_id, 'project') for project_id in df.columns]
+                df.columns = [self.get_name(project_id, 'project')
+                              for project_id in df.columns]
 
-                if (key == 'Resource Required') or (key == 'Unconfirmed') or (key == 'Deferred'):
-                    df.columns.name = key
-                else:
-                    df.columns.name = self.get_name(key, 'person')
+                df.columns.name = self.get_name(key, 'person')
 
             else:
                 return ValueError('key type must be person or project')
@@ -443,16 +374,18 @@ class Wimbledon:
                 if freq != 'D':
                     df = df.resample(freq).mean()
 
-                # sort people (column order) by magnitude of earliest assignment
-                df = df.sort_values(by=[idx for idx in df.index], axis=1, ascending=False)
+                # sort columns by magnitude of earliest assignment
+                df = df.sort_values(by=[idx for idx in df.index],
+                                    axis=1,
+                                    ascending=False)
 
                 # max number items assigned to this key at a time
                 n_columns = (df > 0).sum(axis=1).max()
 
-                # initialise data frame to store projects/people ranked by time assignment
-                key_sheet = pd.DataFrame(index=df.index, columns=range(1, n_columns + 1))
-                # empty strings for blank cells
-                key_sheet[:] = ''
+                # initialise data frame to store ranked time assignments
+                key_sheet = pd.DataFrame('',
+                                         index=df.index,
+                                         columns=range(1, n_columns + 1))
 
                 fill_idx = None
 
@@ -478,16 +411,20 @@ class Wimbledon:
                     key_sheet.loc[nonzero_allocs, fill_idx] = name + df.iloc[nonzero_allocs.values, name_idx].apply(lambda x: '<br>({:.1f})'.format(x))
 
                 # remove unused columns
-                [key_sheet.drop(col, axis=1, inplace=True) for col in key_sheet.columns if
-                 key_sheet[col].str.len().sum() == 0]
+                [key_sheet.drop(col, axis=1, inplace=True)
+                 for col in key_sheet.columns
+                 if key_sheet[col].str.len().sum() == 0]
 
                 # format dates nicely
                 if freq == 'MS':
-                    key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%b-%Y"))
+                    key_sheet = pd.DataFrame(key_sheet,
+                                             index=key_sheet.index.strftime("%b-%Y"))
                 elif freq == 'W-MON':
-                    key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%d-%b-%Y"))
+                    key_sheet = pd.DataFrame(key_sheet,
+                                             index=key_sheet.index.strftime("%d-%b-%Y"))
                 else:
-                    key_sheet = pd.DataFrame(key_sheet, index=key_sheet.index.strftime("%Y-%m-%d"))
+                    key_sheet = pd.DataFrame(key_sheet,
+                                             index=key_sheet.index.strftime("%Y-%m-%d"))
 
                 # store the allocations - transpose to get rows as keys and columns as dates
                 sheet[df.columns.name] = key_sheet.T
@@ -498,8 +435,9 @@ class Wimbledon:
         if key_type == 'project':
 
             # Get project client names
-            proj_idx = [self.get_project_id(name) for name in sheet.index.get_level_values(0)]
-            client_idx = self.projects.loc[proj_idx, 'client_id']
+            proj_idx = [self.get_project_id(name)
+                        for name in sheet.index.get_level_values(0)]
+            client_idx = self.projects.loc[proj_idx, 'client']
             client_name = self.clients.loc[client_idx, 'name']
 
             # Add project client info to index (~programme area)
@@ -508,12 +446,15 @@ class Wimbledon:
             sheet.index.rename('project_name', 1, inplace=True)
             sheet.index.rename('row', 2, inplace=True)
 
-            sheet.sort_values(by=['client_name', 'project_name', 'row'], inplace=True)
+            sheet.sort_values(by=['client_name', 'project_name', 'row'],
+                              inplace=True)
             
             # Move REG projects to end
             clients = client_name.unique()
-            reg = sorted([client for client in clients if 'REG' in client])
-            others = sorted([client for client in clients if 'REG' not in client])
+            reg = sorted([client for client in clients
+                          if 'REG' in client])
+            others = sorted([client for client in clients
+                             if 'REG' not in client])
             sheet = sheet.reindex(others+reg, level=0)
 
             # Remove index headings
@@ -521,8 +462,10 @@ class Wimbledon:
 
             # Get GitHub issue numbers, add as hrefs
             proj_names = sheet.index.levels[1].values
-            proj_idx = [self.get_project_id(name) for name in proj_names]
-            proj_gitissue = [self.projects.loc[idx, 'GitHub'] for idx in proj_idx]
+            proj_idx = [self.get_project_id(name)
+                        for name in proj_names]
+            proj_gitissue = [self.projects.loc[idx, 'github']
+                             for idx in proj_idx]
             git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
 
             proj_names_with_url = {}
@@ -537,22 +480,14 @@ class Wimbledon:
         elif key_type == 'person':
 
             # Get person association group
-            person_idx = []
-            for name in sheet.index.get_level_values(0):
-                try:
-                    person_idx.append(self.get_id(name, 'person'))
-                except (KeyError, ValueError, IndexError):
-                    person_idx.append('Placeholder')
+            person_idx = [self.get_person_id(name)
+                          for name in sheet.index.get_level_values(0)]
 
-            group_name = []
-            for idx in person_idx:
-                if idx == 'Placeholder':
-                    group_name.append('Placeholder')
-                else:
-                    try:
-                        group_name.append(self.people.loc[idx, 'association_group'])
-                    except KeyError:
-                        group_name.append(self.placeholders.loc[idx, 'association_group'])
+            assoc_idx = [self.people.loc[idx, 'association']
+                         for idx in person_idx]
+            
+            group_name = [self.associations.loc[idx, 'name']
+                          for idx in assoc_idx]
 
             # Add project client info to index (~programme area)
             sheet['group_name'] = group_name

@@ -1,3 +1,7 @@
+"""
+Get latest data from Harvest & Forecast APIs and use it to
+update our database.
+"""
 import wimbledon.sql.schema as schema
 import wimbledon.sql.db_utils as db_utils
 from wimbledon.harvest import api_interface
