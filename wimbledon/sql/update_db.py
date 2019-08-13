@@ -1,6 +1,6 @@
 import wimbledon.sql.schema as schema
+import wimbledon.sql.db_utils as db_utils
 from wimbledon.harvest import api_interface
-import wimbledon.api.sql.db_utils as db_utils
 
 import sqlalchemy as sqla
 
@@ -30,7 +30,7 @@ def prep_data(series, typefn, convert_dict=None):
     convert_dict is an {old_value:new_value dict}"""
     if convert_dict:
         series = series.replace(convert_dict)
-        
+
     return list(map(lambda x: to_type_or_none(x, typefn), series.values))
 
 
@@ -72,6 +72,34 @@ def convert_index(df):
     ids = prep_data(ids, int)
 
     return ids, fc_to_hv_dict
+
+
+def merge_placeholders(placeholders,
+                       names=['resource required', 'unconfirmed', 'deferred']):
+    """consolidate names like Resource Required 1 into single placeholder
+    RESOURCE REQUIRED"""
+    
+    # avoid overwriting original df
+    placeholders = placeholders.copy(deep=True)
+    # dictionary of {old key: new key} for merged keys
+    merged_keys_dict = dict()
+    for name in names:
+        # find rows that contain a case insensitive match to name
+        matches = placeholders[
+                    placeholders['name'].str.lower().
+                    str.contains(name.lower())
+                  ].sort_values(by='name')
+
+        # preserve the first match
+        keep_idx = matches.index[0]
+        # keys of remaining matches will be replaced with first one
+        merged_keys_dict.update({idx: keep_idx for idx in matches.index[1:]})
+        # change preserved name to upper case of input name
+        placeholders.loc[keep_idx, 'name'] = name.upper()
+        # drop other matches from df
+        placeholders.drop(matches.index[1:], inplace=True)
+
+    return placeholders, merged_keys_dict
 
 
 def combine_people_placeholders(people, placeholders):
@@ -250,10 +278,12 @@ def update_db(conn=None):
     print('-' * 50)
     print('PLACHEOLDERS')
     print('-' * 50)
-
-    placeholder_ids, _ = convert_index(fc['placeholders'])
-    names = prep_data(fc['placeholders'].name, str)
-    associations = prep_data(fc['placeholders'].roles.apply(get_assoc_group),
+    
+    # consolidate placeholder names
+    placeholders, merged_placeholders = merge_placeholders(fc['placeholders'])
+    placeholder_ids, _ = convert_index(placeholders)
+    names = prep_data(placeholders.name, str)
+    associations = prep_data(placeholders.roles.apply(get_assoc_group),
                              int)
 
     placeholders = [dict(id=placeholder_ids[i],
@@ -300,16 +330,22 @@ def update_db(conn=None):
     print('ASSIGNMENTS')
     print('-' * 50)
 
+    # replace keys for previously merged placeholders
+    fc['assignments']['placeholder_id'].replace(merged_placeholders,
+                                                inplace=True)
+                                     
     assignment_ids, _ = convert_index(fc['assignments'])
+
     # NB: convert forecast project idx to harvest idx
     projects = prep_data(fc['assignments'].project_id, int,
                          convert_dict=fc_to_hv_projects)
+                     
     # NB: combine people and placeholder ids
     # and convert forecast person idx to harvest idx
     people = combine_people_placeholders(fc['assignments'].person_id,
                                          fc['assignments'].placeholder_id)
     people = prep_data(people, int, convert_dict=fc_to_hv_people)
-
+    
     start_dates = prep_data(fc['assignments'].start_date, string_to_date)
     end_dates = prep_data(fc['assignments'].end_date, string_to_date)
     allocations = prep_data(fc['assignments'].allocation, int)

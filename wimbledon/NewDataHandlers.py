@@ -91,10 +91,6 @@ class Wimbledon:
         # project_confirmed: df of (date, project_id) with total allocations across PEOPLE ONLY
         self.project_allocations, self.project_confirmed = self.get_allocations('project')
 
-        # placeholder_allocations: dict with key placeholder_id, contains df of (date, project_id) with allocation
-        # placeholder_totals: df of (date, placeholder_id) with total allocation
-        self.placeholder_allocations, self.placeholder_totals = self.get_allocations('placeholder')
-
         # project_unconfirmed: df of (date, project_id) with total allocation to unconfirmed placeholders
         self.project_unconfirmed = self.get_project_unconfirmed()
 
@@ -148,36 +144,6 @@ class Wimbledon:
 
             if unavailable_id in self.people_allocations[person_id].columns:
                 self.capacity[person_id] = self.capacity[person_id] - self.people_allocations[person_id][unavailable_id]
-
-    def load_csv_data(self, data_dir):
-        """load data from csv files in ../data/forecast directory"""
-
-        people = pd.read_csv(data_dir+'/people.csv',
-                             index_col='id',
-                             parse_dates=['updated_at'],
-                             infer_datetime_format=True)
-
-        projects = pd.read_csv(data_dir+'/projects.csv',
-                               index_col='id',
-                               parse_dates=['updated_at', 'start_date', 'end_date'],
-                               infer_datetime_format=True)
-
-        placeholders = pd.read_csv(data_dir+'/placeholders.csv',
-                                   index_col='id',
-                                   parse_dates=['updated_at'],
-                                   infer_datetime_format=True)
-
-        assignments = pd.read_csv(data_dir+'/assignments.csv',
-                                  index_col='id',
-                                  parse_dates=['start_date', 'end_date', 'updated_at'],
-                                  infer_datetime_format=True)
-
-        clients = pd.read_csv(data_dir+'/clients.csv',
-                              index_col='id',
-                              parse_dates=['updated_at'],
-                              infer_datetime_format=True)
-
-        return people, projects, placeholders, assignments, clients
 
     def process_data(self):
         # assign missing capacities as 1 FTE, given by self.work_hrs_per_day, 5 days per week

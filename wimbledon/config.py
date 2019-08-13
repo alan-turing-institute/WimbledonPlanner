@@ -156,7 +156,7 @@ def get_sql_config():
         except FileNotFoundError:
             raise FileNotFoundError("""No SQL configuration file found.
                                     Please create the file """ +
-                                    SQL_CONFIG_PATH + """or the environment
+                                    SQL_CONFIG_PATH + """ or the environment
                                     variables WIMBLEDON_DB_DRIVER,
                                     WIMBLEDON_DB_HOST, WIMBLEDON_DB_DATABASE,
                                     WIMBLEDON_DB_USER and
