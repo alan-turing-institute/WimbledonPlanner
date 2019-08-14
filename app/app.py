@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, render_template
+from flask import Flask, send_from_directory, render_template, send_file
 
 from wimbledon.vis.Visualise import Visualise
 from wimbledon.api.DataUpdater import update_to_csv
@@ -10,6 +10,10 @@ import subprocess
 import sys
 
 from datetime import datetime
+
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 
 # Initialise Flask App
 app = Flask(__name__)
@@ -39,9 +43,11 @@ def home():
     Browse to:<br>
      * <a href="/projects">/projects</a> for projects whiteboard<br>
      * <a href="/people">/people</a> for people whiteboard<br>
-     * <a href="/update">/update</a> to update the whiteboards (slow!)<br>
-     * <a href="/download">/download</a> to download the whiteboard
-      visualisations
+     * <a href="/demand_vs_capacity">/demand_vs_capacity</a> to view the project
+     demand vs team capacity plot<br>
+     * <a href="/update">/update</a> to update the data and visualisations (slow!)<br>
+     * <a href="/download">/download</a> to download the visualisations
+      visualisations<br>
     """.format(updated_at=updated_at)
 
 
@@ -68,9 +74,11 @@ def update():
                                      run_harvest=False)
 
         # Generate whiteboards
+        print('Visualise object...')
         vis = Visualise(init_harvest=False, data_source='csv',
                         data_dir='../data')
 
+        print('Generate whiteboards...')
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
            
         # Save whiteboards to file
@@ -90,6 +98,7 @@ def update():
         with open(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'w') as f:
             f.write(whiteboards['person_screen'])
 
+        print('Convert whiteboards to pdf...')
         # convert print version html to pdf
         cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
@@ -98,14 +107,14 @@ def update():
             raise ValueError('whiteboard_to_pdf.sh returned with code '+str(result.returncode))
 
         # Generate & save demand vs capacity plot
+        print('Demand vs capacity...')
         capacity_fig = vis.plot_demand_vs_capacity()
         capacity_fig.tight_layout()
         capacity_fig.savefig(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.png',
                              dpi=300)
+        plt.close('all')
         
         with open(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.html', 'w') as f:
-            print('hello')
-            print(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.html')
             f.write("""<!DOCTYPE html>
                         <html>
                             <head>
@@ -115,7 +124,8 @@ def update():
                                  <img src="demand_vs_capacity.png" alt="demand_vs_capacity">
                             </body>
                             </html>""")
-               
+        
+        print('Make zip file...')
         # create zip of print version whiteboard files
         with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
             zipf.write(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'projects.html')
@@ -204,9 +214,8 @@ def demand_vs_capacity():
         Flask response -- Flask representation of zip file to deliver.
     """
     try:
-        path = app.config.get('DATA_DIR') + '/figs/demand_vs_capacity.html'
-        return '<img src="{path}" alt="demand_vs_capacity">'.format(path=path)
-        return render_template(path)
+        path = app.config.get('DATA_DIR') + '/figs/demand_vs_capacity.png'
+        return send_file(path)
 
     except:
         return traceback.format_exc()
