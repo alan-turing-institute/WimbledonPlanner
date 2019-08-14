@@ -13,8 +13,10 @@ To update the versions hosted here go to https://wimbledon-planner.azurewebsites
 
 ## Requirements
 
-Python package dependencies are listed in requirements.txt and are automatically installed to the python virtual environment
-created when running make (see below).
+Python package dependencies are listed in requirements.txt and can be installed to a python virtual environment automatically using the make file (see below), or by running this from the wimbledon directory:
+```bash
+> pip install -r requirements.txt
+```
 
 For converting the HTML whiteboard visualisations to PDFs the command line tool `wkhtmltopdf` is required.
 To install it on Mac OS (assuming `brew` is installed) run:
