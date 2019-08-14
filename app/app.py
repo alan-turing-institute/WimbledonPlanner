@@ -47,8 +47,7 @@ def home():
      * <a href="/demand_vs_capacity">/demand_vs_capacity</a> to view the project
      demand vs team capacity plot<br>
      * <a href="/update">/update</a> to update the data and visualisations (slow!)<br>
-     * <a href="/download">/download</a> to download the visualisations
-      visualisations<br>
+     * <a href="/download">/download</a> to download the visualisations<br>
     """.format(updated_at=updated_at)
 
 
