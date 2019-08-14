@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, render_template, send_file
+from flask import Flask, send_from_directory, send_file
 
 from wimbledon.vis.Visualise import Visualise
 from wimbledon.api.DataUpdater import update_to_csv
