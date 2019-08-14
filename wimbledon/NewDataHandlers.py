@@ -42,7 +42,7 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
 
 
 class Wimbledon:
-    """Load and group Forecast data"""
+    """Load and group Wimbledon data"""
     def __init__(self,
                  update_db=False,
                  work_hrs_per_day=None,
@@ -51,7 +51,7 @@ class Wimbledon:
                  with_time_entries=True):
 
         if update_db:
-            update_db()
+            update_db(conn=conn)
 
         data = query_db.get_data(conn=conn,
                                  with_time_entries=with_time_entries)
@@ -92,7 +92,7 @@ class Wimbledon:
         
         # people_allocations: dict with key person_id, contains df of (date, project_id) with allocation
         # people_totals: df of (date, person_id) with total allocations
-        self.people_allocations, self.people_totals = self.get_allocations('person')
+        self.people_allocations, self.people_totals = self.__get_allocations('person')
        
         # resource required, unconfirmed, deferred allocations
         self.resourcereq_allocations = self.get_person_allocations('RESOURCE REQUIRED')
@@ -101,6 +101,8 @@ class Wimbledon:
  
         # calculate team capacity: capacity in people table minus any allocations to unavailable project
         unavailable_id = self.get_project_id('UNAVAILABLE')
+        
+        # TODO Add capacity to db
         base_capacity = 1.0
 
         self.capacity = pd.DataFrame(base_capacity,
@@ -114,16 +116,16 @@ class Wimbledon:
 
         # project_allocations: dict with key project_id, contains df of (date, person_id) with allocation
         # project_confirmed: df of (date, project_id) with total allocations across PEOPLE ONLY
-        self.project_allocations, self.project_confirmed = self.get_allocations('project')
+        self.project_allocations, self.project_confirmed = self.__get_allocations('project')
 
         # project_unconfirmed: df of (date, project_id) with total allocation to unconfirmed placeholders
-        self.project_unconfirmed = self.get_project_unconfirmed()
+        self.project_unconfirmed = self.__get_project_unconfirmed()
 
         # project_deferred:  df of (date, project_id) with total allocation to deferred placeholders
-        self.project_deferred = self.get_project_deferred()
+        self.project_deferred = self.__get_project_deferred()
 
         # project_resourcereq: resource_required allocations to each project
-        self.project_resourcereq = self.get_project_required()
+        self.project_resourcereq = self.__get_project_required()
 
         # project_confirmed: should not include unconfirmed or deferred totals
         self.project_confirmed = (self.project_confirmed -
@@ -132,6 +134,21 @@ class Wimbledon:
 
         self.project_allocated = (self.project_confirmed -
                                   self.project_resourcereq)
+
+        # !!!!!!!!!!!!!!! HARVEST EQUIVALENTS
+        # TODO make time entries work
+        """
+        self.projects_tasks = self.__get_entries('project', 'task')
+        self.projects_people = self.__get_entries('project', 'person')
+        self.people_projects = self.__get_entries('person', 'project')
+        self.people_tasks = self.__get_entries('person', 'task')
+        self.people_clients = self.__get_entries('person', 'client')
+
+        self.projects_totals = self.__get_entries('project', 'TOTAL')
+        self.people_totals = self.__get_entries('person', 'TOTAL')
+        self.clients_totals = self.__get_entries('client', 'TOTAL')
+        self.tasks_totals = self.__get_entries('task', 'TOTAL')
+        """
 
     def get_person_name(self, person_id):
         """Get the name of someone from their person_id"""
@@ -191,7 +208,7 @@ class Wimbledon:
         else:
             raise ValueError('id_type must be person or project')
 
-    def get_allocations(self, id_column):
+    def __get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where
         the rows are dates, the columns are projects/people depending on
         id_column, and the values are time allocations for that date.
@@ -259,7 +276,7 @@ class Wimbledon:
         idx = self.get_person_id(name)
         return self.people_allocations[idx]
 
-    def get_project_unconfirmed(self):
+    def __get_project_unconfirmed(self):
         """Get unconfirmed project requirements"""
 
         unconf_idx = self.get_person_id('UNCONFIRMED')
@@ -275,7 +292,7 @@ class Wimbledon:
 
         return project_unconfirmed
 
-    def get_project_deferred(self):
+    def __get_project_deferred(self):
         """Get deferred project allocations"""
 
         defer_idx = self.get_person_id('DEFERRED')
@@ -291,7 +308,7 @@ class Wimbledon:
 
         return project_deferred
 
-    def get_project_required(self):
+    def __get_project_required(self):
         """Get resource required (i.e. needs someone assigned)
         for all projects."""
 
@@ -315,7 +332,7 @@ class Wimbledon:
         dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
 
         If add_placeholders=True, non-resource required placeholders will be included on the sheet."""
-
+        # TODO move this function somewhere else?
         if key_type == 'project':
             # copy to prevent overwriting original
             data_dict = deepcopy(self.project_allocations)
@@ -470,9 +487,9 @@ class Wimbledon:
 
             proj_names_with_url = {}
             for idx, proj in enumerate(proj_names):
-                if not (type(proj_gitissue[idx]) is float and np.isnan(proj_gitissue[idx])):
-                    proj_names_with_url[proj] = """<a href="{url}/{issue}">{proj}</a>""".format(url=git_base_url,
-                                                                                               issue=proj_gitissue[idx],
+                if not np.isnan(proj_gitissue[idx]):
+                    proj_names_with_url[proj] = """<a href="{url}/{issue}">{proj}<br>[GitHub: #{issue}]</a>""".format(url=git_base_url,
+                                                                                               issue=int(proj_gitissue[idx]),
                                                                                                proj=proj)
 
             sheet.rename(proj_names_with_url, axis='index', level=1, inplace=True)
@@ -504,6 +521,91 @@ class Wimbledon:
             sheet.index.rename([None, None, None], inplace=True)
 
         return sheet
+    
+    # !!!!!!!!!!!!!!! HARVEST EQUIVALENTS
+    # TODO make time entries work
+    def __get_entries(self, id_column, ref_column):
+        """For each unique value in id_column, create a dataframe where the rows are dates,
+        the columns are projects/people/clients/tasks depending on id_column, and the values are
+        time allocations for each project/person/client/task for each date.
+        id_column can be 'person', 'project', 'client', or 'task'
+        ref_column can be 'person', 'project', 'client', 'task' or 'TOTAL' but must not be same as id_column."""
+
+        if ref_column == id_column:
+            raise ValueError('id_column and ref_column must be different.')
+
+        # id column
+        if id_column == 'person':
+            id_values = self.people.index
+
+        elif id_column == 'project':
+            id_values = self.projects.index
+
+        elif id_column == 'client':
+            id_values = self.clients.index
+
+        elif id_column == 'task':
+            id_values = self.tasks.index
+        else:
+            raise ValueError('id_column must be person, project, client or task')
+
+        # ref_column
+        if ref_column not in ['person', 'project', 'client', 'task', 'TOTAL']:
+            raise ValueError("""id_column must be person, project, client,
+                             task or TOTAL""")
+
+        # group time_entries by id_column, ref_column and spent_date
+        if ref_column == 'TOTAL':
+            grouped_entries = self.time_entries.groupby([id_column, 'spent_date']).hours.sum()
+        else:
+            grouped_entries = self.time_entries.groupby([id_column, ref_column, 'spent_date']).hours.sum()
+
+        # populate the entries dict from grouped_entries
+        # entries is a dict with id_column values as keys and the items being a dataframe with ref_column as the index
+        entries = {}
+
+        for idx in id_values:
+            # check whether the this id has any time entries, i.e. whether the id
+            # exists in the index (get_level_values to deal with MultiIndex)
+            if idx in grouped_entries.index.get_level_values(0):
+                # get the allocations
+                id_entries = grouped_entries.loc[idx]
+
+                # unstack the MultiIndex
+                id_entries = id_entries.reset_index()
+
+                # Initialise dataframe to store results
+                if ref_column == 'TOTAL':
+                    id_entry_days = pd.Series(index=self.date_range)
+                else:
+                    id_entry_days = pd.DataFrame(index=self.date_range, columns=id_entries[ref_column].unique())
+
+                id_entry_days.fillna(0, inplace=True)
+
+                # Loop over each time entry
+                for _, row in id_entries.iterrows():
+                    if ref_column == 'TOTAL':
+                        id_entry_days.loc[row['spent_date']] += row['hours']
+                    else:
+                        id_entry_days.loc[row['spent_date'], row[ref_column]] += row['hours']
+
+            else:
+                # no projects, just make an empty dataframe
+                if ref_column == 'TOTAL':
+                    id_entry_days = pd.Series(index=self.date_range).fillna(0)
+                else:
+                    id_entry_days = pd.DataFrame(index=self.date_range)
+
+            # Add the person's name as a label - just nice for printing later.
+            if ref_column != 'TOTAL':
+                id_entry_days.columns.name = self.get_name(idx, id_column)
+
+            entries[idx] = id_entry_days
+
+        if ref_column == 'TOTAL':
+            entries = pd.DataFrame(entries)
+
+        return entries
 
 
 class Harvest:
