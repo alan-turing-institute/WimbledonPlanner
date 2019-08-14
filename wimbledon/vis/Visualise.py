@@ -658,7 +658,7 @@ class Visualise:
         # merge all demand types into one dataframe ready for plotting
         demand = pd.DataFrame({'REG Management': reg_management_reqs,
                                'REG Development': reg_dev_reqs,
-                               'Research Support': research_support_reqs,
+                               'REG Support': research_support_reqs,
                                'Confirmed projects': project_confirmed,
                                'Projects with funder': unconfirmed,
                                'Deferred projects': deferred})
