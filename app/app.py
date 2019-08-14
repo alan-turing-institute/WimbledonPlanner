@@ -11,6 +11,7 @@ import sys
 
 from datetime import datetime
 
+# change matplotlib backend to avoid it trying to pop up figure windows
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
