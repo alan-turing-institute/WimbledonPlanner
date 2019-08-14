@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, render_template
 
 from wimbledon.vis.Visualise import Visualise
 from wimbledon.api.DataUpdater import update_to_csv
@@ -72,7 +72,7 @@ def update():
                         data_dir='../data')
 
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
-
+           
         # Save whiteboards to file
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
 
@@ -97,12 +97,32 @@ def update():
         if result.returncode is not 0:
             raise ValueError('whiteboard_to_pdf.sh returned with code '+str(result.returncode))
 
+        # Generate & save demand vs capacity plot
+        capacity_fig = vis.plot_demand_vs_capacity()
+        capacity_fig.tight_layout()
+        capacity_fig.savefig(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.png',
+                             dpi=300)
+        
+        with open(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.html', 'w') as f:
+            print('hello')
+            print(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.html')
+            f.write("""<!DOCTYPE html>
+                        <html>
+                            <head>
+                                 <title>Index</title>
+                            </head>
+                            <body>
+                                 <img src="demand_vs_capacity.png" alt="demand_vs_capacity">
+                            </body>
+                            </html>""")
+               
         # create zip of print version whiteboard files
         with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
             zipf.write(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'projects.html')
             zipf.write(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'people.html')
             zipf.write(app.config.get('DATA_DIR') + '/figs/projects/projects.pdf', 'projects.pdf')
             zipf.write(app.config.get('DATA_DIR') + '/figs/people/people.pdf', 'people.pdf')
+            zipf.write(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.png', 'demand_vs_capacity.png')
 
         # save update time to file if everything was successful
         with open(app.config.get('DATA_DIR')+'/.last_update', 'w') as f:
@@ -175,6 +195,21 @@ def download():
     except:
         return traceback.format_exc()
 
+
+@app.route('/demand_vs_capacity')
+def demand_vs_capacity():
+    """Display demand vs capacity plot.
+    
+    Returns:
+        Flask response -- Flask representation of zip file to deliver.
+    """
+    try:
+        path = app.config.get('DATA_DIR') + '/figs/demand_vs_capacity.html'
+        return '<img src="{path}" alt="demand_vs_capacity">'.format(path=path)
+        return render_template(path)
+
+    except:
+        return traceback.format_exc()
 
 if __name__ == "__main__":
     # set home directory
