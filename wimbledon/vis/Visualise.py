@@ -632,7 +632,7 @@ class Visualise:
         # DEMAND
         # ----------
         # Get totals for REG management, development and support clients
-        research_support_idx = self.fc.get_client_id('Research Support')
+        research_support_idx = self.fc.get_client_id('REG Support')
         reg_management_idx = self.fc.get_client_id('REG Management')
         reg_dev_idx = self.fc.get_client_id('REG Development Work')
 
