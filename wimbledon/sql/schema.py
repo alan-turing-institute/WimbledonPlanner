@@ -18,6 +18,7 @@ tasks = sqla.Table('tasks', metadata,
 people = sqla.Table('people', metadata,
                     sqla.Column('id', sqla.Integer, primary_key=True),
                     sqla.Column('name', sqla.String, nullable=False),
+                    sqla.Column('capacity', sqla.Integer),
                     sqla.Column('association', sqla.Integer,
                                 sqla.ForeignKey('associations.id')))
 

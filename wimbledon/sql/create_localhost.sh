@@ -9,8 +9,6 @@ fi
 
 initdb -D /usr/local/var/postgres
 
-bash start_localhost.sh
-
 createdb wimbledon
 
 python schema.py

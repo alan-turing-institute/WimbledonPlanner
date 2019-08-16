@@ -168,9 +168,14 @@ def update_db(conn=None, with_tracked_time=True):
     people_hv_ids, fc_to_hv_people = convert_index(hv['users'])
     names = prep_data(hv['users'].first_name + ' ' +
                       hv['users'].last_name, str)
-
+    
+    # set capacities to zero for people who are archived
+    hv['users'].loc[hv['users'].is_active == False, 'weekly_capacity'] = 0
+    capacities = prep_data(hv['users'].weekly_capacity, int)
+    
     people = [dict(id=people_hv_ids[i],
-                   name=names[i])
+                   name=names[i],
+                   capacity=capacities[i])
               for i in range(len(people_hv_ids))]
 
     db_utils.upsert(schema.people, people, conn)
@@ -222,11 +227,11 @@ def update_db(conn=None, with_tracked_time=True):
         hours = prep_data(hv['time_entries']['hours'], int)
 
         time_entries = [dict(id=time_entry_ids[i],
-                            project=projects[i],
-                            person=people[i],
-                            task=tasks[i],
-                            date=dates[i],
-                            hours=hours[i])
+                             project=projects[i],
+                             person=people[i],
+                             task=tasks[i],
+                             date=dates[i],
+                             hours=hours[i])
                         for i in range(len(time_entry_ids))]
 
         db_utils.upsert(schema.time_entries, time_entries, conn)
@@ -271,10 +276,15 @@ def update_db(conn=None, with_tracked_time=True):
                       fc['people'].last_name, str)
 
     associations = prep_data(fc['people'].roles.apply(get_assoc_group), int)
+    
+    # set capacities to zero for people who are archived
+    fc['people'].loc[fc['people'].archived == True, 'weekly_capacity'] = 0
+    capacities = prep_data(fc['people'].weekly_capacity, int)
 
     people = [dict(id=people_fc_ids[i],
                    name=names[i],
-                   association=associations[i])
+                   association=associations[i],
+                   capacity=capacities[i])
               for i in range(len(people_fc_ids))]
 
     db_utils.upsert(schema.people, people, conn)

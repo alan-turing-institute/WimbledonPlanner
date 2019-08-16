@@ -42,14 +42,21 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
 
 
 class Wimbledon:
-    """Load and group Wimbledon data"""
     def __init__(self,
                  update_db=False,
                  work_hrs_per_day=None,
                  proj_hrs_per_day=None,
                  conn=None,
                  with_tracked_time=True):
-
+        """Load and group Wimbledon data.
+        
+        Keyword Arguments:
+            update_db {bool} -- update the database before loading data (default: {False})
+            work_hrs_per_day {numeric} -- hours in normal working day (default: 8)
+            proj_hrs_per_day {numeric} -- nominal hours spent on projects per day (default: 6.4)
+            conn {SQLAlchemy connection} -- connection to database (default: get from wimbledon config)
+            with_tracked_time {bool} -- whether to load and process timesheet data (default: {True})
+        """
         if update_db:
             update_db(conn=conn,
                       with_tracked_time=with_tracked_time)
@@ -96,16 +103,16 @@ class Wimbledon:
         else:
             self.proj_hrs_per_day = proj_hrs_per_day
 
-        # TODO remove project managers
-        # self.people = self.people[self.people.roles != "['Research Project Manager']"]
-
         # convert assignments in seconds per day to fractions of 1 FTE (defined by self.work_hrs_per_day)
         self.assignments['allocation'] = (self.assignments['allocation'] /
                                           (self.work_hrs_per_day * 60 * 60))
         
+        # convert baseline capacity in seconds per week to fraction of 1 FTE
+        self.people.capacity = (self.people.capacity /
+                                (5 * self.work_hrs_per_day * 60 * 60))
+        
         # people_allocations: dict with key person_id, contains df of (date, project_id) with allocation
         # people_totals: df of (date, person_id) with total allocations
-        # TODO people available calculation taking into account their capacity
         self.people_allocations, self.people_totals = self.__get_allocations('person')
        
         # resource required, unconfirmed, deferred allocations
@@ -116,18 +123,22 @@ class Wimbledon:
         # calculate team capacity: capacity in people table minus any allocations to unavailable project
         unavailable_id = self.get_project_id('UNAVAILABLE')
         
-        # TODO Add capacity to db
-        base_capacity = 1.0
-
-        self.capacity = pd.DataFrame(base_capacity,
-                                     index=self.date_range_workdays,
-                                     columns=self.people.index)
+        self.people_capacities = pd.DataFrame(index=self.date_range_workdays,
+                                              columns=self.people.index)
 
         for person_id in self.people.index:
+            self.people_capacities[person_id] = self.people.capacity[person_id]
+            
             if unavailable_id in self.people_allocations[person_id].columns:
-                self.capacity[person_id] = (self.capacity[person_id] -
-                                            self.people_allocations[person_id][unavailable_id])
+                self.people_capacities[person_id] = (
+                    self.people_capacities[person_id] -
+                    self.people_allocations[person_id][unavailable_id]
+                )
 
+        self.team_capacity = self.people_capacities.sum(axis=1)
+
+        self.people_free_capacity = self.people_capacities - self.people_totals
+        
         # project_allocations: dict with key project_id, contains df of (date, person_id) with allocation
         # project_confirmed: df of (date, project_id) with total allocations across PEOPLE ONLY
         self.project_allocations, self.project_confirmed = self.__get_allocations('project')
@@ -296,7 +307,15 @@ class Wimbledon:
         # total assignment each day
         totals = pd.DataFrame(index=self.date_range_workdays, columns=id_values)
         for idx in allocations.keys():
-            totals[idx] = allocations[idx].sum(axis=1)
+            unavailable_id = self.get_project_id('UNAVAILABLE')
+            if (ref_column == 'project' and
+                unavailable_id in allocations[idx].columns):
+                # don't include unavailable project in totals
+                totals[idx] = allocations[idx].\
+                    drop(unavailable_id, axis=1).\
+                    sum(axis=1)
+            else:
+                totals[idx] = allocations[idx].sum(axis=1)
 
         return allocations, totals
 
