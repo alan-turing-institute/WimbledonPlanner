@@ -2,14 +2,14 @@ from wimbledon.sql import db_utils
 import pandas as pd
 
 
-def get_data(conn=None, with_time_entries=True):
+def get_data(conn=None, with_tracked_time=True):
     """Extract wimbledon data from the database as pandas dataframes.
 
     Keyword Arguments:
         conn {sqlalchemy.engine.Connection} -- Connection to a wimbledon
         database. If none get from wimbledon config (default: {None})
 
-        with_time_entries {bool} -- whether to get time entries data (Harvest
+        with_tracked_time {bool} -- whether to get time entries data (Harvest
         equivalents). Set to False for speed if not needed (default: {True})
 
     Returns:
@@ -42,11 +42,11 @@ def get_data(conn=None, with_time_entries=True):
                                 parse_dates=['start_date', 'end_date']
                             )
 
-    if with_time_entries:
+    if with_tracked_time:
         data['time_entries'] = pd.read_sql_table(
                                     'time_entries', conn,
                                     index_col='id',
-                                    parse_dates=['start_date', 'end_date']
+                                    parse_dates=['date']
                                 )
 
         data['tasks'] = pd.read_sql_table('tasks', conn,

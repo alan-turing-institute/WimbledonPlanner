@@ -136,7 +136,7 @@ def get_assoc_group(role_str):
     return association_groups['Placeholder']
 
 
-def update_db(conn=None):
+def update_db(conn=None, with_tracked_time=True):
     if conn is None:
         conn = db_utils.get_db_connection()
 
@@ -196,39 +196,40 @@ def update_db(conn=None):
 
     db_utils.upsert(schema.projects, projects, conn)
     
-    # Task
-    print('-' * 50)
-    print('TASKS')
-    print('-' * 50)
-    task_ids, _ = convert_index(hv['tasks'])
-    names = prep_data(hv['tasks'].name, str)
+    if with_tracked_time:
+        # Task
+        print('-' * 50)
+        print('TASKS')
+        print('-' * 50)
+        task_ids, _ = convert_index(hv['tasks'])
+        names = prep_data(hv['tasks'].name, str)
 
-    tasks = [dict(id=task_ids[i],
-                  name=names[i])
-             for i in range(len(task_ids))]
+        tasks = [dict(id=task_ids[i],
+                    name=names[i])
+                for i in range(len(task_ids))]
 
-    db_utils.upsert(schema.tasks, tasks, conn)
+        db_utils.upsert(schema.tasks, tasks, conn)
 
-    # TimeEntry
-    print('-' * 50)
-    print('TIME ENTRIES')
-    print('-' * 50)
-    time_entry_ids, _ = convert_index(hv['time_entries'])
-    projects = prep_data(hv['time_entries']['project.id'], int)
-    people = prep_data(hv['time_entries']['user.id'], int)
-    tasks = prep_data(hv['time_entries']['task.id'], int)
-    dates = prep_data(hv['time_entries']['spent_date'], string_to_date)
-    hours = prep_data(hv['time_entries']['hours'], int)
+        # TimeEntry
+        print('-' * 50)
+        print('TIME ENTRIES')
+        print('-' * 50)
+        time_entry_ids, _ = convert_index(hv['time_entries'])
+        projects = prep_data(hv['time_entries']['project.id'], int)
+        people = prep_data(hv['time_entries']['user.id'], int)
+        tasks = prep_data(hv['time_entries']['task.id'], int)
+        dates = prep_data(hv['time_entries']['spent_date'], string_to_date)
+        hours = prep_data(hv['time_entries']['hours'], int)
 
-    time_entries = [dict(id=time_entry_ids[i],
-                         project=projects[i],
-                         person=people[i],
-                         task=tasks[i],
-                         date=dates[i],
-                         hours=hours[i])
-                    for i in range(len(time_entry_ids))]
+        time_entries = [dict(id=time_entry_ids[i],
+                            project=projects[i],
+                            person=people[i],
+                            task=tasks[i],
+                            date=dates[i],
+                            hours=hours[i])
+                        for i in range(len(time_entry_ids))]
 
-    db_utils.upsert(schema.time_entries, time_entries, conn)
+        db_utils.upsert(schema.time_entries, time_entries, conn)
     
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # Get Forecast data
@@ -373,7 +374,9 @@ def update_db(conn=None):
     # that project can be deleted.
     db_utils.delete_not_in(schema.assignments, assignment_ids, conn)
 
-    db_utils.delete_not_in(schema.time_entries, time_entry_ids, conn)
+    if with_tracked_time:
+        db_utils.delete_not_in(schema.time_entries, time_entry_ids, conn)
+        db_utils.delete_not_in(schema.tasks, task_ids, conn)
 
     db_utils.delete_not_in(schema.projects,
                            project_fc_ids + project_hv_ids,
@@ -385,9 +388,7 @@ def update_db(conn=None):
 
     db_utils.delete_not_in(schema.clients,
                            client_fc_ids + client_hv_ids,
-                           conn)
-    
-    db_utils.delete_not_in(schema.tasks, task_ids, conn)
+                           conn)        
 
     conn.close()
 

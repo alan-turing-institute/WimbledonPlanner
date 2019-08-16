@@ -48,28 +48,41 @@ class Wimbledon:
                  work_hrs_per_day=None,
                  proj_hrs_per_day=None,
                  conn=None,
-                 with_time_entries=True):
+                 with_tracked_time=True):
 
         if update_db:
-            update_db(conn=conn)
+            update_db(conn=conn,
+                      with_tracked_time=with_tracked_time)
 
         data = query_db.get_data(conn=conn,
-                                 with_time_entries=with_time_entries)
+                                 with_tracked_time=with_tracked_time)
         self.people = data['people']
         self.projects = data['projects']
         self.assignments = data['assignments']
         self.clients = data['clients']
         self.associations = data['associations']
-        if with_time_entries:
+        
+        start_date = self.assignments['start_date'].min()
+        end_date = self.assignments['end_date'].max()
+
+        if with_tracked_time:
             self.tasks = data['tasks']
             self.time_entries = data['time_entries']
-                
+                   
+            start_date = min([start_date, self.time_entries['date'].min()])
+            end_date = max([end_date, self.time_entries['date'].max()])
+            # people may track time on non-working days, so create a separate
+            # time series for time tracking
+            self.date_range_alldays = pd.date_range(start=start_date,
+                                                    end=end_date,
+                                                    freq='D')
+          
         # Find the earliest and latest date in the data, create a range
-        # of weekdays between these dates
-        self.date_range = get_business_days(
-                            self.assignments['start_date'].min(),
-                            self.assignments['end_date'].max()
-                          )
+        # of weekdays between these dates (so people will only have allocations
+        # to projects on working days)
+        # NB: this should take into account bank holidays, but not things like
+        # British Library shutdown over Christmas.
+        self.date_range_workdays = get_business_days(start_date, end_date)
 
         # 1 FTE hours per day
         if work_hrs_per_day is None:
@@ -92,6 +105,7 @@ class Wimbledon:
         
         # people_allocations: dict with key person_id, contains df of (date, project_id) with allocation
         # people_totals: df of (date, person_id) with total allocations
+        # TODO people available calculation taking into account their capacity
         self.people_allocations, self.people_totals = self.__get_allocations('person')
        
         # resource required, unconfirmed, deferred allocations
@@ -106,7 +120,7 @@ class Wimbledon:
         base_capacity = 1.0
 
         self.capacity = pd.DataFrame(base_capacity,
-                                     index=self.date_range,
+                                     index=self.date_range_workdays,
                                      columns=self.people.index)
 
         for person_id in self.people.index:
@@ -135,20 +149,25 @@ class Wimbledon:
         self.project_allocated = (self.project_confirmed -
                                   self.project_resourcereq)
 
-        # !!!!!!!!!!!!!!! HARVEST EQUIVALENTS
-        # TODO make time entries work
-        """
-        self.projects_tasks = self.__get_entries('project', 'task')
-        self.projects_people = self.__get_entries('project', 'person')
-        self.people_projects = self.__get_entries('person', 'project')
-        self.people_tasks = self.__get_entries('person', 'task')
-        self.people_clients = self.__get_entries('person', 'client')
+        # Time Tracking
+        self.tracked_project_tasks = self.__get_tracking('project', 'task')
+        self.tracked_project_people = self.__get_tracking('project', 'person')
+        self.tracked_person_projects = self.__get_tracking('person', 'project')
+        self.tracked_person_tasks = self.__get_tracking('person', 'task')
 
-        self.projects_totals = self.__get_entries('project', 'TOTAL')
-        self.people_totals = self.__get_entries('person', 'TOTAL')
-        self.clients_totals = self.__get_entries('client', 'TOTAL')
-        self.tasks_totals = self.__get_entries('task', 'TOTAL')
-        """
+        self.tracked_project_totals = self.__get_tracking('project', 'TOTAL')
+        self.tracked_person_totals = self.__get_tracking('person', 'TOTAL')
+        self.tracked_task_totals = self.__get_tracking('task', 'TOTAL')
+
+        # calculate per-client totals for each person
+        self.tracked_person_clients = self.__client_from_project_tracking(
+                                        self.tracked_person_projects
+                                      )
+
+        # calculate overall per-client totals
+        self.tracked_client_totals = self.__client_from_project_tracking(
+                                        self.tracked_project_totals
+                                      )
 
     def get_person_name(self, person_id):
         """Get the name of someone from their person_id"""
@@ -174,22 +193,31 @@ class Wimbledon:
     def get_client_id(self, client_name):
         return self.clients.index[self.clients.name == client_name][0]
 
+    def get_task_name(self, task_id):
+        """Get the name of a task from its id"""
+        return self.tasks.loc[task_id, 'name']
+
+    def get_task_id(self, task_name):
+        """Get the id of a task from its name"""
+        return self.tasks.index[self.tasks.name == task_name][0]
+
     def get_name(self, id_value, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
-        'person', 'project' or 'placeholder'"""
+        'person', 'project', 'client', or 'task'"""
         if id_type == 'person':
-            try:
-                return self.get_person_name(id_value)
-            except KeyError:
-                # if person id search fails check whether it's a placeholder id
-                # to deal with cases where they've been merged together
-                return self.get_name(id_value, 'placeholder')
-
+            return self.get_person_name(id_value)
         elif id_type == 'project':
             return self.get_project_name(id_value)
-
+        elif id_type == 'client':
+            return self.get_client_name(id_value)
+        elif id_type == 'task':
+            return self.get_task_name(id_value)       
         else:
-            raise ValueError('id_type must be person or project')
+            raise ValueError('id_type must be person, project, client or task')
+
+    def get_person_allocations(self, name):
+        idx = self.get_person_id(name)
+        return self.people_allocations[idx]
 
     def get_id(self, name, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
@@ -241,7 +269,7 @@ class Wimbledon:
                 id_allocs = id_allocs.reset_index()
 
                 # Initialise dataframe to store results
-                id_alloc_days = pd.DataFrame(index=self.date_range,
+                id_alloc_days = pd.DataFrame(index=self.date_range_workdays,
                                              columns=id_allocs[ref_column].unique())
                 id_alloc_days.fillna(0, inplace=True)
 
@@ -258,7 +286,7 @@ class Wimbledon:
 
             else:
                 # no projects, just make an empty dataframe
-                id_alloc_days = pd.DataFrame(index=self.date_range)
+                id_alloc_days = pd.DataFrame(index=self.date_range_workdays)
 
             # Add the person's name as a label - just nice for printing later.
             id_alloc_days.columns.name = self.get_name(idx, id_column)
@@ -266,15 +294,11 @@ class Wimbledon:
             allocations[idx] = id_alloc_days
 
         # total assignment each day
-        totals = pd.DataFrame(index=self.date_range, columns=id_values)
+        totals = pd.DataFrame(index=self.date_range_workdays, columns=id_values)
         for idx in allocations.keys():
             totals[idx] = allocations[idx].sum(axis=1)
 
         return allocations, totals
-
-    def get_person_allocations(self, name):
-        idx = self.get_person_id(name)
-        return self.people_allocations[idx]
 
     def __get_project_unconfirmed(self):
         """Get unconfirmed project requirements"""
@@ -282,7 +306,7 @@ class Wimbledon:
         unconf_idx = self.get_person_id('UNCONFIRMED')
 
         project_unconfirmed = pd.DataFrame(0,
-                                           index=self.date_range,
+                                           index=self.date_range_workdays,
                                            columns=self.projects.index)
 
         allocs = self.people_allocations[unconf_idx]
@@ -298,7 +322,7 @@ class Wimbledon:
         defer_idx = self.get_person_id('DEFERRED')
 
         project_deferred = pd.DataFrame(0,
-                                        index=self.date_range,
+                                        index=self.date_range_workdays,
                                         columns=self.projects.index)
 
         allocs = self.people_allocations[defer_idx]
@@ -315,7 +339,7 @@ class Wimbledon:
         resreq_idx = self.get_person_id('RESOURCE REQUIRED')
 
         project_resreq = pd.DataFrame(0,
-                                      index=self.date_range,
+                                      index=self.date_range_workdays,
                                       columns=self.projects.index)
 
         allocs = self.people_allocations[resreq_idx]
@@ -521,13 +545,11 @@ class Wimbledon:
             sheet.index.rename([None, None, None], inplace=True)
 
         return sheet
-    
-    # !!!!!!!!!!!!!!! HARVEST EQUIVALENTS
-    # TODO make time entries work
-    def __get_entries(self, id_column, ref_column):
+
+    def __get_tracking(self, id_column, ref_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,
         the columns are projects/people/clients/tasks depending on id_column, and the values are
-        time allocations for each project/person/client/task for each date.
+        tracked time for each project/person/client/task for each date.
         id_column can be 'person', 'project', 'client', or 'task'
         ref_column can be 'person', 'project', 'client', 'task' or 'TOTAL' but must not be same as id_column."""
 
@@ -554,11 +576,11 @@ class Wimbledon:
             raise ValueError("""id_column must be person, project, client,
                              task or TOTAL""")
 
-        # group time_entries by id_column, ref_column and spent_date
+        # group time_entries by id_column, ref_column and date
         if ref_column == 'TOTAL':
-            grouped_entries = self.time_entries.groupby([id_column, 'spent_date']).hours.sum()
+            grouped_entries = self.time_entries.groupby([id_column, 'date']).hours.sum()
         else:
-            grouped_entries = self.time_entries.groupby([id_column, ref_column, 'spent_date']).hours.sum()
+            grouped_entries = self.time_entries.groupby([id_column, ref_column, 'date']).hours.sum()
 
         # populate the entries dict from grouped_entries
         # entries is a dict with id_column values as keys and the items being a dataframe with ref_column as the index
@@ -576,25 +598,26 @@ class Wimbledon:
 
                 # Initialise dataframe to store results
                 if ref_column == 'TOTAL':
-                    id_entry_days = pd.Series(index=self.date_range)
+                    id_entry_days = pd.Series(index=self.date_range_alldays)
                 else:
-                    id_entry_days = pd.DataFrame(index=self.date_range, columns=id_entries[ref_column].unique())
+                    id_entry_days = pd.DataFrame(index=self.date_range_alldays,
+                                                 columns=id_entries[ref_column].unique())
 
                 id_entry_days.fillna(0, inplace=True)
 
                 # Loop over each time entry
                 for _, row in id_entries.iterrows():
                     if ref_column == 'TOTAL':
-                        id_entry_days.loc[row['spent_date']] += row['hours']
+                        id_entry_days.loc[row['date']] += row['hours']
                     else:
-                        id_entry_days.loc[row['spent_date'], row[ref_column]] += row['hours']
+                        id_entry_days.loc[row['date'], row[ref_column]] += row['hours']
 
             else:
                 # no projects, just make an empty dataframe
                 if ref_column == 'TOTAL':
-                    id_entry_days = pd.Series(index=self.date_range).fillna(0)
+                    id_entry_days = pd.Series(index=self.date_range_alldays).fillna(0)
                 else:
-                    id_entry_days = pd.DataFrame(index=self.date_range)
+                    id_entry_days = pd.DataFrame(index=self.date_range_alldays)
 
             # Add the person's name as a label - just nice for printing later.
             if ref_column != 'TOTAL':
@@ -607,318 +630,46 @@ class Wimbledon:
 
         return entries
 
-
-class Harvest:
-    """Load and group Harvest data"""
-
-    def __init__(self, data_source='api', data_dir='', proj_hrs_per_day=None):
-        self.data_source = data_source
-
-        if data_source == 'api':
-            data = wimbledon.harvest.api_interface.get_harvest()
-
-            self.time_entries = data['time_entries']
-            self.projects = data['projects']
-            self.tasks = data['tasks']
-            self.clients = data['clients']
-            self.people = data['users']
-
-        elif data_source == 'csv':
-            self.time_entries, self.projects, self.tasks, self.clients, self.people = self.load_csv_data(data_dir)
-
-        elif data_source == 'sql':
-            self.time_entries, self.projects, self.tasks, self.clients, self.people = self.load_sql_data()
-
+    def __client_from_project_tracking(self, tracking):
+        """Group previously calculated project tracking values by client.
+        
+        Arguments:
+            tracking {pd.DataFrame or dict} -- a single dataframe or a dict of
+            dataframes containing project ids as columns.
+        
+        Raises:
+            TypeError: if tracking is not an instance of pd.DataFrame or dict.
+        
+        Returns:
+            pd.DataFrame or dict -- same format as tracking except with columns
+            now being client ids.
+        """
+        if isinstance(tracking, pd.DataFrame):
+            grouped_df = tracking.copy(deep=True)
+                
+            grouped_df.columns = [
+                    self.projects.loc[col, 'client']
+                    for col in grouped_df.columns
+                ]
+            grouped_df = grouped_df.\
+                groupby(grouped_df.columns, axis=1).\
+                sum()
+            return grouped_df
+                    
+        elif isinstance(tracking, dict):
+            grouped_dict = dict()
+            for idx, df in tracking.items():
+                grouped_df = df.copy(deep=True)
+                
+                grouped_df.columns = [
+                        self.projects.loc[col, 'client']
+                        for col in grouped_df.columns
+                    ]
+                grouped_df = grouped_df.\
+                    groupby(grouped_df.columns, axis=1).\
+                    sum()
+                grouped_dict[idx] = grouped_df
+            
+            return grouped_dict
         else:
-            raise ValueError('data_source must be csv or sql')
-
-        # Find the earliest and latest date in the data, create a range of weekdays between these dates
-        # NB: Harvest data needs to include non-working days as there may be time entries on these days, e.g.
-        # leave or block entering data for a month on the 1st of that month.
-        self.date_range = pd.date_range(start=self.time_entries['spent_date'].min(),
-                                        end=self.time_entries['spent_date'].max(),
-                                        freq='D')
-
-        if proj_hrs_per_day is None:
-            self.proj_hrs_per_day = 6.4
-        else:
-            self.proj_hrs_per_day = proj_hrs_per_day
-
-        # remove empty columns, reformat some column names
-        self.process_data()
-
-        self.projects_tasks = self.get_entries('project', 'task')
-        self.projects_people = self.get_entries('project', 'person')
-        self.people_projects = self.get_entries('person', 'project')
-        self.people_tasks = self.get_entries('person', 'task')
-        self.people_clients = self.get_entries('person', 'client')
-
-        # TODO exclude leave, TOIL, illness etc. from totals?
-        self.projects_totals = self.get_entries('project', 'TOTAL')
-        self.people_totals = self.get_entries('person', 'TOTAL')
-        self.clients_totals = self.get_entries('client', 'TOTAL')
-        self.tasks_totals = self.get_entries('task', 'TOTAL')
-
-    def load_csv_data(self, data_dir):
-        time_entries = pd.read_csv(data_dir+'/time_entries.csv',
-                                   index_col='id',
-                                   parse_dates=['created_at', 'spent_date', 'updated_at',
-                                                'task_assignment.created_at', 'task_assignment.updated_at',
-                                                'user_assignment.created_at', 'user_assignment.updated_at'],
-                                   infer_datetime_format=True)
-
-        projects = pd.read_csv(data_dir+'/projects.csv',
-                               index_col='id',
-                               parse_dates=['created_at', 'starts_on', 'ends_on', 'updated_at'],
-                               infer_datetime_format=True)
-
-        tasks = pd.read_csv(data_dir+'/tasks.csv',
-                            index_col='id',
-                            parse_dates=['created_at', 'updated_at'],
-                            infer_datetime_format=True)
-
-        clients = pd.read_csv(data_dir+'/clients.csv',
-                              index_col='id',
-                              parse_dates=['created_at', 'updated_at'],
-                              infer_datetime_format=True)
-
-        people = pd.read_csv(data_dir+'/users.csv',
-                             index_col='id',
-                             parse_dates=['created_at', 'updated_at'],
-                             infer_datetime_format=True)
-
-        return time_entries, projects, tasks, clients, people
-
-    def load_sql_data(self):
-        """load data from sql database defined by ../sql/config.json, which must be a json containing
-        host: the server name (url)
-        database: the name of the database on the server
-        drivername: the type of database it is, e.g. postgresql"""
-
-        config = wimbledon.config.get_sql_config()
-
-        if config['host'] == 'localhost':
-            url = sqla.engine.url.URL(drivername=config['drivername'],
-                                      host=config['host'],
-                                      database=config['database'])
-
-            subprocess.call(['sh', '../sql/start_localhost.sh'], cwd='../sql')
-
-        else:
-            url = sqla.engine.url.URL(drivername=config['drivername'],
-                                      username=config['username'],
-                                      password=config['password'],
-                                      host=config['host'],
-                                      database=config['database'])
-
-        engine = sqla.create_engine(url)
-
-        connection = engine.connect()
-
-        projects = pd.read_sql_table('projects', connection, schema='harvest',
-                                     index_col='id',
-                                     parse_dates=['starts_on', 'ends_on'])
-
-        tasks = pd.read_sql_table('tasks', connection, schema='harvest',
-                                  index_col='id')
-
-        clients = pd.read_sql_table('clients', connection, schema='harvest',
-                                    index_col='id')
-
-        people = pd.read_sql_table('users', connection, schema='harvest',
-                                   index_col='id')
-
-        time_entries = pd.read_sql_table('time_entries', connection, schema='harvest',
-                                         index_col='id',
-                                         parse_dates=['spent_date'])
-
-        time_entries = pd.merge(time_entries, projects['client_id'], left_on='project_id', right_index=True, how='left')
-
-        return time_entries, projects, tasks, clients, people
-
-    def process_data(self):
-        # remove empty columns
-        self.time_entries.dropna(axis=1, inplace=True)
-        self.projects.dropna(axis=1, inplace=True)
-        self.tasks.dropna(axis=1, inplace=True)
-        self.clients.dropna(axis=1, inplace=True)
-        self.people.dropna(axis=1, inplace=True)
-
-        # replace dots in column names with underscores
-        self.time_entries.columns = self.time_entries.columns.str.replace('.', '_')
-        self.projects.columns = self.projects.columns.str.replace('.', '_')
-        self.tasks.columns = self.tasks.columns.str.replace('.', '_')
-        self.clients.columns = self.clients.columns.str.replace('.', '_')
-        self.people.columns = self.people.columns.str.replace('.', '_')
-
-    def get_person_name(self, person_id):
-        """Get the full name of someone from their person_id"""
-        return self.people.loc[person_id, 'first_name'] + ' ' + self.people.loc[person_id, 'last_name']
-
-    def get_person_id(self, first_name, last_name=None):
-        """Get the person_id of someone from their first_name and last_name."""
-        if last_name is None:
-            person_id = self.people.loc[(self.people['first_name'] == first_name)]
-
-            if len(person_id) != 1:
-                raise ValueError('Could not unique person with name ' + first_name)
-
-        else:
-            person_id = self.people.loc[(self.people['first_name'] == first_name) &
-                                        (self.people['last_name'] == last_name)]
-
-            if len(person_id) != 1:
-                raise ValueError('Could not unique person with name ' + first_name + ' ' + last_name)
-
-        return person_id.index[0]
-
-    def get_project_name(self, project_id):
-        """Get the name of a project from its project_id"""
-        return self.projects.loc[project_id, 'name']
-
-    def get_project_id(self, project_name):
-        """Get the id of a project from its name"""
-        return self.projects.index[self.projects.name == project_name][0]
-
-    def get_client_name(self, client_id):
-        """Get the name of a project from its project_id"""
-        return self.clients.loc[client_id, 'name']
-
-    def get_client_id(self, client_name):
-        """Get the id of a client from its name"""
-        return self.clients.index[self.clients.name == client_name][0]
-
-    def get_task_name(self, task_id):
-        """Get the name of a client from its id"""
-        return self.tasks.loc[task_id, 'name']
-
-    def get_task_id(self, task_name):
-        """Get the id of a task from its name"""
-        return self.tasks.index[self.tasks.name == task_name][0]
-
-    def get_name(self, id_value, id_type):
-        """Get the name of an id based on the type of id it is. id_type can be
-        'person', 'project' 'client', or 'task'."""
-        if id_type == 'person' or id_type == 'user.id' or id_type == 'user_id':
-            return self.get_person_name(id_value)
-        elif id_type == 'project' or id_type == 'project.id' or id_type == 'project_id':
-            return self.get_project_name(id_value)
-        elif id_type == 'client' or id_type == 'client.id' or id_type == 'client_id':
-            return self.get_client_name(id_value)
-        elif id_type == 'task' or id_type == 'task.id' or id_type == 'task_id':
-            return self.get_task_name(id_value)
-        else:
-            raise ValueError('id_type must be person, project, client or task')
-
-    def get_id(self, name, name_type):
-        """Get the name of an id based on the type of id it is. id_type can be
-        'person', 'project' 'client', or 'task'."""
-        if name_type == 'person':
-            return self.get_person_id(name.split(' ')[0], ' '.join(name.split(' ')[1:]))
-        elif name_type == 'project':
-            return self.get_project_id(name)
-        elif name_type == 'client':
-            return self.get_client_id(name)
-        elif name_type == 'task':
-            return self.get_task_id(name)
-        else:
-            raise ValueError('id_type must be person, project, client or task')
-
-    def get_entries(self, id_column, ref_column):
-        """For each unique value in id_column, create a dataframe where the rows are dates,
-        the columns are projects/people/clients/tasks depending on id_column, and the values are
-        time allocations for each project/person/client/task for each date.
-        id_column can be 'person', 'project', 'client', or 'task'
-        ref_column can be 'person', 'project', 'client', 'task' or 'TOTAL' but must not be same as id_column."""
-
-        if ref_column == id_column:
-            raise ValueError('id_column and ref_column must be different.')
-
-        # id column
-        if id_column == 'person':
-            id_column = 'user_id'
-            id_values = self.people.index
-
-        elif id_column == 'project':
-            id_column = 'project_id'
-            id_values = self.projects.index
-
-        elif id_column == 'client':
-            id_column = 'client_id'
-            id_values = self.clients.index
-
-        elif id_column == 'task':
-            id_column = 'task_id'
-            id_values = self.tasks.index
-
-        else:
-            raise ValueError('id_column must be person, project, client or task')
-
-        # ref_column
-        if ref_column == 'person':
-            ref_column = 'user_id'
-
-        elif ref_column == 'project':
-            ref_column = 'project_id'
-
-        elif ref_column == 'client':
-            ref_column = 'client_id'
-
-        elif ref_column == 'task':
-            ref_column = 'task_id'
-
-        elif ref_column != 'TOTAL':
-            raise ValueError('id_column must be person, project, client, task or TOTAL')
-
-        # group time_entries by id_column, ref_column and spent_date
-        if ref_column == 'TOTAL':
-            grouped_entries = self.time_entries.groupby([id_column, 'spent_date']).hours.sum()
-        else:
-            grouped_entries = self.time_entries.groupby([id_column, ref_column, 'spent_date']).hours.sum()
-
-        # populate the entries dict from grouped_entries
-        # entries is a dict with id_column values as keys and the items being a dataframe with ref_column as the index
-        entries = {}
-
-        for idx in id_values:
-            # check whether the this id has any time entries, i.e. whether the id
-            # exists in the index (get_level_values to deal with MultiIndex)
-            if idx in grouped_entries.index.get_level_values(0):
-                # get the allocations
-                id_entries = grouped_entries.loc[idx]
-
-                # unstack the MultiIndex
-                id_entries = id_entries.reset_index()
-
-                # Initialise dataframe to store results
-                if ref_column == 'TOTAL':
-                    id_entry_days = pd.Series(index=self.date_range)
-                else:
-                    id_entry_days = pd.DataFrame(index=self.date_range, columns=id_entries[ref_column].unique())
-
-                id_entry_days.fillna(0, inplace=True)
-
-                # Loop over each time entry
-                for _, row in id_entries.iterrows():
-                    if ref_column == 'TOTAL':
-                        id_entry_days.loc[row['spent_date']] += row['hours']
-                    else:
-                        id_entry_days.loc[row['spent_date'], row[ref_column]] += row['hours']
-
-            else:
-                # no projects, just make an empty dataframe
-                if ref_column == 'TOTAL':
-                    id_entry_days = pd.Series(index=self.date_range).fillna(0)
-                else:
-                    id_entry_days = pd.DataFrame(index=self.date_range)
-
-            # Add the person's name as a label - just nice for printing later.
-            if ref_column != 'TOTAL':
-                id_entry_days.columns.name = self.get_name(idx, id_column)
-
-            entries[idx] = id_entry_days
-
-        if ref_column == 'TOTAL':
-            entries = pd.DataFrame(entries)
-
-        return entries
+            raise TypeError('tracking must be dataframe or dict of dataframes')
