@@ -1,4 +1,4 @@
-"""The functions in this file take a dataframe output from a DataHandlers.Forecast.spreadsheet_sheet dataframe
+"""The functions in this file take a dataframe output from a Wimbledon.whiteboard dataframe
 and convert it into a styled HTML table.
 
 The primary function is make_whiteboard(df, key_type, display)"""
@@ -6,7 +6,7 @@ The primary function is make_whiteboard(df, key_type, display)"""
 from distinctipy import distinctipy
 
 import pandas as pd
-import wimbledon.vis.DataHandlers
+from wimbledon import Wimbledon
 import string
 import re
 import sys
@@ -479,14 +479,14 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    print('MAKE FORECAST OBJECT')
-    fc = wimbledon.vis.DataHandlers.Forecast()
+    print('MAKE WIMBLEDON OBJECT')
+    wim = Wimbledon(with_tracked_time=False)
 
     print('GET WHITEBOARD DATAFRAME')
-    df = fc.whiteboard(key_type,
-                       pd.datetime.now() - pd.Timedelta('30 days'),
-                       pd.datetime.now() + pd.Timedelta('365 days'),
-                       'MS')
+    df = wim.whiteboard(key_type,
+                        pd.datetime.now() - pd.Timedelta('30 days'),
+                        pd.datetime.now() + pd.Timedelta('365 days'),
+                        'MS')
 
     print('GET FORMATTED HTML WHITEBOARD')
     html = make_whiteboard(df, key_type, display)

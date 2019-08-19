@@ -43,11 +43,10 @@ def select_date_range(df, start_date, end_date, drop_zero_cols=True):
 
 class Wimbledon:
     def __init__(self,
-                 update_db=False,
+                 conn=None, update_db=False,
+                 with_tracked_time=True,
                  work_hrs_per_day=None,
-                 proj_hrs_per_day=None,
-                 conn=None,
-                 with_tracked_time=True):
+                 proj_hrs_per_day=None):
         """Load and group Wimbledon data.
         
         Keyword Arguments:
@@ -161,24 +160,25 @@ class Wimbledon:
                                   self.project_resourcereq)
 
         # Time Tracking
-        self.tracked_project_tasks = self.__get_tracking('project', 'task')
-        self.tracked_project_people = self.__get_tracking('project', 'person')
-        self.tracked_person_projects = self.__get_tracking('person', 'project')
-        self.tracked_person_tasks = self.__get_tracking('person', 'task')
+        if with_tracked_time:
+            self.tracked_project_tasks = self.__get_tracking('project', 'task')
+            self.tracked_project_people = self.__get_tracking('project', 'person')
+            self.tracked_person_projects = self.__get_tracking('person', 'project')
+            self.tracked_person_tasks = self.__get_tracking('person', 'task')
 
-        self.tracked_project_totals = self.__get_tracking('project', 'TOTAL')
-        self.tracked_person_totals = self.__get_tracking('person', 'TOTAL')
-        self.tracked_task_totals = self.__get_tracking('task', 'TOTAL')
+            self.tracked_project_totals = self.__get_tracking('project', 'TOTAL')
+            self.tracked_person_totals = self.__get_tracking('person', 'TOTAL')
+            self.tracked_task_totals = self.__get_tracking('task', 'TOTAL')
 
-        # calculate per-client totals for each person
-        self.tracked_person_clients = self.__client_from_project_tracking(
-                                        self.tracked_person_projects
-                                      )
+            # calculate per-client totals for each person
+            self.tracked_person_clients = self.__client_from_project_tracking(
+                                            self.tracked_person_projects
+                                        )
 
-        # calculate overall per-client totals
-        self.tracked_client_totals = self.__client_from_project_tracking(
-                                        self.tracked_project_totals
-                                      )
+            # calculate overall per-client totals
+            self.tracked_client_totals = self.__client_from_project_tracking(
+                                            self.tracked_project_totals
+                                        )
 
     def get_person_name(self, person_id):
         """Get the name of someone from their person_id"""
@@ -212,6 +212,14 @@ class Wimbledon:
         """Get the id of a task from its name"""
         return self.tasks.index[self.tasks.name == task_name][0]
 
+    def get_association_name(self, association_id):
+        """get the association name from the association id"""
+        return self.associations.loc[association_id, 'name']
+    
+    def get_association_id(self, association_name):
+        """get the association id from the association name"""
+        return self.associations.index[self.associations.name == association_name][0]
+        
     def get_name(self, id_value, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
         'person', 'project', 'client', or 'task'"""
@@ -246,6 +254,203 @@ class Wimbledon:
 
         else:
             raise ValueError('id_type must be person or project')
+
+    def whiteboard(self, key_type, start_date, end_date, freq):
+        """Create the raw, unstyled, whiteboard visualisation.
+
+            Dataframe with the rows being key_type (project or person ids), the columns
+        dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
+
+        If add_placeholders=True, non-resource required placeholders will be included on the sheet."""
+        # TODO move this function somewhere else?
+        if key_type == 'project':
+            # copy to prevent overwriting original
+            data_dict = deepcopy(self.project_allocations)
+
+        elif key_type == 'person':
+            data_dict = deepcopy(self.people_allocations)
+
+        else:
+            return ValueError('key type must be person or project')
+
+        sheet = {}
+
+        # set of unique project names used for cell colouring later
+        names = set()
+
+        # for each project
+        for key in data_dict.keys():
+            # get the projects's person allocations
+            df = data_dict[key]
+
+            # replace ids with names. for project id: include resource required.
+            if key_type == 'project':
+                if self.get_name(key, 'project') == 'UNAVAILABLE':
+                    # don't display allocations to unavailable project
+                    continue
+
+                df.columns = [self.get_name(person_id, 'person')
+                                for person_id in df.columns]
+                
+                df.columns.name = self.get_name(key, 'project')
+
+            elif key_type == 'person':
+                df.columns = [self.get_name(project_id, 'project')
+                                for project_id in df.columns]
+
+                df.columns.name = self.get_name(key, 'person')
+
+            else:
+                return ValueError('key type must be person or project')
+
+            # extract the date range of interest
+            df = select_date_range(df, start_date, end_date)
+
+            if key_type == 'person':
+                if 'UNAVAILABLE' in df.columns and len(df.columns) == 1:
+                    # don't display people who are only assigned as unavailable
+                    continue
+
+            # check there are project allocations to display
+            if df.shape[0] > 0 and df.shape[1] > 0:
+
+                # update the set of names
+                [names.add(col) for col in df.columns]
+
+                # resample the data to the given date frequency
+                if freq != 'D':
+                    df = df.resample(freq).mean()
+
+                # sort columns by magnitude of earliest assignment
+                df = df.sort_values(by=[idx for idx in df.index],
+                                    axis=1,
+                                    ascending=False)
+
+                # max number items assigned to this key at a time
+                n_columns = (df > 0).sum(axis=1).max()
+
+                # initialise data frame to store ranked time assignments
+                key_sheet = pd.DataFrame('',
+                                            index=df.index,
+                                            columns=range(1, n_columns + 1))
+
+                fill_idx = None
+
+                for name_idx, name in enumerate(df.columns):
+                    # flags dates where this name has a non-zero allocation
+                    nonzero_allocs = df.iloc[:, name_idx] > 0
+
+                    # choose where to place new allocations in key_sheet
+                    for key_col in key_sheet.columns:
+                        # flags columns in key_sheet where the new allocations in df[name] overlap
+                        # with previous allocations added to key_sheet
+                        conflicts = key_sheet.loc[nonzero_allocs, key_col].str.len() > 0
+
+                        # if there is no overlap between new allocations and this column we can fill the values there
+                        if (~conflicts).all():
+                            fill_idx = key_col
+                            break
+
+                    if fill_idx is None:
+                        raise KeyError("no suitable column to fill without conflicts")
+
+                    # insert the new allocations with format <NAME> (<ALLOCATION>)
+                    key_sheet.loc[nonzero_allocs, fill_idx] = name + df.iloc[nonzero_allocs.values, name_idx].apply(lambda x: '<br>({:.1f})'.format(x))
+
+                # remove unused columns
+                [key_sheet.drop(col, axis=1, inplace=True)
+                    for col in key_sheet.columns
+                    if key_sheet[col].str.len().sum() == 0]
+
+                # format dates nicely
+                if freq == 'MS':
+                    key_sheet = pd.DataFrame(key_sheet,
+                                                index=key_sheet.index.strftime("%b-%Y"))
+                elif freq == 'W-MON':
+                    key_sheet = pd.DataFrame(key_sheet,
+                                                index=key_sheet.index.strftime("%d-%b-%Y"))
+                else:
+                    key_sheet = pd.DataFrame(key_sheet,
+                                                index=key_sheet.index.strftime("%Y-%m-%d"))
+
+                # store the allocations - transpose to get rows as keys and columns as dates
+                sheet[df.columns.name] = key_sheet.T
+
+        # merge everything together into one large dataframe, sorted by key
+        sheet = pd.concat(sheet).sort_index()
+
+        if key_type == 'project':
+
+            # Get project client names
+            proj_idx = [self.get_project_id(name)
+                        for name in sheet.index.get_level_values(0)]
+            client_idx = self.projects.loc[proj_idx, 'client']
+            client_name = self.clients.loc[client_idx, 'name']
+
+            # Add project client info to index (~programme area)
+            sheet['client_name'] = client_name.values
+            sheet.set_index(['client_name', sheet.index], inplace=True)
+            sheet.index.rename('project_name', 1, inplace=True)
+            sheet.index.rename('row', 2, inplace=True)
+
+            sheet.sort_values(by=['client_name', 'project_name', 'row'],
+                                inplace=True)
+            
+            # Move REG projects to end
+            clients = client_name.unique()
+            reg = sorted([client for client in clients
+                            if 'REG' in client])
+            others = sorted([client for client in clients
+                                if 'REG' not in client])
+            sheet = sheet.reindex(others+reg, level=0)
+
+            # Remove index headings
+            sheet.index.rename([None, None, None], inplace=True)
+
+            # Get GitHub issue numbers, add as hrefs
+            proj_names = sheet.index.levels[1].values
+            proj_idx = [self.get_project_id(name)
+                        for name in proj_names]
+            proj_gitissue = [self.projects.loc[idx, 'github']
+                                for idx in proj_idx]
+            git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
+
+            proj_names_with_url = {}
+            for idx, proj in enumerate(proj_names):
+                if not np.isnan(proj_gitissue[idx]):
+                    proj_names_with_url[proj] = """<a href="{url}/{issue}">{proj}<br>[GitHub: #{issue}]</a>""".format(url=git_base_url,
+                                                                                                issue=int(proj_gitissue[idx]),
+                                                                                                proj=proj)
+
+            sheet.rename(proj_names_with_url, axis='index', level=1, inplace=True)
+
+        elif key_type == 'person':
+
+            # Get person association group
+            person_idx = [self.get_person_id(name)
+                            for name in sheet.index.get_level_values(0)]
+
+            assoc_idx = [self.people.loc[idx, 'association']
+                            for idx in person_idx]
+            
+            group_name = [self.associations.loc[idx, 'name']
+                            for idx in assoc_idx]
+
+            # Add project client info to index (~programme area)
+            sheet['group_name'] = group_name
+            sheet.set_index(['group_name', sheet.index], inplace=True)
+            sheet.index.rename('person_name', 1, inplace=True)
+            sheet.index.rename('row', 2, inplace=True)
+
+            sheet.sort_values(by=['group_name', 'person_name', 'row'], inplace=True)
+
+            sheet = sheet.reindex(['REG Director', 'REG Principal', 'REG Senior', 'REG Permanent',
+                                    'REG FTC', 'REG Associate', 'University Partner', 'Placeholder'],
+                                    level=0)
+
+            sheet.index.rename([None, None, None], inplace=True)
+
+        return sheet
 
     def __get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where
@@ -367,203 +572,6 @@ class Wimbledon:
             project_resreq[project] += allocs[project]
 
         return project_resreq
-
-    def whiteboard(self, key_type, start_date, end_date, freq):
-        """Create the raw, unstyled, whiteboard visualisation.
-
-         Dataframe with the rows being key_type (project or person ids), the columns
-        dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
-
-        If add_placeholders=True, non-resource required placeholders will be included on the sheet."""
-        # TODO move this function somewhere else?
-        if key_type == 'project':
-            # copy to prevent overwriting original
-            data_dict = deepcopy(self.project_allocations)
-
-        elif key_type == 'person':
-            data_dict = deepcopy(self.people_allocations)
-
-        else:
-            return ValueError('key type must be person or project')
-
-        sheet = {}
-
-        # set of unique project names used for cell colouring later
-        names = set()
-
-        # for each project
-        for key in data_dict.keys():
-            # get the projects's person allocations
-            df = data_dict[key]
-
-            # replace ids with names. for project id: include resource required.
-            if key_type == 'project':
-                if self.get_name(key, 'project') == 'UNAVAILABLE':
-                    # don't display allocations to unavailable project
-                    continue
-
-                df.columns = [self.get_name(person_id, 'person')
-                              for person_id in df.columns]
-                
-                df.columns.name = self.get_name(key, 'project')
-
-            elif key_type == 'person':
-                df.columns = [self.get_name(project_id, 'project')
-                              for project_id in df.columns]
-
-                df.columns.name = self.get_name(key, 'person')
-
-            else:
-                return ValueError('key type must be person or project')
-
-            # extract the date range of interest
-            df = select_date_range(df, start_date, end_date)
-
-            if key_type == 'person':
-                if 'UNAVAILABLE' in df.columns and len(df.columns) == 1:
-                    # don't display people who are only assigned as unavailable
-                    continue
-
-            # check there are project allocations to display
-            if df.shape[0] > 0 and df.shape[1] > 0:
-
-                # update the set of names
-                [names.add(col) for col in df.columns]
-
-                # resample the data to the given date frequency
-                if freq != 'D':
-                    df = df.resample(freq).mean()
-
-                # sort columns by magnitude of earliest assignment
-                df = df.sort_values(by=[idx for idx in df.index],
-                                    axis=1,
-                                    ascending=False)
-
-                # max number items assigned to this key at a time
-                n_columns = (df > 0).sum(axis=1).max()
-
-                # initialise data frame to store ranked time assignments
-                key_sheet = pd.DataFrame('',
-                                         index=df.index,
-                                         columns=range(1, n_columns + 1))
-
-                fill_idx = None
-
-                for name_idx, name in enumerate(df.columns):
-                    # flags dates where this name has a non-zero allocation
-                    nonzero_allocs = df.iloc[:, name_idx] > 0
-
-                    # choose where to place new allocations in key_sheet
-                    for key_col in key_sheet.columns:
-                        # flags columns in key_sheet where the new allocations in df[name] overlap
-                        # with previous allocations added to key_sheet
-                        conflicts = key_sheet.loc[nonzero_allocs, key_col].str.len() > 0
-
-                        # if there is no overlap between new allocations and this column we can fill the values there
-                        if (~conflicts).all():
-                            fill_idx = key_col
-                            break
-
-                    if fill_idx is None:
-                        raise KeyError("no suitable column to fill without conflicts")
-
-                    # insert the new allocations with format <NAME> (<ALLOCATION>)
-                    key_sheet.loc[nonzero_allocs, fill_idx] = name + df.iloc[nonzero_allocs.values, name_idx].apply(lambda x: '<br>({:.1f})'.format(x))
-
-                # remove unused columns
-                [key_sheet.drop(col, axis=1, inplace=True)
-                 for col in key_sheet.columns
-                 if key_sheet[col].str.len().sum() == 0]
-
-                # format dates nicely
-                if freq == 'MS':
-                    key_sheet = pd.DataFrame(key_sheet,
-                                             index=key_sheet.index.strftime("%b-%Y"))
-                elif freq == 'W-MON':
-                    key_sheet = pd.DataFrame(key_sheet,
-                                             index=key_sheet.index.strftime("%d-%b-%Y"))
-                else:
-                    key_sheet = pd.DataFrame(key_sheet,
-                                             index=key_sheet.index.strftime("%Y-%m-%d"))
-
-                # store the allocations - transpose to get rows as keys and columns as dates
-                sheet[df.columns.name] = key_sheet.T
-
-        # merge everything together into one large dataframe, sorted by key
-        sheet = pd.concat(sheet).sort_index()
-
-        if key_type == 'project':
-
-            # Get project client names
-            proj_idx = [self.get_project_id(name)
-                        for name in sheet.index.get_level_values(0)]
-            client_idx = self.projects.loc[proj_idx, 'client']
-            client_name = self.clients.loc[client_idx, 'name']
-
-            # Add project client info to index (~programme area)
-            sheet['client_name'] = client_name.values
-            sheet.set_index(['client_name', sheet.index], inplace=True)
-            sheet.index.rename('project_name', 1, inplace=True)
-            sheet.index.rename('row', 2, inplace=True)
-
-            sheet.sort_values(by=['client_name', 'project_name', 'row'],
-                              inplace=True)
-            
-            # Move REG projects to end
-            clients = client_name.unique()
-            reg = sorted([client for client in clients
-                          if 'REG' in client])
-            others = sorted([client for client in clients
-                             if 'REG' not in client])
-            sheet = sheet.reindex(others+reg, level=0)
-
-            # Remove index headings
-            sheet.index.rename([None, None, None], inplace=True)
-
-            # Get GitHub issue numbers, add as hrefs
-            proj_names = sheet.index.levels[1].values
-            proj_idx = [self.get_project_id(name)
-                        for name in proj_names]
-            proj_gitissue = [self.projects.loc[idx, 'github']
-                             for idx in proj_idx]
-            git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
-
-            proj_names_with_url = {}
-            for idx, proj in enumerate(proj_names):
-                if not np.isnan(proj_gitissue[idx]):
-                    proj_names_with_url[proj] = """<a href="{url}/{issue}">{proj}<br>[GitHub: #{issue}]</a>""".format(url=git_base_url,
-                                                                                               issue=int(proj_gitissue[idx]),
-                                                                                               proj=proj)
-
-            sheet.rename(proj_names_with_url, axis='index', level=1, inplace=True)
-
-        elif key_type == 'person':
-
-            # Get person association group
-            person_idx = [self.get_person_id(name)
-                          for name in sheet.index.get_level_values(0)]
-
-            assoc_idx = [self.people.loc[idx, 'association']
-                         for idx in person_idx]
-            
-            group_name = [self.associations.loc[idx, 'name']
-                          for idx in assoc_idx]
-
-            # Add project client info to index (~programme area)
-            sheet['group_name'] = group_name
-            sheet.set_index(['group_name', sheet.index], inplace=True)
-            sheet.index.rename('person_name', 1, inplace=True)
-            sheet.index.rename('row', 2, inplace=True)
-
-            sheet.sort_values(by=['group_name', 'person_name', 'row'], inplace=True)
-
-            sheet = sheet.reindex(['REG Director', 'REG Principal', 'REG Senior', 'REG Permanent',
-                                   'REG FTC', 'REG Associate', 'University Partner', 'Placeholder'],
-                                  level=0)
-
-            sheet.index.rename([None, None, None], inplace=True)
-
-        return sheet
 
     def __get_tracking(self, id_column, ref_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,
