@@ -798,12 +798,12 @@ class Visualise:
         fc_totals = select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
 
         if stack:
-            hv_totals = self.wim.projects_people[project_id].copy()
+            hv_totals = self.wim.tracked_project_people[project_id].copy()
             hv_totals = hv_totals.resample(freq).sum().cumsum()
             hv_totals = select_date_range(hv_totals, start_date, end_date, drop_zero_cols=True)
             hv_totals.columns = [self.wim.get_person_name(idx) for idx in hv_totals.columns]
         else:
-            hv_totals = self.wim.projects_totals[project_id].copy()
+            hv_totals = self.wim.tracked_project_totals[project_id].copy()
             hv_totals = hv_totals.resample(freq).sum().cumsum()
             hv_totals = select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
 
@@ -840,7 +840,7 @@ class Visualise:
             plt.close(fig)
             raise TypeError('forecast_id '+str(project_id)+' plot failed')
 
-    def plot_harvest(self, id_type, group_type, project_id=None,
+    def plot_harvest(self, id_type, group_type, id_value=None,
                     start_date=None, end_date=None, freq='MS',
                     plot_type='bar'):
         """Bar charts of Harvest time tracking."""
@@ -852,46 +852,46 @@ class Visualise:
                        'project-TOTAL, client-TOTAL and task-TOTAL')
 
         if id_type == 'person':
-            if project_id is not None and group_type != 'TOTAL':
-                id_name = self.wim.get_person_name(project_id)
+            if id_value is not None and group_type != 'TOTAL':
+                id_name = self.wim.get_person_name(id_value)
             else:
                 id_name = ''
 
             if group_type == 'project':
-                df = self.wim.people_projects[project_id].copy()
+                df = self.wim.tracked_person_projects[id_value].copy()
                 df.columns = [self.wim.get_project_name(idx) for idx in df.columns]
                 type_name = 'Project'
             elif group_type == 'client':
-                df = self.wim.people_clients[project_id].copy()
+                df = self.wim.tracked_person_clients[id_value].copy()
                 df.columns = [self.wim.get_client_name(idx) for idx in df.columns]
                 type_name = 'Client'
             elif group_type == 'task':
-                df = self.wim.people_tasks[project_id].copy()
+                df = self.wim.tracked_person_tasks[id_value].copy()
                 df.columns = [self.wim.get_task_name(idx) for idx in df.columns]
                 type_name = 'Task'
             elif group_type == 'TOTAL':
-                df = self.wim.people_totals.copy()
+                df = self.wim.tracked_person_totals.copy()
                 df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
                 type_name = 'People'
             else:
                 raise e
 
         elif id_type == 'project':
-            if project_id is not None and group_type != 'TOTAL':
-                id_name = self.wim.get_project_name(project_id)
+            if id_value is not None and group_type != 'TOTAL':
+                id_name = self.wim.get_project_name(id_value)
             else:
                 id_name = ''
 
             if group_type == 'person':
-                df = self.wim.projects_people[project_id].copy()
+                df = self.wim.tracked_project_people[id_value].copy()
                 df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
                 type_name = 'People'
             elif group_type == 'task':
-                df = self.wim.projects_tasks[project_id].copy()
+                df = self.wim.tracked_project_tasks[id_value].copy()
                 df.columns = [self.wim.get_task_name(idx) for idx in df.columns]
                 type_name = 'Task'
             elif group_type == 'TOTAL':
-                df = self.wim.projects_totals.copy()
+                df = self.wim.tracked_project_totals.copy()
                 df.columns = [self.wim.get_project_name(idx) for idx in df.columns]
                 type_name = 'Project'
             else:
@@ -901,7 +901,7 @@ class Visualise:
             id_name = ''
 
             if group_type == 'TOTAL':
-                df = self.wim.clients_totals.copy()
+                df = self.wim.tracked_client_totals.copy()
                 df.columns = [self.wim.get_client_name(idx) for idx in df.columns]
                 type_name = 'Client'
             else:
@@ -911,7 +911,7 @@ class Visualise:
             id_name = ''
 
             if group_type == 'TOTAL':
-                df = self.wim.tasks_totals.copy()
+                df = self.wim.tracked_task_totals.copy()
                 df.columns = [self.wim.get_task_name(idx) for idx in df.columns]
                 type_name = 'Task'
             else:
