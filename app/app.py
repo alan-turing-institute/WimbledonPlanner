@@ -2,7 +2,7 @@ from flask import Flask, send_from_directory, send_file
 
 from wimbledon.vis import Visualise
 from wimbledon.harvest.api_interface import update_to_csv
-
+from wimbledon.github import preferences_availability as pref
 import os
 import zipfile
 import traceback
@@ -55,7 +55,7 @@ def home():
 def update():
     """Query the Forecast API for the latest data and update the whiteboard
     visualisations.
-   
+
     Raises:
         ValueError: Traceback of what went wrong if something fails during
          update process.
@@ -69,13 +69,23 @@ def update():
         #  system time?)
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
+        # Generate preference table
+        print('Generate preference table...')
+        preferences_table = pref.get_all_preferences_table()
+
+        # Save preference table to file
+        check_dir(app.config.get('DATA_DIR') + '/figs/preferences')
+
+        with open(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html', 'w') as f:
+            f.write(preferences_table)
+
         vis = Visualise(with_tracked_time=False,
                         update_db=True)
-        
+
         # Generate whiteboards
         print('Generate whiteboards...')
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
-           
+
         # Save whiteboards to file
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
 
@@ -108,7 +118,7 @@ def update():
         capacity_fig.savefig(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.png',
                              dpi=300)
         plt.close('all')
-        
+
         with open(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.html', 'w') as f:
             f.write("""<!DOCTYPE html>
                         <html>
@@ -119,7 +129,7 @@ def update():
                                  <img src="demand_vs_capacity.png" alt="demand_vs_capacity">
                             </body>
                             </html>""")
-        
+
         print('Make zip file...')
         # create zip of print version whiteboard files
         with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
@@ -142,7 +152,7 @@ def update():
 @app.route('/projects')
 def projects():
     """Get the projects whiteboard.
-    
+
     Returns:
         str -- HTML representation of the projects whiteboard.
     """
@@ -162,7 +172,7 @@ def projects():
 @app.route('/people')
 def people():
     """Get the people whiteboard
-    
+
     Returns:
         str -- HTML representation of the people whiteboard.
     """
@@ -179,16 +189,36 @@ def people():
         return traceback.format_exc()
 
 
+@app.route('/preferences')
+def preferences():
+    """Get the preferences table
+
+    Returns:
+        str -- HTML representation of the preferences table.
+    """
+    try:
+        if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html'):
+            update()
+
+        with open(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html', 'r') as f:
+            whiteboard = f.read()
+
+        return whiteboard
+
+    except:
+        return traceback.format_exc()
+
+
 @app.route('/download')
 def download():
     """Get a zip of whiteboard files.
-    
+
     Returns:
         Flask response -- Flask representation of zip file to deliver.
     """
     try:
         response = send_from_directory(app.config.get('DATA_DIR'), 'whiteboard.zip', as_attachment=True)
-        
+
         # change headers to stop browser from delivering cached version
         response.headers['Last-Modified'] = datetime.now()
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
@@ -204,7 +234,7 @@ def download():
 @app.route('/demand_vs_capacity')
 def demand_vs_capacity():
     """Display demand vs capacity plot.
-    
+
     Returns:
         Flask response -- Flask representation of zip file to deliver.
     """
