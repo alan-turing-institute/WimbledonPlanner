@@ -1,6 +1,6 @@
 from flask import Flask, send_from_directory
 
-from wimbledon.vis.Visualise import Visualise
+from wimbledon.vis import Visualise
 from wimbledon.harvest.api_interface import update_to_csv
 
 import os
@@ -68,7 +68,7 @@ def update():
                                      run_harvest=False)
 
         # Generate whiteboards
-        vis = Visualise(init_harvest=False, data_source='csv',
+        vis = Visualise(with_tracked_time=False,
                         data_dir='../data')
 
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)

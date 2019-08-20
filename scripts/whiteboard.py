@@ -4,7 +4,7 @@ import sys
 
 import pandas as pd
 
-from wimbledon.vis.Visualise import Visualise
+from wimbledon.vis import Visualise
 
 FIG_DIR = '../data/figs'
 PROJECTS_DIR = FIG_DIR + '/projects'
