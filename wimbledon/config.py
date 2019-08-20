@@ -192,7 +192,12 @@ def get_sql_config():
 
 
 def get_github_credentials():
+    """
+    Load GitHub credentials from ~/.wimbledon/.github_credentials, which should be a json file containing the key: token,
+    or from GITHUB_TOKEN environment variable.
 
+    :return:
+    """
     try:
         # check environment variables
         github_credentials = dict()
