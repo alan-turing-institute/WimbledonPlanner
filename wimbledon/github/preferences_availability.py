@@ -30,8 +30,6 @@ query = """
   }
 }
 """
-def test_func():
-    print("rtgrt")
 
 def run_query(query, token):
     """A simple function to use requests.post to make the API call. Note the json= section.
