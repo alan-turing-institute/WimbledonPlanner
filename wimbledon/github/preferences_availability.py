@@ -5,6 +5,7 @@ from datetime import datetime
 import statistics
 from IPython.display import HTML, display
 from wimbledon.vis.Visualise import DataHandlers
+from wimbledon import config
 
 
 query = """
@@ -170,4 +171,34 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                     if (not person and not project) or not positive_only or len(emoji_data) > 0:
                         data[project_title] = emoji_data
     preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
-    return preferences
+    css = """<style>
+                .tableFixHead {
+                          overflow: scroll;
+                          max-height: 100%;
+                          max-width: 100%;
+                        }
+                thead th {
+                          position: sticky;
+                          top: 0;
+                        }
+                tbody th {
+                          position: sticky;
+                          left: 0;
+                        }
+                thead th:first-child {
+                          left: 0;
+                          z-index: 1;
+                }
+        </style>"""
+    emoji_table = preferences.to_html()
+    html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
+    return html_table
+
+
+def get_all_preferences_table():
+    credentials = config.get_github_credentials()
+    token = credentials["token"]
+    fc = DataHandlers.Forecast()  # get data from forecast
+    preference_data_df = get_preference_data(fc, token)
+    preferences_with_availability = get_preferences(fc, preference_data_df)
+    return preferences_with_availability

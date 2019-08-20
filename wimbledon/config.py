@@ -8,6 +8,7 @@ CONFIG_DIR = os.path.expanduser('~/.wimbledon')
 HARVEST_CREDENTIALS_PATH = CONFIG_DIR + '/.harvest_credentials'
 SQL_CONFIG_PATH = CONFIG_DIR + '/.sql_config'
 WIMBLEDON_CONFIG_PATH = CONFIG_DIR + '/.wimbledon_config'
+GITHUB_CREDENTIALS_PATH = CONFIG_DIR + '/.github_credentials'
 
 def check_dir(directory):
     """
@@ -157,3 +158,26 @@ def get_sql_config():
             "password not set in " + SQL_CONFIG_PATH
 
     return sql_config
+
+
+def get_github_credentials():
+
+    try:
+        # check environment variables
+        github_credentials = dict()
+        github_credentials['token'] = os.environ['GITHUB_TOKEN']
+
+    except KeyError:
+        # check ~/.wimbledon/.github_credentials
+        try:
+            with open(GITHUB_CREDENTIALS_PATH, 'r') as f:
+                github_credentials = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError('No GitHub credentials found. Please create the file '+ GITHUB_CREDENTIALS_PATH)
+
+        keys = github_credentials.keys()
+
+        assert "token" in keys, \
+            "token not present in " + GITHUB_CREDENTIALS_PATH
+
+    return github_credentials
