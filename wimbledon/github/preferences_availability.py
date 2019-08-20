@@ -33,8 +33,10 @@ query = """
 """
 
 def run_query(query, token):
-    """A simple function to use requests.post to make the API call. Note the json= section.
-    Takes as input a string containing a GraphQL query string"""
+    """
+    A simple function to use requests.post to make the API call. Note the json= section.
+    Takes as input a string containing a GraphQL query string
+    """
     headers = {"Authorization": "Bearer " + token}
     request = requests.post('https://api.github.com/graphql', json={'query': query}, headers=headers)
     if request.status_code == 200:
@@ -44,7 +46,9 @@ def run_query(query, token):
 
 
 def get_person_availability(fc, person, start_date, end_date):
-    """Get the mean of a person's FTE proportion available for the start to end datetime objects, using their name or id"""
+    """
+    Get the mean of a person's FTE proportion available for the start to end datetime objects, using their name or id
+    """
     peopledf = 1 - fc.people_totals.resample('MS').mean()  # pandas df for team members availability
     if isinstance(person, str):
         try:
@@ -61,7 +65,9 @@ def get_person_availability(fc, person, start_date, end_date):
 
 
 def get_project_requirement(fc, project, start_date, end_date):
-    """Get the mean of a project's FTE requirement for the start to end datetime objects, using the project name or id"""
+    """
+    Get the mean of a project's FTE requirement for the start to end datetime objects, using the project name or id
+    """
     projectdf = fc.project_resourcereq.resample('MS').mean()  # pandas df for project resource requirement
     if isinstance(project, str):
         try:
@@ -78,8 +84,11 @@ def get_project_requirement(fc, project, start_date, end_date):
 
 
 def get_preference_data(fc, github_token, emoji_mapping=None):
-    """Get each team members preference emoji for all projects with a GitHub issue"""
-    issues = fc.projects["GitHub"].dropna()  # Get list of GitHub issues for projects
+    """
+    Get each team members preference emoji for all projects with a GitHub issue.
+    Return a pandas df with person against project and their preference emoji.
+    Custom emoji mapping can be provided.
+    """
     gid_mapping = {  # People without their full names on github.
      'myyong': 'May Yong',
      'nbarlowATI': 'Nick Barlow',
@@ -89,7 +98,7 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
      'AshwiniKV': 'Ashwini Venkatasubramaniam',
     }
     if not emoji_mapping:
-        emoji_mapping = {'CONFUSED': '😕',
+        emoji_mapping = {'CONFUSED': '😕',  # Map the emojis from GitHub to those we want to display
               'EYES': '👀',
               'HEART': '❤️',
               'HOORAY': '🎉',
@@ -101,10 +110,12 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
     preference_data = {
         "Person": names
     }
+    issues = fc.projects["GitHub"].dropna()  # Get list of GitHub issues for projects
     for issue_num, project_id in zip(issues, issues.index):
-        modified_query = query.replace("X", str(issue_num))
+        modified_query = query.replace("X", str(issue_num))  # Create a GraphQL query for this GitHub issue
         result = run_query(modified_query, github_token)  # Execute the query
         emojis = []
+        # Get the relevant emoji for each team member for this GitHub issue and associated project
         for name in names:
             emoji_name = None
             for reaction in result['data']['repository']['issue']['reactionGroups']:
@@ -118,16 +129,23 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
             if emoji_name:
                 emoji = emoji_mapping[emoji_name]
             else:
-                emoji = "❓"
+                emoji = "❓"  # For team members who have not given a preference to the project
             emojis.append(emoji)
         preference_data[fc.get_project_name(project_id)] = emojis
         preference_data_df = pd.DataFrame(preference_data).set_index('Person')
+        # Remove any team members without emoji preferences for any project
         preference_data_df = preference_data_df.loc[~(preference_data_df=="❓").all(axis=1)]
     return preference_data_df
 
 
 def get_preferences(fc, preference_data_df, first_date=False, last_date=False, person=False, project=False, positive_only=False, emojis_only=False):
-    resreqdf = fc.project_resourcereq.resample('MS').mean() # grouped by month and mean taken
+    """
+    Create a HTML table with each project that has a resource requirement against every REG team member with availability.
+    Table values show the preference emojis alongside the mean availability the person has for the resource required period and
+    the mean resource required for the range between the first month with resource required and the last.
+    """
+    # Get the data on project resource requirement from Forecast
+    resreqdf = fc.project_resourcereq.resample('MS').mean()  # grouped by month and mean taken
     if person:
         names = [person]
     else:
@@ -136,14 +154,16 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
         "Person": names
     }
     issues = fc.projects["GitHub"].dropna().values
+    # If a project name or project id is provided, only get data for that project
     if project:
         if isinstance(project, str):
             try:
                 project = fc.get_project_id(project)
             except:
                 pass
-    for project_id in resreqdf:  # some of these have no GitHub issue
-        if not project or project == project_id:
+    # Get projects with some resource requirement but filter by those with a GitHub issue
+    for project_id in resreqdf:
+        if not project or project == project_id:  # If a project name or project id is provided, only get data for that project
             date_indices = resreqdf.index[resreqdf[project_id] > 0]
             if len(date_indices) > 0:  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
                 issue_num = fc.projects.loc[project_id, "GitHub"]
@@ -157,6 +177,7 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                         person_availability = get_person_availability(fc, name, first_resreq_date, last_resreq_date)
                         percentage_availability = round((person_availability / resreq) * 100, 2)
                         emoji = preference_data_df[project_title][name]
+                        # If a specific person or project is specified and positive_only is True, only include checks and thumbs
                         if (not person and not project) or not positive_only or emoji == '✅' or emoji == '👍':
                             if emojis_only:
                                 emoji_data.append(emoji)
@@ -170,7 +191,9 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
 
                     if (not person and not project) or not positive_only or len(emoji_data) > 0:
                         data[project_title] = emoji_data
+    # Created an alphabetically sorted dataframe from the data
     preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
+    # Create a HTML table from this dataframe that is scrollable
     css = """<style>
                 .tableFixHead {
                           overflow: scroll;
@@ -196,9 +219,14 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
 
 
 def get_all_preferences_table():
+    """
+    Create the HTML table described in get_preferences() with default settings
+    i.e. for all team members with at least one preference emoji and all projects
+    with some resource requirement.
+    """
     credentials = config.get_github_credentials()
     token = credentials["token"]
-    fc = DataHandlers.Forecast()  # get data from forecast
+    fc = DataHandlers.Forecast()
     preference_data_df = get_preference_data(fc, token)
     preferences_with_availability = get_preferences(fc, preference_data_df)
     return preferences_with_availability
