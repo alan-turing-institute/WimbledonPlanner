@@ -193,7 +193,7 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
     return preference_data_df
 
 
-def get_preferences(fc, preference_data_df, first_date=False, last_date=False, person=False, project=False, positive_only=False, emojis_only=False):
+def get_preferences(fc, preference_data_df, first_date=False, last_date=False, person=False, project=False, positive_only=False, emojis_only=False, css=None):
     """
     Create a HTML table with each project that has a resource requirement against every REG team member with availability.
     Table values show the preference emojis alongside the mean availability the person has for the resource required period and
@@ -237,7 +237,8 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                             if emojis_only:
                                 emoji_data.append(emoji)
                             else:
-                                emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
+                                emoji_data.append(emoji + " " + str(person_availability) + " / " + str(round(resreq, 2)))
+                                # emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
 #                         if project and positive_only and (emoji == '❌' or emoji == '❓'):
 #                             print(name, emoji)
 #                             data["Person"].remove(name)
@@ -249,31 +250,56 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
     # Created an alphabetically sorted dataframe from the data
     preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
     # Create a HTML table from this dataframe that is scrollable
-    css = """<style>
-                .tableFixHead {
-                          overflow: scroll;
-                          max-height: 100%;
-                          max-width: 100%;
-                        }
-                thead th {
-                          position: sticky;
-                          top: 0;
-                        }
-                tbody th {
-                          position: sticky;
-                          left: 0;
-                        }
-                thead th:first-child {
-                          left: 0;
-                          z-index: 1;
-                }
-        </style>"""
-    emoji_table = preferences.to_html()
-    html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
+    # Default css can be overridden with argument
+    if not css:
+        css = """<style>
+                    .tableFixHead {
+                              overflow: scroll;
+                              max-height: 100%;
+                              max-width: 100%;
+                            }
+                    thead th {
+                              position: sticky;
+                              top: 0;
+                              background-color: #4CAF50;
+                              color: white;
+                            }
+                    tbody th {
+                              position: sticky;
+                              left: 0;
+                              padding-top: 12px;
+                              padding-top: 12px;
+                              padding-bottom: 12px;
+                              text-align: left;
+                              background-color: #4CAF50;
+                              color: white;
+                            }
+                    thead th:first-child {
+                              left: 0;
+                              z-index: 1;
+                            }
+                    td th {
+                              border: 1px solid #ddd;
+                              padding: 8px;
+                            }
+                    table {
+                               font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+                               border-collapse: collapse;
+                               width: 100%;
+                            }
+                    tr:nth-child(even){
+                               background-color: #f2f2f2;
+                            }
+                    tr:hover {
+                               background-color: #d4fad9;
+                            }
+            </style>"""
+    emoji_table = preferences.to_html()  # Convert to HTML table
+    html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
     return html_table
 
 
-def get_all_preferences_table():
+def get_all_preferences_table(fc=None):
     """
     Create the HTML table described in get_preferences() with default settings
     i.e. for all team members with at least one preference emoji and all projects
@@ -281,7 +307,9 @@ def get_all_preferences_table():
     """
     credentials = config.get_github_credentials()
     token = credentials["token"]
-    fc = DataHandlers.Forecast()
+
+    if not fc:
+        fc = DataHandlers.Forecast()
     preference_data_df = get_preference_data(fc, token)
     preferences_with_availability = get_preferences(fc, preference_data_df)
     return preferences_with_availability
