@@ -32,6 +32,35 @@ query = """
 }
 """
 
+alternate_query = """
+{
+  repository(owner:"alan-turing-institute", name:"Hut23") {
+    issue(number:X) {
+          number
+          title
+          url
+          comments(first:5) {
+            edges {
+              node {
+                reactionGroups {
+                    content
+                    users(first:20) {
+                        edges {
+                            node {
+                                login
+                                name
+                            }
+                        }
+                    }
+                    }
+              }
+            }
+          }
+    }
+  }
+}
+"""
+
 def run_query(query, token):
     """
     A simple function to use requests.post to make the API call. Note the json= section.
@@ -43,6 +72,33 @@ def run_query(query, token):
         return request.json()
     else:
         raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
+
+
+def get_reactions(token, issue):
+    """
+    Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
+    """
+    def reactions_exist(project_reactions):
+        for reaction in project_reactions:
+            for edge in reaction['users']['edges']:
+                if reaction['content']:
+                    return True
+        return False
+
+    modified_query = query.replace("X", str(issue))
+    result = run_query(modified_query, token)
+    project_reactions_first_query = result['data']['repository']['issue']['reactionGroups']
+    if reactions_exist(project_reactions_first_query):
+        return project_reactions_first_query
+
+    modified_query = alternate_query.replace("X", str(issue))
+    result = run_query(modified_query, token)
+    project_comments = result['data']['repository']['issue']['comments']['edges']
+    for comment in project_comments:
+        project_reactions = comment['node']['reactionGroups']
+        if reactions_exist(project_reactions):
+            return project_reactions
+    return project_reactions_first_query
 
 
 def get_person_availability(fc, person, start_date, end_date):
@@ -112,13 +168,12 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
     }
     issues = fc.projects["GitHub"].dropna()  # Get list of GitHub issues for projects
     for issue_num, project_id in zip(issues, issues.index):
-        modified_query = query.replace("X", str(issue_num))  # Create a GraphQL query for this GitHub issue
-        result = run_query(modified_query, github_token)  # Execute the query
+        project_reactions = get_reactions(github_token, issue_num)  # get a dict with the emoji reactions for this issue
         emojis = []
         # Get the relevant emoji for each team member for this GitHub issue and associated project
         for name in names:
             emoji_name = None
-            for reaction in result['data']['repository']['issue']['reactionGroups']:
+            for reaction in project_reactions:
                 for edge in reaction['users']['edges']:
                     if edge['node']['name'] == name:
                         emoji_name = reaction['content']
@@ -132,9 +187,9 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
                 emoji = "❓"  # For team members who have not given a preference to the project
             emojis.append(emoji)
         preference_data[fc.get_project_name(project_id)] = emojis
-        preference_data_df = pd.DataFrame(preference_data).set_index('Person')
-        # Remove any team members without emoji preferences for any project
-        preference_data_df = preference_data_df.loc[~(preference_data_df=="❓").all(axis=1)]
+    preference_data_df = pd.DataFrame(preference_data).set_index('Person')
+    # Remove any team members without emoji preferences for any project
+    preference_data_df = preference_data_df.loc[~(preference_data_df=="❓").all(axis=1)]
     return preference_data_df
 
 
