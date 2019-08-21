@@ -44,6 +44,7 @@ def home():
     Browse to:<br>
      * <a href="/projects">/projects</a> for projects whiteboard<br>
      * <a href="/people">/people</a> for people whiteboard<br>
+     * <a href="/preferences">/preferences</a> for team member preferences and availability<br>
      * <a href="/demand_vs_capacity">/demand_vs_capacity</a> to view the project
      demand vs team capacity plot<br>
      * <a href="/update">/update</a> to update the data and visualisations (slow!)<br>
