@@ -59,8 +59,7 @@ class Wimbledon:
         if update_db:
             wimbledon.harvest.db_interface.update_db(
                 conn=conn,
-                with_tracked_time=with_tracked_time,
-                update_db=update_db
+                with_tracked_time=with_tracked_time
             )
 
         data = query_db.get_data(conn=conn,
