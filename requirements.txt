@@ -7,6 +7,6 @@ git+https://github.com/alan-turing-institute/pyforecast.git
 seaborn==0.9.0
 python-harvest-redux==5.0.0b0
 pdfCropMargins==0.1.4
-distinctipy
+distinctipy>=1.1.1
 Flask==1.0.2
 -e .
