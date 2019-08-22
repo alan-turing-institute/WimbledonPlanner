@@ -144,7 +144,7 @@ def update_db(conn=None, with_tracked_time=True):
     print('=' * 50)
     print('HARVEST')
     print('=' * 50)
-    hv = api_interface.get_harvest()
+    hv = api_interface.get_harvest(with_tracked_time=with_tracked_time)
 
     # Client
     print('-' * 50)

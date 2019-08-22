@@ -8,7 +8,7 @@ import re
 import numpy as np
 
 import wimbledon.config
-from wimbledon.harvest.db_interface import update_db
+import wimbledon.harvest.db_interface
 from wimbledon.sql import query_db
 
 
@@ -57,8 +57,11 @@ class Wimbledon:
             with_tracked_time {bool} -- whether to load and process timesheet data (default: {True})
         """
         if update_db:
-            update_db(conn=conn,
-                      with_tracked_time=with_tracked_time)
+            wimbledon.harvest.db_interface.update_db(
+                conn=conn,
+                with_tracked_time=with_tracked_time,
+                update_db=update_db
+            )
 
         data = query_db.get_data(conn=conn,
                                  with_tracked_time=with_tracked_time)
@@ -201,6 +204,10 @@ class Wimbledon:
         """Get the id of a project from its name"""
         return self.projects.index[self.projects.name == project_name][0]
 
+    def get_client_name(self, client_id):
+        """Get the name of a project from its project_id"""
+        return self.clients.loc[client_id, 'name']
+    
     def get_client_id(self, client_name):
         return self.clients.index[self.clients.name == client_name][0]
 
@@ -230,7 +237,7 @@ class Wimbledon:
         elif id_type == 'client':
             return self.get_client_name(id_value)
         elif id_type == 'task':
-            return self.get_task_name(id_value)       
+            return self.get_task_name(id_value)
         else:
             raise ValueError('id_type must be person, project, client or task')
 
@@ -242,16 +249,17 @@ class Wimbledon:
         """Get the name of an id based on the type of id it is. id_type can be
         'person', 'project' or 'placeholder'"""
         if id_type == 'person':
-            try:
-                return self.get_person_id(name)
-            except (KeyError, ValueError):
-                # if person id search fails check whether it's a placeholder id
-                # to deal with cases where they've been merged together
-                return self.get_placeholder_id(name)
+            return self.get_person_id(name)
 
         elif id_type == 'project':
             return self.get_project_id(name)
+        
+        elif id_type == 'client':
+            return self.get_client_id(name)
 
+        elif id_type == 'task':
+            return self.get_task_id(name)
+        
         else:
             raise ValueError('id_type must be person or project')
 

@@ -9,6 +9,8 @@ from wimbledon import select_date_range
 
 from wimbledon.vis import HTMLWriter
 
+from distinctipy import colorsets
+colorsets.set_palette()
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -36,9 +38,11 @@ class Visualise:
         
         # only print one decimal place
         pd.options.display.float_format = '{:.1f}'.format
-        
-        # have bigger fonts by default
-        sns.set(font_scale=1.5)
+ 
+        # have bigger fonts by default and use distinctipy colours
+        sns.set(font_scale=1.5,
+                palette=sns.color_palette(colorsets.get_colors()),
+                color_codes=False)
 
         # TODO: Deal with case where time tracking not initiated but a
         # TODO: function tries to use them.
@@ -262,60 +266,6 @@ class Visualise:
                 df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
                 df.columns.name = self.wim.get_person_name(id_value)
 
-        elif id_type == 'institute':
-            # people and placeholders (i.e. including other universities etc.)
-            if id_value == 'ALL_PEOPLE':
-                # initialise df
-
-                df = self.wim.people_totals
-                
-                # slice the given date range from the dataframe
-                df = select_date_range(df, start_date, end_date, drop_zero_cols=False)
-
-                # replace ids with names
-                df.columns = [self.wim.get_name(person_id, 'person') for person_id in df.columns]
-
-                # remove resource required placeholders
-                cols = [col for col in df.columns if 'resource required' not in col.lower()]
-                df = df[cols]
-
-            elif id_value == 'PROJECT_REQUIREMENTS':
-                # initialise df
-                df = self.wim.project_confirmed.copy(deep=True)
-
-                # slice the given date range from the dataframe
-                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
-
-                # replace ids with names
-                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
-
-            elif id_value == 'PROJECT_ALLOCATED':
-
-                # initialise df
-                df = self.wim.project_allocated.copy(deep=True)
-
-                # slice the given date range from the dataframe
-                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
-
-                # replace ids with names
-                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
-
-            elif id_value == 'PROJECT_RESREQ':
-                # net allocation (i.e. resource required flags) same whether partner institutes included or not
-                # so call function again with appropriate arguments that give same desired result
-                df = self.get_allocations('RESOURCE_REQ', 'project', start_date, end_date, freq)
-
-            else:
-                # get person and placeholder allocation for a specific project id
-                # extract the allocations, and replace ids with names
-                df = deepcopy(self.wim.project_allocations[id_value])
-
-                # slice the given date range from the dataframe
-                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
-
-                df.columns = [self.wim.get_name(idx, 'person') for idx in df.columns]
-                df.columns.name = self.wim.get_name(id_value, 'project')
-
         else:
             raise ValueError('id_type must be person, project or placeholder')
 
@@ -340,25 +290,35 @@ class Visualise:
         """Make a stacked area plot of a person's project allocations between
         a start date and an end date."""
 
-        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+        start_date, end_date, freq = self.get_time_parameters(start_date,
+                                                              end_date,
+                                                              freq)
 
         try:
-            df = self.get_allocations(id_value, id_type, start_date, end_date, freq)
+            df = self.get_allocations(id_value, id_type,
+                                      start_date, end_date, freq)
 
-            if id_type == 'person' or id_type == 'institute':
+            if id_type == 'person':
+                if 'UNAVAILABLE' in df.columns:
+                    df.drop('UNAVAILABLE', axis=1, inplace=True)
+                
                 # people nominally allocated 100%
-                nominal_allocation = pd.Series(1, index=df.index)
+                nominal_allocation = self.wim.people_capacities[id_value]
                 time_label = 'Time Capacity'
 
             elif id_type == 'project':
                 # get the project's person allocations
                 nominal_allocation = self.wim.project_confirmed[id_value]
-                nominal_allocation = select_date_range(nominal_allocation, start_date, end_date,
-                                                                    drop_zero_cols=False)
                 time_label = 'Time Requirement'
 
             else:
-                raise ValueError('id_type must be person, institute or project')
+                raise ValueError('id_type must be person or project')
+
+            nominal_allocation = select_date_range(nominal_allocation,
+                                                   start_date, end_date,
+                                                   drop_zero_cols=False)
+            
+            nominal_allocation = nominal_allocation.resample(freq).mean()
 
             # plot the data
             fig = plt.figure(figsize=(15, 5))
@@ -369,16 +329,8 @@ class Visualise:
             ax.set_title(df.columns.name)
             ax.set_ylabel('Total FTE @ '+str(self.wim.work_hrs_per_day)+' hrs/day')
 
-            if id_type != 'placeholder':
-                if freq != 'D':
-                    nominal_allocation = nominal_allocation.resample(freq).mean()
-
-                nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
-
-                ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.sum(axis=1).max()])])
-
-            else:
-                ax.set_ylim([0, 1.1 * df.sum(axis=1).max()])
+            nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
+            ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.sum(axis=1).max()])])
 
             ax.legend(title='', loc='best')
             ax.set_xlim([start_date, end_date])
@@ -532,52 +484,39 @@ class Visualise:
             elif id_type == 'project':
                 fmt = '.1f'
 
-                if id_value == 'ALL_TOTALS':
+                if id_value == 'ALLOCATED':
                     title = 'Project Allocated Capacity (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                elif id_value == 'ALL_REQUIREMENTS':
+                elif id_value == 'CONFIRMED':
                     title = 'Project Demand (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                elif id_value == 'ALL_RESREQ':
+                elif id_value == 'RESOURCE_REQ':
                     title = 'Project Resource Required (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
                 else:
                     title = df.columns.name + ' Allocation (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
 
             elif id_type == 'placeholder':
                 fmt = '.1f'
-
+                
                 if id_value == 'ALL':
-                    title = 'Total Allocation (FTE @  ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
+                    title = 'Total Placeholder Allocation (FTE @  ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
                 else:
                     title = df.columns.name + ' Allocation (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-
-            elif id_type == 'institute':
-                # people and non-resource required placeholders
-                fmt = '.1f'
-
-                if id_value == 'ALL_PEOPLE':
-                    title = 'Institute Allocated Capacity (FTE @  ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                elif id_value == 'PROJECT_REQUIREMENTS':
-                    title = 'Project Demand (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                elif id_value == 'PROJECT_ALLOCATED':
-                    title = 'Project Allocated Capacity (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                elif id_value == 'PROJECT_RESREQ':
-                    title = 'Project Resource Required (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                else:
-                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-
+                    
+            else:
+                raise ValueError('id_type must be person, project or placeholder')
+            
             # change date format for prettier printing
             df = self.format_date_index(df, freq)
 
             fig = plt.figure(figsize=(df.shape[0], df.shape[1]))
             ax = fig.gca()
-            # sort by largest values (proceeding through columns to find differences)
-            sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False), linewidths=1,
-                        cmap='Reds', cbar=False,
-                        annot=True, fmt=fmt, annot_kws={'fontsize': 14}, ax=ax)
+            # sort by largest values
+            sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns],
+                                         ascending=False),
+                        linewidths=1, cmap='Reds', cbar=False, fmt=fmt,
+                        annot=True, annot_kws={'fontsize': 14}, ax=ax)
 
             ax.set_ylabel('')
-
             ax.set_title(title)
-
 
             return fig
 
@@ -780,12 +719,15 @@ class Visualise:
         client_meanfte = client_meanfte.T
         client_meanfte.drop('NaN', inplace=True)
 
+        # strip time from column names for prettier printing
+        client_meanfte.columns = client_meanfte.columns.date
+        
         return client_meanfte
 
     def plot_forecast_harvest(self, project_id,
                               start_date=None, end_date=None, freq='W-MON',
                               err_bar=True, err_size=0.2,
-                              stack=False):
+                              stack=False, units='Hours'):
 
         """compare planned time for a project in forecast to tracked time in harvest.
         If stack is True: Area plot for harvest data split into each person's contribution.
@@ -810,6 +752,18 @@ class Visualise:
         if (fc_totals == 0).all(axis=None) & (hv_totals == 0).all(axis=None):
             raise ValueError('forecast_id '+str(project_id)+' no data to plot.')
 
+        if units == 'FTE days':
+            fc_totals = fc_totals / self.wim.work_hrs_per_day
+            hv_totals = hv_totals / self.wim.work_hrs_per_day
+        elif units == 'FTE weeks':
+            fc_totals = fc_totals / (self.wim.work_hrs_per_day * 5)
+            hv_totals = hv_totals / (self.wim.work_hrs_per_day * 5)
+        elif units == 'FTE months':
+            fc_totals = fc_totals / (self.wim.work_hrs_per_day * 5 * 52 / 12)
+            hv_totals = hv_totals / (self.wim.work_hrs_per_day * 5 * 52 / 12)
+        else:
+            units = 'Hours'
+        
         try:
             fig = plt.figure(figsize=(10, 10))
             ax = fig.gca()
@@ -827,7 +781,7 @@ class Visualise:
                 hv_totals.plot(ax=ax, label='Harvest', linewidth=3, color='r')
 
             plt.xlim([start_date, end_date])
-            plt.ylabel('Cumulative Hours')
+            plt.ylabel(units)
             plt.legend()
             plt.title(self.wim.get_project_name(project_id))
 
@@ -835,14 +789,14 @@ class Visualise:
 
         except ValueError as e:
             plt.close(fig)
-            raise ValueError('forecast_id '+str(project_id)+' plot failed')
+            raise ValueError('project '+str(project_id)+' plot failed')
         except TypeError as e:
             plt.close(fig)
-            raise TypeError('forecast_id '+str(project_id)+' plot failed')
+            raise TypeError('project '+str(project_id)+' plot failed')
 
     def plot_harvest(self, id_type, group_type, id_value=None,
                     start_date=None, end_date=None, freq='MS',
-                    plot_type='bar'):
+                    plot_type='bar', units='Hours'):
         """Bar charts of Harvest time tracking."""
 
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
@@ -922,12 +876,21 @@ class Visualise:
 
         df = select_date_range(df, start_date, end_date)
 
+        if units == 'FTE days':
+            df = df / self.wim.work_hrs_per_day
+        elif units == 'FTE weeks':
+            df = df / (self.wim.work_hrs_per_day * 5)
+        elif units == 'FTE months':
+            df = df / (self.wim.work_hrs_per_day * 5 * 52 / 12)            
+        else:
+            units = 'Hours'
+        
         if plot_type == 'bar':
             fig = plt.figure(figsize=(10, df.shape[1]))
             ax = fig.gca()
 
             df.sum().sort_values().plot.barh(ax=ax)
-            ax.set_xlabel('Hours')
+            ax.set_xlabel(units)
 
         elif plot_type == 'pie':
             fig = plt.figure(figsize=(10, 10))
@@ -943,16 +906,25 @@ class Visualise:
 
             df = df.resample(freq).sum()
             df = self.format_date_index(df, freq)
+            
+            if units == 'Hours':
+                fmt = '.0f'
+            else:
+                fmt = '.1f'
+
             sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False),
-                        ax=ax, cmap='Reds', annot=True, cbar=False, fmt='.0f')
+                        ax=ax, cmap='Reds', annot=True, cbar=False, fmt=fmt)
 
         else:
             raise ValueError('plot_type must be bar or heatmap.')
 
-        title = '{:s} hours from {:s} to {:s}'.format(type_name,
-                                                      start_date.strftime('%d %b %y'),
-                                                      end_date.strftime('%d %b %y'))
 
+        title = '{:s} {:s} from {:s} to {:s}'.format(
+                    type_name,
+                    units,
+                    start_date.strftime('%d %b %y'),
+                    end_date.strftime('%d %b %y')
+                )
         if id_name != '':
             title = id_name + '\n' + title
 

@@ -55,7 +55,7 @@ if __name__ == '__main__':
     else:
         display = 'screen'
 
-    vis = Visualise(init_forecast=True, init_harvest=False,
+    vis = Visualise(with_tracked_time=False,
                     start_date=start_date, end_date=end_date)
 
     print('{:.1f}s'.format(time.time() - init))

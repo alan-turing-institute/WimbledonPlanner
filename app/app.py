@@ -63,14 +63,10 @@ def update():
         #  system time?)
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
-        # get updated data from Forecast API
-        update_to_csv(app.config.get('DATA_DIR'), run_forecast=True,
-                                     run_harvest=False)
-
-        # Generate whiteboards
         vis = Visualise(with_tracked_time=False,
-                        data_dir='../data')
-
+                        update_db=True)
+        
+        # Generate whiteboards
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
 
         # Save whiteboards to file
