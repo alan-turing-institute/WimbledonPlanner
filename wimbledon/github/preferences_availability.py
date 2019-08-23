@@ -231,6 +231,10 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                 if not isinstance(issue_num, float):  # if this project has a GitHub issue
                     first_resreq_date = date_indices[0].strftime("%Y-%m-%d")
                     last_resreq_date = date_indices[-1].strftime("%Y-%m-%d")
+                    if first_date:
+                        first_resreq_date = first_date
+                    if last_date:
+                        last_resreq_date = last_date
                     resreq = get_project_requirement(fc, project_id, first_resreq_date, last_resreq_date)
                     project_name = fc.projects.loc[project_id, "name"]
                     project_title = project_name + " (" + str(issue_num) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
