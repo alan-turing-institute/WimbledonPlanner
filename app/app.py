@@ -72,7 +72,7 @@ def update():
 
         # Generate preference table
         print('Generate preference table...')
-        preferences_table = pref.get_all_preferences_table()
+        preferences_table = pref.get_all_preferences_table(fc=vis.fc)
 
         # Save preference table to file
         check_dir(app.config.get('DATA_DIR') + '/figs/preferences')
