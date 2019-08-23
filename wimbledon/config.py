@@ -2,12 +2,14 @@ import json
 import os.path
 import os
 import wimbledon
+import sqlalchemy as sqla
 
 CONFIG_DIR = os.path.expanduser('~/.wimbledon')
 
 HARVEST_CREDENTIALS_PATH = CONFIG_DIR + '/.harvest_credentials'
 SQL_CONFIG_PATH = CONFIG_DIR + '/.sql_config'
 WIMBLEDON_CONFIG_PATH = CONFIG_DIR + '/.wimbledon_config'
+
 
 def check_dir(directory):
     """
@@ -35,8 +37,9 @@ def set_harvest_credentials(harvest_account_id,
                             forecast_account_id,
                             access_token):
     """
-    Saves Harvest credentials to ~/.wimbledon/.harvest_credentials as a json file containing a harvest account id,
-    a forecast account id and an access token.
+    Saves Harvest credentials to ~/.wimbledon/.harvest_credentials as a
+    json file containing a harvest account id, a forecast account id
+    and an access token.
 
     Get these from https://id.getharvest.com/developers.
 
@@ -99,7 +102,8 @@ def get_harvest_credentials():
     return harvest_credentials
 
 
-def set_sql_config(drivername, host, database, username='', password=''):
+def set_sql_config(drivername, host, database, port='',
+                   username='', password=''):
     """
     Saves configuration of a SQL database to ~/.wimbledon/.sql_config
 
@@ -115,7 +119,8 @@ def set_sql_config(drivername, host, database, username='', password=''):
         "host": host,
         "database": database,
         "username": username,
-        "password": password
+        "password": password,
+        "port": port
     }
 
     check_dir(CONFIG_DIR)
@@ -126,34 +131,60 @@ def set_sql_config(drivername, host, database, username='', password=''):
 
 def get_sql_config():
     """
-    Loads SQL database configuration from ~/.wimbledon/.sql_config which should be a json file with the keys
-    drivername, host and database.
+    Loads SQL database configuration from ~/.wimbledon/.sql_config which
+    should be a json file with the keys drivername, host, port and database.
 
     :return:
     """
 
     try:
-        with open(SQL_CONFIG_PATH, 'r') as f:
-            sql_config = json.load(f)
-    except FileNotFoundError:
-        raise FileNotFoundError('No SQL configuration file found. Please create the file ' + SQL_CONFIG_PATH)
+        # check environment variables
+        sql_config = dict()
+        sql_config['drivername'] = os.environ['WIMBLEDON_DB_DRIVER']
+        sql_config['host'] = os.environ['WIMBLEDON_DB_HOST']
+        sql_config['database'] = os.environ['WIMBLEDON_DB_DATABASE']
+
+        if sql_config["host"] != 'localhost':
+            sql_config['port'] = os.environ['WIMBLEDON_DB_PORT']
+            sql_config['username'] = os.environ['WIMBLEDON_DB_USER']
+            sql_config['password'] = os.environ['WIMBLEDON_DB_PASSWORD']
+
+    except KeyError:
+        try:
+            with open(SQL_CONFIG_PATH, 'r') as f:
+                sql_config = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError("""No SQL configuration file found.
+                                    Please create the file """ +
+                                    SQL_CONFIG_PATH + """ or the environment
+                                    variables WIMBLEDON_DB_DRIVER,
+                                    WIMBLEDON_DB_HOST, WIMBLEDON_DB_DATABASE,
+                                    WIMBLEDON_DB_USER, WIMBLEDON_DB_PASSWORD
+                                    and WIMBLEDON_DB_PORT.""")
 
     keys = sql_config.keys()
 
     assert "drivername" in keys and len(sql_config["drivername"]) > 0, \
-        "drivername not set in " + SQL_CONFIG_PATH
+        "drivername not set in SQL config"
 
     assert "host" in keys and len(sql_config["host"]) > 0, \
-        "host not set in " + SQL_CONFIG_PATH
+        "host not set in SQL config"
 
     assert "database" in keys and len(sql_config["database"]) > 0, \
-        "database not set in " + SQL_CONFIG_PATH
+        "database not set in SQL config"
 
     if sql_config["host"] != 'localhost':
+        assert "port" in keys and len(sql_config["port"]) > 0, \
+            "port not set in SQL config"
+            
         assert "username" in keys and len(sql_config["username"]) > 0, \
-            "username not set in " + SQL_CONFIG_PATH
+            "username not set in SQL config"
 
         assert "password" in keys and len(sql_config["password"]) > 0, \
-            "password not set in " + SQL_CONFIG_PATH
+            "password not set in SQL config"
+    else:
+        sql_config['port'] = None
+        sql_config['username'] = None
+        sql_config['password'] = None
 
     return sql_config

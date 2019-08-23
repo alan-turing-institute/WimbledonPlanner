@@ -4,7 +4,7 @@ import sys
 
 import pandas as pd
 
-from wimbledon.vis.Visualise import Visualise
+from wimbledon.vis import Visualise
 
 FIG_DIR = '../data/figs'
 PROJECTS_DIR = FIG_DIR + '/projects'
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     else:
         display = 'screen'
 
-    vis = Visualise(init_forecast=True, init_harvest=False,
+    vis = Visualise(with_tracked_time=False,
                     start_date=start_date, end_date=end_date)
 
     print('{:.1f}s'.format(time.time() - init))

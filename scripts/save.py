@@ -30,7 +30,7 @@ import subprocess
 
 import pandas as pd
 
-from wimbledon.vis.Visualise import Visualise
+from wimbledon.vis import Visualise
 
 
 FIG_DIR = '../data/figs'
@@ -56,11 +56,11 @@ def save_sheet(sheet, save_dir, save_name):
         f.write(sheet)
 
 
-def init_vis(init_forecast=True, init_harvest=False, data_source=None, data_dir=FIG_DIR):
+def init_vis(with_tracked_time=True, update_db=False):
     print('Initialising visualisation object... ', end='', flush=True)
     start = time.time()
 
-    vis = Visualise(init_forecast, init_harvest, data_source=data_source, data_dir=data_dir)
+    vis = Visualise(with_tracked_time=with_tracked_time, update_db=update_db)
 
     print('{:.1f}s'.format(time.time() - start))
     return vis
@@ -192,19 +192,18 @@ def forecast_individual(vis):
 if __name__ == '__main__':
     args = sys.argv[1:]
 
-    if 'csv' in args:
-        data_source = 'csv'
-    else:
-        data_source = None
-
-    init_forecast = True
-
     if 'harvest' in args:
-        init_harvest = True
+        with_tracked_time = True
     else:
-        init_harvest = False
+        with_tracked_time = False
+        
+    if 'update' in args:
+        update_db = True
+    else:
+        update_db = False
 
-    vis = init_vis(init_forecast, init_harvest, data_source=data_source, data_dir=FIG_DIR)
+    vis = init_vis(with_tracked_time=with_tracked_time,
+                   update_db=update_db)
 
     if 'forecast' in args and 'individual' in args:
         forecast_individual(vis)

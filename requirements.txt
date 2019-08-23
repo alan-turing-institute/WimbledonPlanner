@@ -1,5 +1,6 @@
 pandas>=0.24
-sqlalchemy
+sqlalchemy>=1.3.4
+psycopg2-binary>=2.8.2
 holidays==0.9.10
 Jinja2==2.10.1
 openpyxl==2.6.1
@@ -7,6 +8,6 @@ git+https://github.com/alan-turing-institute/pyforecast.git
 seaborn==0.9.0
 python-harvest-redux==5.0.0b0
 pdfCropMargins==0.1.4
-distinctipy
+distinctipy>=1.1.1
 Flask==1.0.2
 -e .
