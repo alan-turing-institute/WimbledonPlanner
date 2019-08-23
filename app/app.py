@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, send_file
 
 from wimbledon.vis import Visualise
 from wimbledon.harvest.api_interface import update_to_csv
@@ -10,6 +10,11 @@ import subprocess
 import sys
 
 from datetime import datetime
+
+# change matplotlib backend to avoid it trying to pop up figure windows
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 
 # Initialise Flask App
 app = Flask(__name__)
@@ -39,9 +44,10 @@ def home():
     Browse to:<br>
      * <a href="/projects">/projects</a> for projects whiteboard<br>
      * <a href="/people">/people</a> for people whiteboard<br>
-     * <a href="/update">/update</a> to update the whiteboards (slow!)<br>
-     * <a href="/download">/download</a> to download the whiteboard
-      visualisations
+     * <a href="/demand_vs_capacity">/demand_vs_capacity</a> to view the project
+     demand vs team capacity plot<br>
+     * <a href="/update">/update</a> to update the data and visualisations (slow!)<br>
+     * <a href="/download">/download</a> to download the visualisations<br>
     """.format(updated_at=updated_at)
 
 
@@ -67,8 +73,9 @@ def update():
                         update_db=True)
         
         # Generate whiteboards
+        print('Generate whiteboards...')
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
-
+           
         # Save whiteboards to file
         check_dir(app.config.get('DATA_DIR')+'/figs/projects')
 
@@ -86,6 +93,7 @@ def update():
         with open(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'w') as f:
             f.write(whiteboards['person_screen'])
 
+        print('Convert whiteboards to pdf...')
         # convert print version html to pdf
         cmd = 'bash {home_dir}/scripts/whiteboard_to_pdf.sh'.format(home_dir=app.config.get('HOME_DIR'))
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
@@ -93,12 +101,33 @@ def update():
         if result.returncode is not 0:
             raise ValueError('whiteboard_to_pdf.sh returned with code '+str(result.returncode))
 
+        # Generate & save demand vs capacity plot
+        print('Demand vs capacity...')
+        capacity_fig = vis.plot_demand_vs_capacity()
+        capacity_fig.tight_layout()
+        capacity_fig.savefig(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.png',
+                             dpi=300)
+        plt.close('all')
+        
+        with open(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.html', 'w') as f:
+            f.write("""<!DOCTYPE html>
+                        <html>
+                            <head>
+                                 <title>Index</title>
+                            </head>
+                            <body>
+                                 <img src="demand_vs_capacity.png" alt="demand_vs_capacity">
+                            </body>
+                            </html>""")
+        
+        print('Make zip file...')
         # create zip of print version whiteboard files
         with zipfile.ZipFile(app.config.get('DATA_DIR')+'/whiteboard.zip', 'w') as zipf:
             zipf.write(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'projects.html')
             zipf.write(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'people.html')
             zipf.write(app.config.get('DATA_DIR') + '/figs/projects/projects.pdf', 'projects.pdf')
             zipf.write(app.config.get('DATA_DIR') + '/figs/people/people.pdf', 'people.pdf')
+            zipf.write(app.config.get('DATA_DIR')+'/figs/demand_vs_capacity.png', 'demand_vs_capacity.png')
 
         # save update time to file if everything was successful
         with open(app.config.get('DATA_DIR')+'/.last_update', 'w') as f:
@@ -171,6 +200,20 @@ def download():
     except:
         return traceback.format_exc()
 
+
+@app.route('/demand_vs_capacity')
+def demand_vs_capacity():
+    """Display demand vs capacity plot.
+    
+    Returns:
+        Flask response -- Flask representation of zip file to deliver.
+    """
+    try:
+        path = app.config.get('DATA_DIR') + '/figs/demand_vs_capacity.png'
+        return send_file(path)
+
+    except:
+        return traceback.format_exc()
 
 if __name__ == "__main__":
     # set home directory

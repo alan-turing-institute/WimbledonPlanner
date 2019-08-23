@@ -529,6 +529,9 @@ class Visualise:
         if today is None:
             today = pd.datetime.now()
 
+        # move start date to 1st of specified month (fixes some display issues)
+        start_date = pd.datetime(start_date.year, start_date.month, 1)
+        
         # ----------
         # DEMAND
         # ----------
@@ -559,7 +562,7 @@ class Visualise:
         # merge all demand types into one dataframe ready for plotting
         demand = pd.DataFrame({'REG Management': reg_management_reqs,
                                'REG Development': reg_dev_reqs,
-                               'Research Support': research_support_reqs,
+                               'REG Support': research_support_reqs,
                                'Confirmed projects': project_confirmed,
                                'Projects with funder': unconfirmed,
                                'Deferred projects': deferred})
@@ -567,7 +570,7 @@ class Visualise:
         demand = select_date_range(demand, start_date, end_date, drop_zero_cols=False)
 
         demand = demand.resample(freq).mean()
-
+                
         # ----------
         # CAPACITY
         # ----------
@@ -606,8 +609,11 @@ class Visualise:
         csv = pd.read_csv(self.script_dir+'/reg_capacity.csv', index_col='Month')
         csv = csv.T
         csv.index = pd.to_datetime(csv.index, format='%b-%y')
-        csv = csv.loc[start_date:end_date]
-
+        
+        # make sure capture the start date month in csv file by going from 1st
+        # of month
+        csv = DataHandlers.select_date_range(csv, start_date, end_date)
+        
         capacity['University Partner'] = csv['University Partner capacity']
 
         # order columns
@@ -680,7 +686,7 @@ class Visualise:
         # Annotate "today" (today defined in first cell)
         ax.plot([today, today], ylim, color='white', linewidth=4)
 
-        ax.text(today + pd.Timedelta(12, unit='D'), 10, 'TODAY',
+        ax.text(today + pd.Timedelta(3, unit='D'), 10, 'TODAY',
                 rotation=90, fontsize=24, color='white', fontweight='bold')
 
         # grey box over the past

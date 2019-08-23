@@ -22,7 +22,6 @@ Wimbledon Planner is designed to run on **Python 3.7**, using Python 3.6 may giv
 Python package dependencies are listed in requirements.txt and can be installed by running this from the parent directory of the repo:
 ```bash
 > pip3 install -r requirements.txt
-```
 
 For converting the HTML whiteboard visualisations to PDFs the command line tool `wkhtmltopdf` is required.
 To install it on Mac OS (assuming `brew` is installed), and its ghostscript dependency, run:
