@@ -159,29 +159,29 @@ def get_sql_config():
                                     SQL_CONFIG_PATH + """ or the environment
                                     variables WIMBLEDON_DB_DRIVER,
                                     WIMBLEDON_DB_HOST, WIMBLEDON_DB_DATABASE,
-                                    WIMBLEDON_DB_USER and
-                                    WIMBLEDON_DB_PASSWORD.""")
+                                    WIMBLEDON_DB_USER, WIMBLEDON_DB_PASSWORD
+                                    and WIMBLEDON_DB_PORT.""")
 
     keys = sql_config.keys()
 
     assert "drivername" in keys and len(sql_config["drivername"]) > 0, \
-        "drivername not set in " + SQL_CONFIG_PATH
+        "drivername not set in SQL config"
 
     assert "host" in keys and len(sql_config["host"]) > 0, \
-        "host not set in " + SQL_CONFIG_PATH
+        "host not set in SQL config"
 
     assert "database" in keys and len(sql_config["database"]) > 0, \
-        "database not set in " + SQL_CONFIG_PATH
+        "database not set in SQL config"
 
     if sql_config["host"] != 'localhost':
         assert "port" in keys and len(sql_config["port"]) > 0, \
-            "port not set in " + SQL_CONFIG_PATH
+            "port not set in SQL config"
             
         assert "username" in keys and len(sql_config["username"]) > 0, \
-            "username not set in " + SQL_CONFIG_PATH
+            "username not set in SQL config"
 
         assert "password" in keys and len(sql_config["password"]) > 0, \
-            "password not set in " + SQL_CONFIG_PATH
+            "password not set in SQL config"
     else:
         sql_config['port'] = None
         sql_config['username'] = None
