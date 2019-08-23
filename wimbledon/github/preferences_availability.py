@@ -164,6 +164,9 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
               'THUMBS_UP': '👍',
               'LAUGH': '✅'}
     names = list(fc.people.full_name)
+    # Giovanni and Miguel have left but put emojis on future projects. Remove them
+    names.remove("Giovanni Colavizza")
+    names.remove("Miguel Morin")
     preference_data = {
         "Person": names
     }
@@ -230,7 +233,7 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                     last_resreq_date = date_indices[-1].strftime("%Y-%m-%d")
                     resreq = get_project_requirement(fc, project_id, first_resreq_date, last_resreq_date)
                     project_name = fc.projects.loc[project_id, "name"]
-                    project_title = project_name + "\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
+                    project_title = project_name + " (" + str(issue_num) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
                     emoji_data = []
                     for name in names:
                         person_availability = get_person_availability(fc, name, first_resreq_date, last_resreq_date)
