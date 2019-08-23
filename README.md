@@ -69,11 +69,11 @@ Wimbledon Planner interacts with data stored in a **postgresql** database. Funct
 The configuration of the database to use is set by the file `~/.wimbledon/.sql_config`, which is a json file with the following structure:
 ```json
 {"drivername": "postgresql",
- "host": <HOSTNAME>,
+ "host": "<HOSTNAME>",
  "database": "wimbledon",
- "username": <USERNAME>
- "password": <PASSWORD>
- "port": <PORT>}
+ "username": "<USERNAME>"
+ "password": "<PASSWORD>"
+ "port": "<PORT>"}
 ```
 You can either create this file yourself or use the function `set_sql_config` in `wimbledon/config.py`.
 Alternatively you can use the environment variables `WIMBLEDON_DB_DRIVER`, `WIMBLEDON_DB_HOST`, `WIMBLEDON_DB_DATABASE`, `WIMBLEDON_DB_PORT`, `WIMBLEDON_DB_USER` and `WIMBLEDON_DB_PASSWORD`.
