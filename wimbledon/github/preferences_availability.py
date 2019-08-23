@@ -214,7 +214,6 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
     data = {
         "Person": names
     }
-    issues = fc.projects["GitHub"].dropna().values
     # If a project name or project id is provided, only get data for that project
     if project:
         if isinstance(project, str):
@@ -225,10 +224,11 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
     # Get projects with some resource requirement but filter by those with a GitHub issue
     for project_id in resreqdf:
         if not project or project == project_id:  # If a project name or project id is provided, only get data for that project
+            # Get the dates for each month that the project has a resource requirement > 0
             date_indices = resreqdf.index[resreqdf[project_id] > 0]
             if len(date_indices) > 0:  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
                 issue_num = fc.projects.loc[project_id, "GitHub"]
-                if issue_num in issues:  # if this project has a GitHub issue
+                if not isinstance(issue_num, float):  # if this project has a GitHub issue
                     first_resreq_date = date_indices[0].strftime("%Y-%m-%d")
                     last_resreq_date = date_indices[-1].strftime("%Y-%m-%d")
                     resreq = get_project_requirement(fc, project_id, first_resreq_date, last_resreq_date)
