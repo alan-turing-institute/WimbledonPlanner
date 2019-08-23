@@ -75,20 +75,20 @@ def update():
         update_to_csv(app.config.get('DATA_DIR'), run_forecast=True,
                                      run_harvest=False)
 
+        # Generate whiteboards
+        print('Visualise object...')
+        vis = Visualise(init_harvest=False, data_source='csv',
+                        data_dir='../data')
+
         # Generate preference table
         print('Generate preference table...')
-        preferences_table = pref.get_all_preferences_table()
+        preferences_table = pref.get_all_preferences_table(fc=vis.fc)
 
         # Save preference table to file
         check_dir(app.config.get('DATA_DIR') + '/figs/preferences')
 
         with open(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html', 'w') as f:
             f.write(preferences_table)
-
-        # Generate whiteboards
-        print('Visualise object...')
-        vis = Visualise(init_harvest=False, data_source='csv',
-                        data_dir='../data')
 
         print('Generate whiteboards...')
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
