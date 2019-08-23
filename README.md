@@ -71,8 +71,8 @@ The configuration of the database to use is set by the file `~/.wimbledon/.sql_c
 {"drivername": "postgresql",
  "host": "<HOSTNAME>",
  "database": "wimbledon",
- "username": "<USERNAME>"
- "password": "<PASSWORD>"
+ "username": "<USERNAME>",
+ "password": "<PASSWORD>",
  "port": "<PORT>"}
 ```
 You can either create this file yourself or use the function `set_sql_config` in `wimbledon/config.py`.
