@@ -35,10 +35,10 @@ class Visualise:
 
         # default='warn' # Gets rid of SettingWithCopy warnings
         pd.options.mode.chained_assignment = None
-        
+
         # only print one decimal place
         pd.options.display.float_format = '{:.1f}'.format
- 
+
         # have bigger fonts by default and use distinctipy colours
         sns.set(font_scale=1.5,
                 palette=sns.color_palette(colorsets.get_colors()),
@@ -121,13 +121,13 @@ class Visualise:
         Keyword Arguments:
             start_date {datetime} -- start date for whiteboard (default: 1
             month before today)
-            
+
             end_date {datetime} -- end date for whiteboard (default: 1 year
             after today)
-            
+
             freq {str} -- Frequency of columns, as pandas time frequency
             string (default: 'MS' for month start)
-            
+
             update_timestamp {str} -- time data was obtained (default: {None})
         """
 
@@ -146,11 +146,11 @@ class Visualise:
                                                     'project',
                                                     'nostyle',
                                                     update_timestamp=update_timestamp)
-       
+
         # add screen style
         style = HTMLWriter.write_style(sheet, display='screen')
         whiteboards['project_screen'] = style + whiteboard_raw
-        
+
         # add print style
         style = HTMLWriter.write_style(sheet, display='print')
         whiteboards['project_print'] = style + whiteboard_raw
@@ -162,11 +162,11 @@ class Visualise:
         sheet = self.wim.whiteboard('person', start_date, end_date, freq)
         whiteboard_raw = HTMLWriter.make_whiteboard(sheet, 'person', 'nostyle',
                                                     update_timestamp=update_timestamp)
-       
+
         # add screen style
         style = HTMLWriter.write_style(sheet, display='screen')
         whiteboards['person_screen'] = style + whiteboard_raw
-               
+
         # add print style
         style = HTMLWriter.write_style(sheet, display='print')
         whiteboards['person_print'] = style + whiteboard_raw
@@ -301,7 +301,7 @@ class Visualise:
             if id_type == 'person':
                 if 'UNAVAILABLE' in df.columns:
                     df.drop('UNAVAILABLE', axis=1, inplace=True)
-                
+
                 # people nominally allocated 100%
                 nominal_allocation = self.wim.people_capacities[id_value]
                 time_label = 'Time Capacity'
@@ -317,7 +317,7 @@ class Visualise:
             nominal_allocation = select_date_range(nominal_allocation,
                                                    start_date, end_date,
                                                    drop_zero_cols=False)
-            
+
             nominal_allocation = nominal_allocation.resample(freq).mean()
 
             # plot the data
@@ -495,15 +495,15 @@ class Visualise:
 
             elif id_type == 'placeholder':
                 fmt = '.1f'
-                
+
                 if id_value == 'ALL':
                     title = 'Total Placeholder Allocation (FTE @  ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
                 else:
                     title = df.columns.name + ' Allocation (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
-                    
+
             else:
                 raise ValueError('id_type must be person, project or placeholder')
-            
+
             # change date format for prettier printing
             df = self.format_date_index(df, freq)
 
@@ -531,7 +531,7 @@ class Visualise:
 
         # move start date to 1st of specified month (fixes some display issues)
         start_date = pd.datetime(start_date.year, start_date.month, 1)
-        
+
         # ----------
         # DEMAND
         # ----------
@@ -570,7 +570,7 @@ class Visualise:
         demand = select_date_range(demand, start_date, end_date, drop_zero_cols=False)
 
         demand = demand.resample(freq).mean()
-                
+
         # ----------
         # CAPACITY
         # ----------
@@ -609,11 +609,11 @@ class Visualise:
         csv = pd.read_csv(self.script_dir+'/reg_capacity.csv', index_col='Month')
         csv = csv.T
         csv.index = pd.to_datetime(csv.index, format='%b-%y')
-        
+
         # make sure capture the start date month in csv file by going from 1st
         # of month
-        csv = DataHandlers.select_date_range(csv, start_date, end_date)
-        
+        csv = select_date_range(csv, start_date, end_date)
+
         capacity['University Partner'] = csv['University Partner capacity']
 
         # order columns
@@ -727,7 +727,7 @@ class Visualise:
 
         # strip time from column names for prettier printing
         client_meanfte.columns = client_meanfte.columns.date
-        
+
         return client_meanfte
 
     def plot_forecast_harvest(self, project_id,
@@ -769,7 +769,7 @@ class Visualise:
             hv_totals = hv_totals / (self.wim.work_hrs_per_day * 5 * 52 / 12)
         else:
             units = 'Hours'
-        
+
         try:
             fig = plt.figure(figsize=(10, 10))
             ax = fig.gca()
@@ -887,10 +887,10 @@ class Visualise:
         elif units == 'FTE weeks':
             df = df / (self.wim.work_hrs_per_day * 5)
         elif units == 'FTE months':
-            df = df / (self.wim.work_hrs_per_day * 5 * 52 / 12)            
+            df = df / (self.wim.work_hrs_per_day * 5 * 52 / 12)
         else:
             units = 'Hours'
-        
+
         if plot_type == 'bar':
             fig = plt.figure(figsize=(10, df.shape[1]))
             ax = fig.gca()
@@ -912,7 +912,7 @@ class Visualise:
 
             df = df.resample(freq).sum()
             df = self.format_date_index(df, freq)
-            
+
             if units == 'Hours':
                 fmt = '.0f'
             else:
@@ -937,4 +937,3 @@ class Visualise:
         ax.set_title(title)
 
         return fig
-
