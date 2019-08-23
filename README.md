@@ -76,6 +76,7 @@ The configuration of the database to use is set by the file `~/.wimbledon/.sql_c
  "password": <PASSWORD>
  "port": <PORT>}
 ```
+You can either create this file yourself or use the function `set_sql_config` in `wimbledon/config.py`.
 Alternatively you can use the environment variables `WIMBLEDON_DB_DRIVER`, `WIMBLEDON_DB_HOST`, `WIMBLEDON_DB_DATABASE`, `WIMBLEDON_DB_PORT`, `WIMBLEDON_DB_USER` and `WIMBLEDON_DB_PASSWORD`.
 
 #### Local database
