@@ -18,7 +18,7 @@ query = """
 
           reactionGroups {
             content
-            users(first:20) {
+            users(first:Y) {
                 edges {
                     node {
                         login
@@ -39,7 +39,7 @@ alternate_query = """
           number
           title
           url
-          comments(first:5) {
+          comments(first:Y) {
             edges {
               node {
                 reactionGroups {
@@ -74,7 +74,7 @@ def run_query(query, token):
         raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
 
 
-def get_reactions(token, issue):
+def get_reactions(token, issue, number_of_people=20):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
     """
@@ -85,13 +85,14 @@ def get_reactions(token, issue):
                     return True
         return False
 
-    modified_query = query.replace("X", str(issue))
+    # Edit the query string to contain the relevant issue and number of GitHub users
+    modified_query = query.replace("X", str(issue)).replace("Y", str(number_of_people))
     result = run_query(modified_query, token)
     project_reactions_first_query = result['data']['repository']['issue']['reactionGroups']
     if reactions_exist(project_reactions_first_query):
         return project_reactions_first_query
 
-    modified_query = alternate_query.replace("X", str(issue))
+    modified_query = alternate_query.replace("X", str(issue)).replace("Y", str(number_of_people))
     result = run_query(modified_query, token)
     project_comments = result['data']['repository']['issue']['comments']['edges']
     for comment in project_comments:
@@ -167,8 +168,10 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
         "Person": names
     }
     issues = fc.projects["GitHub"].dropna()  # Get list of GitHub issues for projects
+    total_people = len(fc.people)
     for issue_num, project_id in zip(issues, issues.index):
-        project_reactions = get_reactions(github_token, issue_num)  # get a dict with the emoji reactions for this issue
+        # Get a dict with the emoji reactions for this issue
+        project_reactions = get_reactions(github_token, issue_num, number_of_people=total_people)
         emojis = []
         # Get the relevant emoji for each team member for this GitHub issue and associated project
         for name in names:
