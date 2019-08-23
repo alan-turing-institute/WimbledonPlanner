@@ -13,7 +13,7 @@ This repo is used to build the web app hosted at https://wimbledon-planner.azure
 
 * [GitHub Preferences](TODO)
 
-To update the data used by the web app go to https://wimbledon-planner.azurewebsites.net/update. This will take a couple of minutes after which you should get the message "DATA UPDATED!".
+To update the data used by the web app go to https://wimbledon-planner.azurewebsites.net/update. This will take a couple of minutes after which you should get the message `DATA UPDATED!`
 
 ## Requirements
 
