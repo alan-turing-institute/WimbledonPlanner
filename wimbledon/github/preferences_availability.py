@@ -226,18 +226,19 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                     first_resreq_date = date_indices[0].strftime("%Y-%m-%d")
                     last_resreq_date = date_indices[-1].strftime("%Y-%m-%d")
                     resreq = get_project_requirement(fc, project_id, first_resreq_date, last_resreq_date)
-                    project_title = fc.projects.loc[project_id, "name"]
+                    project_name = fc.projects.loc[project_id, "name"]
+                    project_title = project_name + "\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
                     emoji_data = []
                     for name in names:
                         person_availability = get_person_availability(fc, name, first_resreq_date, last_resreq_date)
-                        percentage_availability = round((person_availability / resreq) * 100, 2)
-                        emoji = preference_data_df[project_title][name]
+                        percentage_availability = round((person_availability / resreq) * 100)
+                        emoji = preference_data_df[project_name][name]
                         # If a specific person or project is specified and positive_only is True, only include checks and thumbs
                         if (not person and not project) or not positive_only or emoji == '✅' or emoji == '👍':
                             if emojis_only:
                                 emoji_data.append(emoji)
                             else:
-                                emoji_data.append(emoji + " " + str(person_availability) + " / " + str(round(resreq, 2)))
+                                emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " +  str(round(resreq, 2)) + ")")
                                 # emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
 #                         if project and positive_only and (emoji == '❌' or emoji == '❓'):
 #                             print(name, emoji)
@@ -286,6 +287,7 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
                                font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
                                border-collapse: collapse;
                                width: 100%;
+                               white-space: pre;
                             }
                     tr:nth-child(even){
                                background-color: #f2f2f2;
