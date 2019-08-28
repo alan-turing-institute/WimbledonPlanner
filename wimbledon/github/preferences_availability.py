@@ -40,12 +40,12 @@ alternate_query = """
           number
           title
           url
-          comments(first:Y) {
+          comments(first:Z) {
             edges {
               node {
                 reactionGroups {
                     content
-                    users(first:20) {
+                    users(first:Y) {
                         edges {
                             node {
                                 login
@@ -75,7 +75,7 @@ def run_query(query, token):
         raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
 
 
-def get_reactions(token, issue, number_of_people=20):
+def get_reactions(token, issue, number_of_people=20, number_of_comments=5):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
     """
@@ -87,13 +87,15 @@ def get_reactions(token, issue, number_of_people=20):
         return False
 
     # Edit the query string to contain the relevant issue and number of GitHub users
+    # This query gets the emojis on the issue itself (i.e. the top comment/ post)
     modified_query = query.replace("X", str(int(issue))).replace("Y", str(number_of_people))
     result = run_query(modified_query, token)
     project_reactions_first_query = result['data']['repository']['issue']['reactionGroups']
     if reactions_exist(project_reactions_first_query):
         return project_reactions_first_query
 
-    modified_query = alternate_query.replace("X", str(int(issue))).replace("Y", str(number_of_people))
+    # If we don't find any emojis from the first query, this one searches subsequent comments (set to first 5 by default)
+    modified_query = alternate_query.replace("X", str(int(issue))).replace("Y", str(number_of_people)).replace("Z", str(number_of_comments))
     result = run_query(modified_query, token)
     project_comments = result['data']['repository']['issue']['comments']['edges']
     for comment in project_comments:
