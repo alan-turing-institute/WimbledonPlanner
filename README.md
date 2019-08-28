@@ -45,7 +45,7 @@ Wimbledon Planner searches for configuration info in environment variables or in
 
 ### Harvest
 
-Wimbledon requires account IDs and a token to query the Harvest and Forecast APIs. This is stored in the file 
+Wimbledon requires account IDs and a token to query the Harvest and Forecast APIs. This is stored in the file
 `~/.wimbledon/.harvest_credentials`, which is a json file with the following structure:
 ```json
 {"harvest_account_id":  "<HARVEST_ACCOUNT_ID",
@@ -62,7 +62,7 @@ To get the tokens:
 3) Name the token after the machine you are creating the secrets for.
 4) To get the Harvest account key, ensure that you have selected "Harvest - The Alan Turing Institute" under "Choose Account"
 5) To get the Forecast account key, ensure that you have selected "Forecast - The Alan Turing Institute" under "Choose Account"
- 
+
 ### SQL
 
 Wimbledon Planner interacts with data stored in a **postgresql** database. Functions used to update the database rely on postgres specific functions in sqlalchemy so are unlikely to work with other database types. It also expects the database to be called `wimbledon` and for the schema of the database to match the one defined in `wimbledon/sql/schema.py`.
@@ -98,7 +98,7 @@ This creates a postgresql server at `/usr/local/var/postgres` on your system wit
 ```bash
 > psql wimbledon
 ```
-When connected you can try things like `\d` to list the tables of the database, or `\d people` to list the columns of the people table. 
+When connected you can try things like `\d` to list the tables of the database, or `\d people` to list the columns of the people table.
 
 If you reboot your system you may need to start the postgres server again:
 ```bash
@@ -126,15 +126,26 @@ The web app uses the wimbledon-planner Azure Database for PostgreSQL server in t
 
 ### GitHub
 
-TODO
+Wimbledon requires a GitHub token to query the GitHub API. This is stored in the file `~/.wimbledon/.github_credentials`, which is a json file with the following structure:
+```json
+{"token":  "<GITHUB TOKEN>"}
+```
+
+Since Wimbledon retrieves preference information from https://github.com/alan-turing-institute/Hut23, you must have access to this repository for your token to work.
+
+To create an access token, [follow this guide](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) and select the following scopes:
+
+![Scopes](api/img/scopes.png)
 
 ## Interactive Notebooks
 
 The Jupyter notebooks `visualise_forecast.ipynb` and `visualise_harvest.ipynb` in the `notebooks` directory get the
  latest Harvest/Forecast data and display the visualisations, including some interactive widgets
-  to customise/display plots for individual projects, individual people etc. 
-  
- The `reg_capacity_vs_demand.ipynb` notebook creates the REG capacity vs. project demand history & forecast plot
+  to customise/display plots for individual projects, individual people etc.
+
+ The `reg_capacity_vs_demand.ipynb` notebook creates the REG capacity vs. project demand history & forecast plot.
+
+ The `github_api.ipynb` notebook shows how the project preference/ availability table is generated.
 
 ## App
 
