@@ -200,7 +200,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
     return preference_data_df
 
 
-def get_preferences(wim, preference_data_df, first_date=False, last_date=False, person=False, project=False, positive_only=False, emojis_only=False, css=None):
+def get_preferences(wim, preference_data_df, first_date=False, last_date=False, person=False, project=False, emojis_only=False, css=None):
     """
     Create a HTML table with each project that has a resource requirement against every REG team member with availability.
     Table values show the preference emojis alongside the mean availability the person has for the resource required period and
@@ -238,23 +238,18 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                         last_resreq_date = last_date
                     resreq = get_project_requirement(wim, project_id, first_resreq_date, last_resreq_date)
                     project_name = wim.projects.loc[project_id, "name"]
-                    project_title = project_name + " (" + str(issue_num) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
+                    project_title = project_name + " (" + str(int(issue_num)) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
                     emoji_data = []
                     for name in names:
                         person_availability = get_person_availability(wim, name, first_resreq_date, last_resreq_date)
                         percentage_availability = round((person_availability / resreq) * 100)
                         emoji = preference_data_df[project_name][name]
-                        # If a specific person or project is specified and positive_only is True, only include checks and thumbs
-                        if (not person and not project) or not positive_only or emoji == '✅' or emoji == '👍':
-                            if emojis_only:
-                                emoji_data.append(emoji)
-                            else:
-                                emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
-#                         if project and positive_only and (emoji == '❌' or emoji == '❓'):
-#                             data["Person"].remove(name)
-
-                    if (not person and not project) or not positive_only or len(emoji_data) > 0:
-                        data[project_title] = emoji_data
+                        if emojis_only:
+                            emoji_data.append(emoji)
+                        else:  # Include availability
+                            emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
+                    # Store list of preference data for this project
+                    data[project_title] = emoji_data
     # Created an alphabetically sorted dataframe from the data
     preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
     # Create a HTML table from this dataframe that is scrollable
