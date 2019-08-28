@@ -91,6 +91,7 @@ The port, username and password are not needed in this case.
 However, you will also need to create the database on your system. To do that, run:
 ```bash
 > cd wimbledon/sql
+> pg_ctl -D /usr/local/var/postgres -l logfile start # start postgres
 > bash create_localhost.sh
 ```
 This creates a postgresql server at `/usr/local/var/postgres` on your system with a `wimbledon` database on it and the schema defined by `wimbledon/sql/schema.py`. If you'd like to check this worked you can connect to the database with the postgres command-line tool:
