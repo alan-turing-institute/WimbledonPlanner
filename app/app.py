@@ -70,18 +70,18 @@ def update():
         #  system time?)
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
+        vis = Visualise(with_tracked_time=False,
+                        update_db=True)
+
         # Generate preference table
         print('Generate preference table...')
-        preferences_table = pref.get_all_preferences_table(fc=vis.fc)
+        preferences_table = pref.get_all_preferences_table(wim=vis.wim)
 
         # Save preference table to file
         check_dir(app.config.get('DATA_DIR') + '/figs/preferences')
 
         with open(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html', 'w') as f:
             f.write(preferences_table)
-
-        vis = Visualise(with_tracked_time=False,
-                        update_db=True)
 
         # Generate whiteboards
         print('Generate whiteboards...')
