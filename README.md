@@ -100,6 +100,11 @@ This creates a postgresql server at `/usr/local/var/postgres` on your system wit
 ```
 When connected you can try things like `\d` to list the tables of the database, or `\d people` to list the columns of the people table. 
 
+If you reboot your system you may need to start the postgres server again:
+```bash
+> pg_ctl -D /usr/local/var/postgres -l logfile start
+```
+
 The app and notebooks wil update the database by default to add data to it, but if you'd like to trigger this manually you can run:
 ```bash
 > cd wimbledon/harvest
