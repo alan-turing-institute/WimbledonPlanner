@@ -1,9 +1,8 @@
 from flask import Flask, send_from_directory, send_file
 
-from wimbledon.vis.Visualise import Visualise
-from wimbledon.api.DataUpdater import update_to_csv
+from wimbledon.vis import Visualise
+from wimbledon.harvest.api_interface import update_to_csv
 from wimbledon.github import preferences_availability as pref
-
 import os
 import zipfile
 import traceback
@@ -71,18 +70,12 @@ def update():
         #  system time?)
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
-        # get updated data from Forecast API
-        update_to_csv(app.config.get('DATA_DIR'), run_forecast=True,
-                                     run_harvest=False)
-
-        # Generate whiteboards
-        print('Visualise object...')
-        vis = Visualise(init_harvest=False, data_source='csv',
-                        data_dir='../data')
+        vis = Visualise(with_tracked_time=False,
+                        update_db=True)
 
         # Generate preference table
         print('Generate preference table...')
-        preferences_table = pref.get_all_preferences_table(fc=vis.fc)
+        preferences_table = pref.get_all_preferences_table(wim=vis.wim)
 
         # Save preference table to file
         check_dir(app.config.get('DATA_DIR') + '/figs/preferences')
@@ -90,6 +83,7 @@ def update():
         with open(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html', 'w') as f:
             f.write(preferences_table)
 
+        # Generate whiteboards
         print('Generate whiteboards...')
         whiteboards = vis.all_whiteboards(update_timestamp=updated_at)
 

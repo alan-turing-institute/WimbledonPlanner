@@ -4,9 +4,13 @@ import pandas as pd
 from copy import deepcopy
 import re
 
-from wimbledon.vis import DataHandlers
+from wimbledon import Wimbledon
+from wimbledon import select_date_range
+
 from wimbledon.vis import HTMLWriter
 
+from distinctipy import colorsets
+colorsets.set_palette()
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -22,28 +26,30 @@ def extract_name(text):
 
 class Visualise:
 
-    def __init__(self, init_forecast=True, init_harvest=True,
-                 start_date=None, end_date=None, freq=None, hrs_per_day=None,
-                 data_source='api', data_dir=''):
+    def __init__(self, conn=None, update_db=False, with_tracked_time=True,
+                 start_date=None, end_date=None, freq=None,
+                 work_hrs_per_day=None, proj_hrs_per_day=None):
 
+        # location of this file: used to find reg_capacity.csv
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
 
-        pd.options.mode.chained_assignment = None  # default='warn' # Gets rid of SettingWithCopy warnings
-        pd.options.display.float_format = '{:.1f}'.format  # only print one decimal place
-        sns.set(font_scale=1.5)  # have bigger fonts by default
+        # default='warn' # Gets rid of SettingWithCopy warnings
+        pd.options.mode.chained_assignment = None
 
-        # only initiate forecast and harvest objects if requested - to have option to be quicker
-        # TODO: Deal with case where hv/fc hasn't been initiated but a function tries to use them.
-        if init_forecast:
-            self.fc = DataHandlers.Forecast(hrs_per_day=hrs_per_day,
-                                            data_source=data_source, data_dir=data_dir+'/forecast')
-        else:
-            self.fc = None
+        # only print one decimal place
+        pd.options.display.float_format = '{:.1f}'.format
 
-        if init_harvest:
-            self.hv = DataHandlers.Harvest(data_source=data_source, data_dir=data_dir+'/harvest')
-        else:
-            self.hv = None
+        # have bigger fonts by default and use distinctipy colours
+        sns.set(font_scale=1.5,
+                palette=sns.color_palette(colorsets.get_colors()),
+                color_codes=False)
+
+        # TODO: Deal with case where time tracking not initiated but a
+        # TODO: function tries to use them.
+        self.wim = Wimbledon(conn=conn, update_db=update_db,
+                             with_tracked_time=with_tracked_time,
+                             work_hrs_per_day=work_hrs_per_day,
+                             proj_hrs_per_day=proj_hrs_per_day)
 
         #  set default time parameters
         if start_date is None:
@@ -93,27 +99,41 @@ class Visualise:
                    freq=None,
                    display='screen',
                    update_timestamp=None):
-        """Create an HTML table in the style of the whiteboard with cells coloured by name"""
+        """Create an HTML table in the style of the whiteboard with
+        cells coloured by name"""
 
-        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+        start_date, end_date, freq = self.get_time_parameters(start_date,
+                                                              end_date,
+                                                              freq)
 
-        sheet = self.fc.whiteboard(key_type, start_date, end_date, freq)
+        sheet = self.wim.whiteboard(key_type, start_date, end_date, freq)
 
-        html = HTMLWriter.make_whiteboard(sheet, key_type, display, update_timestamp=update_timestamp)
+        html = HTMLWriter.make_whiteboard(sheet, key_type, display,
+                                          update_timestamp=update_timestamp)
 
         return html
 
-    def all_whiteboards(self, start_date=None, end_date=None, freq=None, update_timestamp=None):
-        """Generate the project and people whiteboards styled for display on screen and for printing.
+    def all_whiteboards(self, start_date=None, end_date=None, freq=None,
+                        update_timestamp=None):
+        """Generate the project and people whiteboards styled for display on
+        screen and for printing.
 
         Keyword Arguments:
-            start_date {datetime} -- start date for whiteboard (default: 1 month before today)
-            end_date {datetime} -- end date for whiteboard (default: 1 year after today)
-            freq {str} -- Frequency of columns, as pandas time frequency string (default: 'MS' for month start)
+            start_date {datetime} -- start date for whiteboard (default: 1
+            month before today)
+
+            end_date {datetime} -- end date for whiteboard (default: 1 year
+            after today)
+
+            freq {str} -- Frequency of columns, as pandas time frequency
+            string (default: 'MS' for month start)
+
             update_timestamp {str} -- time data was obtained (default: {None})
         """
 
-        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+        start_date, end_date, freq = self.get_time_parameters(start_date,
+                                                              end_date,
+                                                              freq)
 
         whiteboards = dict()
 
@@ -121,13 +141,16 @@ class Visualise:
         # PROJECTS
         # ########
         # get unstyled whiteboard
-        sheet = self.fc.whiteboard('project', start_date, end_date, freq)
-        whiteboard_raw = HTMLWriter.make_whiteboard(sheet, 'project', 'nostyle', update_timestamp=update_timestamp)
-       
+        sheet = self.wim.whiteboard('project', start_date, end_date, freq)
+        whiteboard_raw = HTMLWriter.make_whiteboard(sheet,
+                                                    'project',
+                                                    'nostyle',
+                                                    update_timestamp=update_timestamp)
+
         # add screen style
         style = HTMLWriter.write_style(sheet, display='screen')
         whiteboards['project_screen'] = style + whiteboard_raw
-        
+
         # add print style
         style = HTMLWriter.write_style(sheet, display='print')
         whiteboards['project_print'] = style + whiteboard_raw
@@ -136,13 +159,14 @@ class Visualise:
         # PEOPLE
         # ######
         # get unstyled whiteboard
-        sheet = self.fc.whiteboard('person', start_date, end_date, freq)
-        whiteboard_raw = HTMLWriter.make_whiteboard(sheet, 'person', 'nostyle', update_timestamp=update_timestamp)
-       
+        sheet = self.wim.whiteboard('person', start_date, end_date, freq)
+        whiteboard_raw = HTMLWriter.make_whiteboard(sheet, 'person', 'nostyle',
+                                                    update_timestamp=update_timestamp)
+
         # add screen style
         style = HTMLWriter.write_style(sheet, display='screen')
         whiteboards['person_screen'] = style + whiteboard_raw
-               
+
         # add print style
         style = HTMLWriter.write_style(sheet, display='print')
         whiteboards['person_print'] = style + whiteboard_raw
@@ -154,77 +178,79 @@ class Visualise:
         if id_type == 'person':
             if id_value == 'ALL':
                 # initialise df
-                df = self.fc.people_totals.copy()
+                df = self.wim.people_totals.copy()
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=False)
 
                 # replace person ids with names
-                df.columns = [self.fc.get_person_name(person_id) for person_id in df.columns]
+                df.columns = [self.wim.get_person_name(person_id) for person_id in df.columns]
 
             else:
                 # extract the person's allocations, and replace ids with names
-                df = deepcopy(self.fc.people_allocations[id_value])
+                df = deepcopy(self.wim.people_allocations[id_value])
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-                df.columns.name = self.fc.get_person_name(id_value)
+                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
+                df.columns.name = self.wim.get_person_name(id_value)
 
         elif id_type == 'project':
 
             if id_value == 'CONFIRMED':
                 # initialise df
-                df = self.fc.project_confirmed.copy()
+                df = self.wim.project_confirmed.copy()
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date,
+                df = select_date_range(df, start_date, end_date,
                                                     drop_zero_cols=True)
 
                 # replace person ids with names
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
 
             elif id_value == 'RESOURCE_REQ':
                 # initialise df
-                df = self.fc.project_resourcereq.copy()
+                df = self.wim.project_resourcereq.copy()
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 # replace person ids with names
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
 
             elif id_value == 'ALLOCATED':
                 # initialise df
-                df = self.fc.project_confirmed.copy() - self.fc.project_resourcereq.copy()
+                df = self.wim.project_confirmed.copy() - self.wim.project_resourcereq.copy()
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
                 # replace person ids with names
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
+                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
 
             else:
                 # extract the project's people allocations, and replace ids with names
-                df = deepcopy(self.fc.project_allocations[id_value])
+                df = deepcopy(self.wim.project_allocations[id_value])
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
-                df.columns = [self.fc.get_name(person_id, 'person') for person_id in df.columns]
-                df.columns.name = self.fc.get_project_name(id_value)
+                df.columns = [self.wim.get_name(person_id, 'person') for person_id in df.columns]
+                df.columns.name = self.wim.get_project_name(id_value)
 
         elif id_type == 'placeholder':
             if id_value == 'ALL':
                 # initialise df
-                df = self.fc.placeholder_totals.copy()
+                df = self.wim.people_totals.copy()
+                df = df[[self.wim.get_association_name(idx) == 'Placeholder'
+                         for idx in df.columns]]
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=False)
 
                 # replace ids with names
-                df.columns = [self.fc.get_placeholder_name(placeholder_id) for placeholder_id in df.columns]
+                df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
 
                 # remove resource required placeholders
                 cols = [col for col in df.columns if 'resource required' not in col.lower()]
@@ -232,97 +258,13 @@ class Visualise:
 
             else:
                 # extract the person's allocations, and replace ids with names
-                df = self.fc.placeholder_allocations[id_value].copy()
+                df = self.wim.people_allocations[id_value].copy()
 
                 # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
+                df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
 
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-                df.columns.name = self.fc.get_placeholder_name(id_value)
-
-        elif id_type == 'institute':
-            # people and placeholders (i.e. including other universities etc.)
-            if id_value == 'ALL_PEOPLE':
-                # initialise df
-
-                df = pd.merge(self.fc.people_totals, self.fc.placeholder_totals,
-                              left_index=True, right_index=True)
-
-                # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=False)
-
-                # replace ids with names
-                df.columns = [self.fc.get_name(person_id, 'person') for person_id in df.columns]
-
-                # remove resource required placeholders
-                cols = [col for col in df.columns if 'resource required' not in col.lower()]
-                df = df[cols]
-
-            elif id_value == 'PROJECT_REQUIREMENTS':
-                # initialise df
-                df = self.fc.project_confirmed.copy(deep=True)
-
-                # add resource allocations from placeholders (excl resource required, which have already been included)
-                placeholder_ids = [idx for idx in self.fc.placeholders.index
-                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name'].lower()]
-
-                for idx in placeholder_ids:
-                    allocs = self.fc.placeholder_allocations[idx].copy(deep=True)
-
-                    for col in allocs.columns:
-                        df[col] += allocs[col]
-
-                # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
-
-                # replace ids with names
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-
-            elif id_value == 'PROJECT_ALLOCATED':
-
-                # initialise df
-                df = self.fc.project_allocated.copy(deep=True)
-
-                # add resource allocations from placeholders (excl resource required, which have already been included)
-                placeholder_ids = [idx for idx in self.fc.placeholders.index
-                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name'].lower()]
-
-                for idx in placeholder_ids:
-                    allocs = self.fc.placeholder_allocations[idx].copy(deep=True)
-
-                    for col in allocs.columns:
-                        df[col] += allocs[col]
-
-                # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
-
-                # replace ids with names
-                df.columns = [self.fc.get_project_name(project_id) for project_id in df.columns]
-
-            elif id_value == 'PROJECT_RESREQ':
-                # net allocation (i.e. resource required flags) same whether partner institutes included or not
-                # so call function again with appropriate arguments that give same desired result
-                df = self.get_allocations('RESOURCE_REQ', 'project', start_date, end_date, freq)
-
-            else:
-                # get person and placeholder allocation for a specific project id
-                # extract the allocations, and replace ids with names
-                df = deepcopy(self.fc.project_allocations[id_value])
-
-                # remove resource required placeholders
-                placeholder_ids = [idx for idx in self.fc.placeholders.index
-                                   if 'resource required' not in self.fc.placeholders.loc[idx, 'name']]
-
-                for idx in placeholder_ids:
-                    allocs = self.fc.placeholder_allocations[idx].copy(deep=True)
-                    if id_value in allocs.columns:
-                        df.loc[:, idx] = allocs[id_value]
-
-                # slice the given date range from the dataframe
-                df = DataHandlers.select_date_range(df, start_date, end_date, drop_zero_cols=True)
-
-                df.columns = [self.fc.get_name(idx, 'person') for idx in df.columns]
-                df.columns.name = self.fc.get_name(id_value, 'project')
+                df.columns = [self.wim.get_project_name(project_id) for project_id in df.columns]
+                df.columns.name = self.wim.get_person_name(id_value)
 
         else:
             raise ValueError('id_type must be person, project or placeholder')
@@ -348,25 +290,35 @@ class Visualise:
         """Make a stacked area plot of a person's project allocations between
         a start date and an end date."""
 
-        start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
+        start_date, end_date, freq = self.get_time_parameters(start_date,
+                                                              end_date,
+                                                              freq)
 
         try:
-            df = self.get_allocations(id_value, id_type, start_date, end_date, freq)
+            df = self.get_allocations(id_value, id_type,
+                                      start_date, end_date, freq)
 
-            if id_type == 'person' or id_type == 'institute':
+            if id_type == 'person':
+                if 'UNAVAILABLE' in df.columns:
+                    df.drop('UNAVAILABLE', axis=1, inplace=True)
+
                 # people nominally allocated 100%
-                nominal_allocation = pd.Series(1, index=df.index)
+                nominal_allocation = self.wim.people_capacities[id_value]
                 time_label = 'Time Capacity'
 
             elif id_type == 'project':
                 # get the project's person allocations
-                nominal_allocation = self.fc.project_confirmed[id_value]
-                nominal_allocation = DataHandlers.select_date_range(nominal_allocation, start_date, end_date,
-                                                                    drop_zero_cols=False)
+                nominal_allocation = self.wim.project_confirmed[id_value]
                 time_label = 'Time Requirement'
 
             else:
-                raise ValueError('id_type must be person, institute or project')
+                raise ValueError('id_type must be person or project')
+
+            nominal_allocation = select_date_range(nominal_allocation,
+                                                   start_date, end_date,
+                                                   drop_zero_cols=False)
+
+            nominal_allocation = nominal_allocation.resample(freq).mean()
 
             # plot the data
             fig = plt.figure(figsize=(15, 5))
@@ -375,18 +327,10 @@ class Visualise:
             df.plot.area(ax=ax, linewidth=0)
 
             ax.set_title(df.columns.name)
-            ax.set_ylabel('Total FTE @ '+str(self.fc.hrs_per_day)+' hrs/day')
+            ax.set_ylabel('Total FTE @ '+str(self.wim.work_hrs_per_day)+' hrs/day')
 
-            if id_type != 'placeholder':
-                if freq != 'D':
-                    nominal_allocation = nominal_allocation.resample(freq).mean()
-
-                nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
-
-                ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.sum(axis=1).max()])])
-
-            else:
-                ax.set_ylim([0, 1.1 * df.sum(axis=1).max()])
+            nominal_allocation.plot(ax=ax, color='k', linewidth=3, linestyle='--', label=time_label)
+            ax.set_ylim([0, 1.1 * max([nominal_allocation.max(), df.sum(axis=1).max()])])
 
             ax.legend(title='', loc='best')
             ax.set_xlim([start_date, end_date])
@@ -500,16 +444,16 @@ class Visualise:
             if id_type == 'project' and 'ALL' not in str(id_value):
                 # add the project's missing resource allocation
                 if freq == 'D':
-                    df['UNALLOCATED'] = self.fc.project_resourcereq[id_value]
+                    df['UNALLOCATED'] = self.wim.project_resourcereq[id_value]
                 else:
-                    df['UNALLOCATED'] = self.fc.project_resourcereq[id_value].resample(freq).mean()
+                    df['UNALLOCATED'] = self.wim.project_resourcereq[id_value].resample(freq).mean()
 
             elif id_type == 'person' and 'ALL' not in str(id_value):
                 # add the person's total project assignment to the data frame
                 if freq == 'D':
-                    df['TOTAL'] = self.fc.people_totals[id_value]
+                    df['TOTAL'] = self.wim.people_totals[id_value]
                 else:
-                    df['TOTAL'] = self.fc.people_totals[id_value].resample(freq).mean()
+                    df['TOTAL'] = self.wim.people_totals[id_value].resample(freq).mean()
 
             df = self.format_date_index(df, freq)
 
@@ -533,94 +477,51 @@ class Visualise:
                 fmt = '.0%'
 
                 if id_value == 'ALL':
-                    title = 'Total Person Allocation (% FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                    title = 'Total Person Allocation (% FTE @  ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
                 else:
-                    title = df.columns.name + ' Allocation (% FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                    title = df.columns.name + ' Allocation (% FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
 
             elif id_type == 'project':
                 fmt = '.1f'
 
-                if id_value == 'ALL_TOTALS':
-                    title = 'Project Allocated Capacity (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-                elif id_value == 'ALL_REQUIREMENTS':
-                    title = 'Project Demand (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-                elif id_value == 'ALL_RESREQ':
-                    title = 'Project Resource Required (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                if id_value == 'ALLOCATED':
+                    title = 'Project Allocated Capacity (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
+                elif id_value == 'CONFIRMED':
+                    title = 'Project Demand (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
+                elif id_value == 'RESOURCE_REQ':
+                    title = 'Project Resource Required (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
                 else:
-                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
 
             elif id_type == 'placeholder':
                 fmt = '.1f'
 
                 if id_value == 'ALL':
-                    title = 'Total Allocation (FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                    title = 'Total Placeholder Allocation (FTE @  ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
                 else:
-                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.wim.work_hrs_per_day) + ' hrs/day)'
 
-            elif id_type == 'institute':
-                # people and non-resource required placeholders
-                fmt = '.1f'
-
-                if id_value == 'ALL_PEOPLE':
-                    title = 'Institute Allocated Capacity (FTE @  ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-                elif id_value == 'PROJECT_REQUIREMENTS':
-                    title = 'Project Demand (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-                elif id_value == 'PROJECT_ALLOCATED':
-                    title = 'Project Allocated Capacity (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-                elif id_value == 'PROJECT_RESREQ':
-                    title = 'Project Resource Required (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
-                else:
-                    title = df.columns.name + ' Allocation (FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day)'
+            else:
+                raise ValueError('id_type must be person, project or placeholder')
 
             # change date format for prettier printing
             df = self.format_date_index(df, freq)
 
             fig = plt.figure(figsize=(df.shape[0], df.shape[1]))
             ax = fig.gca()
-            # sort by largest values (proceeding through columns to find differences)
-            sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False), linewidths=1,
-                        cmap='Reds', cbar=False,
-                        annot=True, fmt=fmt, annot_kws={'fontsize': 14}, ax=ax)
+            # sort by largest values
+            sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns],
+                                         ascending=False),
+                        linewidths=1, cmap='Reds', cbar=False, fmt=fmt,
+                        annot=True, annot_kws={'fontsize': 14}, ax=ax)
 
             ax.set_ylabel('')
-
             ax.set_title(title)
-
 
             return fig
 
         except ValueError as e:
             return None
-
-    def plot_capacity_check(self, start_date=None, end_date=None, figsize=(10, 7)):
-        """Plot of total project requirements, total team allocation and total team capacity over time."""
-
-        start_date, end_date, _ = self.get_time_parameters(start_date, end_date)
-
-        reqs = self.fc.project_confirmed.sum(axis=1)
-        reqs = DataHandlers.select_date_range(reqs, start_date, end_date, drop_zero_cols=False)
-        reqs = reqs.resample('W-MON').mean()
-
-        alloc = self.fc.project_allocated.sum(axis=1)
-        alloc = DataHandlers.select_date_range(alloc, start_date, end_date, drop_zero_cols=False)
-        alloc = alloc.resample('W-MON').mean()
-
-        # Weekly capacity just a constant based on number of people for now -
-        # no way to know e.g. when people started/stopped in REG in current data
-        team100 = self.fc.people['weekly_capacity'].sum()
-
-        fig = plt.figure(figsize=figsize)
-        ax = fig.gca()
-
-        reqs.plot(ax=ax, label='Project Required')
-        alloc.plot(ax=ax, label='Team Allocated')
-        xlim = ax.get_xlim()
-        ax.plot(xlim, [team100, team100], 'k--', label='Team Total')
-        ax.set_xlim(xlim)
-        ax.legend()
-        ax.set_ylabel('FTE @ ' + str(self.fc.hrs_per_day) + ' hrs/day')
-
-        return fig
 
     def plot_demand_vs_capacity(self, start_date=None, end_date=None, freq=None, today=None, figsize=(19, 10)):
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
@@ -630,33 +531,33 @@ class Visualise:
 
         # move start date to 1st of specified month (fixes some display issues)
         start_date = pd.datetime(start_date.year, start_date.month, 1)
-        
+
         # ----------
         # DEMAND
         # ----------
         # Get totals for REG management, development and support clients
-        research_support_idx = self.fc.get_client_id('REG Support')
-        reg_management_idx = self.fc.get_client_id('REG Management')
-        reg_dev_idx = self.fc.get_client_id('REG Development Work')
+        research_support_idx = self.wim.get_client_id('REG Support')
+        reg_management_idx = self.wim.get_client_id('REG Management')
+        reg_dev_idx = self.wim.get_client_id('REG Development Work')
 
-        research_support_projs = self.fc.projects[self.fc.projects.client_id == research_support_idx].index
-        reg_management_projs = self.fc.projects[self.fc.projects.client_id == reg_management_idx].index
-        reg_dev_projs = self.fc.projects[self.fc.projects.client_id == reg_dev_idx].index
+        research_support_projs = self.wim.projects[self.wim.projects.client == research_support_idx].index
+        reg_management_projs = self.wim.projects[self.wim.projects.client == reg_management_idx].index
+        reg_dev_projs = self.wim.projects[self.wim.projects.client == reg_dev_idx].index
 
-        research_support_reqs = self.fc.project_confirmed[research_support_projs].sum(axis=1)
-        reg_management_reqs = self.fc.project_confirmed[reg_management_projs].sum(axis=1)
-        reg_dev_reqs = self.fc.project_confirmed[reg_dev_projs].sum(axis=1)
+        research_support_reqs = self.wim.project_confirmed[research_support_projs].sum(axis=1)
+        reg_management_reqs = self.wim.project_confirmed[reg_management_projs].sum(axis=1)
+        reg_dev_reqs = self.wim.project_confirmed[reg_dev_projs].sum(axis=1)
 
         # Get overall totals
-        project_confirmed = self.fc.project_confirmed.drop(self.fc.get_project_id('UNAVAILABLE'), axis=1)
+        project_confirmed = self.wim.project_confirmed.drop(self.wim.get_project_id('UNAVAILABLE'), axis=1)
         project_confirmed = project_confirmed.sum(axis=1)
 
         # project_confirmed = total for all non-research support, REG management or REG development projects
         project_confirmed = project_confirmed - reg_management_reqs - reg_dev_reqs - research_support_reqs
 
         # Get totals for unconfirmed and deferred projects
-        unconfirmed = self.fc.project_unconfirmed.sum(axis=1)
-        deferred = self.fc.project_deferred.sum(axis=1)
+        unconfirmed = self.wim.project_unconfirmed.sum(axis=1)
+        deferred = self.wim.project_deferred.sum(axis=1)
 
         # merge all demand types into one dataframe ready for plotting
         demand = pd.DataFrame({'REG Management': reg_management_reqs,
@@ -666,46 +567,53 @@ class Visualise:
                                'Projects with funder': unconfirmed,
                                'Deferred projects': deferred})
 
-        demand = DataHandlers.select_date_range(demand, start_date, end_date, drop_zero_cols=False)
+        demand = select_date_range(demand, start_date, end_date, drop_zero_cols=False)
+
         demand = demand.resample(freq).mean()
-                
+
         # ----------
         # CAPACITY
         # ----------
 
         # Idx for people on fixed term contracts
-        ftc = self.fc.people[self.fc.people['association_group'] == 'REG FTC'].index
+        ftc = self.wim.people[self.wim.people['association'] ==
+                              self.wim.get_association_id('REG FTC')].index
 
         # Idx for REG associates
-        assoc = self.fc.people[self.fc.people['association_group'] == 'REG Associate'].index
-
+        assoc = self.wim.people[self.wim.people['association'] ==
+                                self.wim.get_association_id('REG Associate')].index
         # Idx for people on permanent contracts
-        select_perm = pd.DataFrame(index=self.fc.people.index)
-        select_perm['perm'] = self.fc.people['association_group'] == 'REG Permanent'
-        select_perm['senior'] = self.fc.people['association_group'] == 'REG Senior'
-        select_perm['princ'] = self.fc.people['association_group'] == 'REG Principal'
-        select_perm['direc'] = self.fc.people['association_group'] == 'REG Director'
+        select_perm = pd.DataFrame(index=self.wim.people.index)
+        select_perm['perm'] = (self.wim.people['association'] ==
+                               self.wim.get_association_id('REG Permanent'))
+        select_perm['senior'] = (self.wim.people['association'] ==
+                                 self.wim.get_association_id('REG Senior'))
+        select_perm['princ'] = (self.wim.people['association'] ==
+                                self.wim.get_association_id('REG Principal'))
+        select_perm['direc'] = (self.wim.people['association'] ==
+                                self.wim.get_association_id('REG Director'))
         select_perm = select_perm.any(axis=1)
-        perm = self.fc.people[select_perm].index
+        perm = self.wim.people[select_perm].index
 
         # Merge capacity types into one dataframe
-        capacity = pd.DataFrame(index=self.fc.capacity.index)
-        capacity['REG FTC'] = self.fc.capacity[ftc].sum(axis=1)
-        capacity['REG Associate'] = self.fc.capacity[assoc].sum(axis=1)
-        capacity['REG Permanent'] = self.fc.capacity[perm].sum(axis=1)
+        capacity = pd.DataFrame(index=self.wim.people_capacities.index)
+        capacity['REG FTC'] = self.wim.people_capacities[ftc].sum(axis=1)
+        capacity['REG Associate'] = self.wim.people_capacities[assoc].sum(axis=1)
+        capacity['REG Permanent'] = self.wim.people_capacities[perm].sum(axis=1)
 
-        capacity = DataHandlers.select_date_range(capacity, start_date, end_date)
         capacity = capacity.resample(freq).mean()
+
+        capacity = select_date_range(capacity, start_date, end_date)
 
         # Load institute capacity from file
         csv = pd.read_csv(self.script_dir+'/reg_capacity.csv', index_col='Month')
         csv = csv.T
         csv.index = pd.to_datetime(csv.index, format='%b-%y')
-        
+
         # make sure capture the start date month in csv file by going from 1st
         # of month
-        csv = DataHandlers.select_date_range(csv, start_date, end_date)
-        
+        csv = select_date_range(csv, start_date, end_date)
+
         capacity['University Partner'] = csv['University Partner capacity']
 
         # order columns
@@ -791,23 +699,23 @@ class Visualise:
     def table_client_demand(self, start_date=None, end_date=None, freq='AS-APR'):
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
-        project_ids = self.fc.project_confirmed.columns
+        project_ids = self.wim.project_confirmed.columns
 
         clients = []
         for project in project_ids:
-            client_id = self.fc.projects.loc[project, 'client_id']
+            client_id = self.wim.projects.loc[project, 'client']
 
             if not np.isnan(client_id) and \
-                    not self.fc.clients.loc[client_id, 'name'] == 'UNAVAILABLE':
+                    not self.wim.clients.loc[client_id, 'name'] == 'UNAVAILABLE':
 
-                clients.append(self.fc.clients.loc[client_id, 'name'])
+                clients.append(self.wim.clients.loc[client_id, 'name'])
 
             else:
                 clients.append('NaN')
 
-        client_meanfte = self.fc.project_confirmed.copy()
+        client_meanfte = self.wim.project_confirmed.copy()
 
-        client_meanfte = DataHandlers.select_date_range(client_meanfte, start_date, end_date, drop_zero_cols=False)
+        client_meanfte = select_date_range(client_meanfte, start_date, end_date, drop_zero_cols=False)
 
         client_meanfte = client_meanfte.groupby(clients, axis=1).sum()
         client_meanfte = client_meanfte.resample(freq).mean()
@@ -817,39 +725,50 @@ class Visualise:
         client_meanfte = client_meanfte.T
         client_meanfte.drop('NaN', inplace=True)
 
+        # strip time from column names for prettier printing
+        client_meanfte.columns = client_meanfte.columns.date
+
         return client_meanfte
 
-    def plot_forecast_harvest(self, forecast_id,
+    def plot_forecast_harvest(self, project_id,
                               start_date=None, end_date=None, freq='W-MON',
                               err_bar=True, err_size=0.2,
-                              stack=False):
+                              stack=False, units='Hours'):
 
         """compare planned time for a project in forecast to tracked time in harvest.
         If stack is True: Area plot for harvest data split into each person's contribution.
         If err_bar is True: Add lines representing forecast projection +/- err_size*100 %"""
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
 
-        harvest_id = self.fc.get_harvest_id(forecast_id)
-        if np.isnan(harvest_id):
-            raise ValueError('No harvest_id exists for forecast_id '+str(forecast_id))
-
         # NB scale forecast fte by using harvest hours per day property (default 6.4)
-        fc_totals = self.hv.proj_hrs_per_day * self.fc.project_confirmed[forecast_id].copy()
+        fc_totals = self.wim.proj_hrs_per_day * self.wim.project_confirmed[project_id].copy()
         fc_totals = fc_totals.resample(freq).sum().cumsum()
-        fc_totals = DataHandlers.select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
+        fc_totals = select_date_range(fc_totals, start_date, end_date, drop_zero_cols=False)
 
         if stack:
-            hv_totals = self.hv.projects_people[harvest_id].copy()
+            hv_totals = self.wim.tracked_project_people[project_id].copy()
             hv_totals = hv_totals.resample(freq).sum().cumsum()
-            hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=True)
-            hv_totals.columns = [self.hv.get_person_name(idx) for idx in hv_totals.columns]
+            hv_totals = select_date_range(hv_totals, start_date, end_date, drop_zero_cols=True)
+            hv_totals.columns = [self.wim.get_person_name(idx) for idx in hv_totals.columns]
         else:
-            hv_totals = self.hv.projects_totals[harvest_id].copy()
+            hv_totals = self.wim.tracked_project_totals[project_id].copy()
             hv_totals = hv_totals.resample(freq).sum().cumsum()
-            hv_totals = DataHandlers.select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
+            hv_totals = select_date_range(hv_totals, start_date, end_date, drop_zero_cols=False)
 
         if (fc_totals == 0).all(axis=None) & (hv_totals == 0).all(axis=None):
-            raise ValueError('forecast_id '+str(forecast_id)+' no data to plot.')
+            raise ValueError('forecast_id '+str(project_id)+' no data to plot.')
+
+        if units == 'FTE days':
+            fc_totals = fc_totals / self.wim.work_hrs_per_day
+            hv_totals = hv_totals / self.wim.work_hrs_per_day
+        elif units == 'FTE weeks':
+            fc_totals = fc_totals / (self.wim.work_hrs_per_day * 5)
+            hv_totals = hv_totals / (self.wim.work_hrs_per_day * 5)
+        elif units == 'FTE months':
+            fc_totals = fc_totals / (self.wim.work_hrs_per_day * 5 * 52 / 12)
+            hv_totals = hv_totals / (self.wim.work_hrs_per_day * 5 * 52 / 12)
+        else:
+            units = 'Hours'
 
         try:
             fig = plt.figure(figsize=(10, 10))
@@ -868,22 +787,22 @@ class Visualise:
                 hv_totals.plot(ax=ax, label='Harvest', linewidth=3, color='r')
 
             plt.xlim([start_date, end_date])
-            plt.ylabel('Cumulative Hours')
+            plt.ylabel(units)
             plt.legend()
-            plt.title(self.fc.get_project_name(forecast_id))
+            plt.title(self.wim.get_project_name(project_id))
 
             return fig
 
         except ValueError as e:
             plt.close(fig)
-            raise ValueError('forecast_id '+str(forecast_id)+' plot failed')
+            raise ValueError('project '+str(project_id)+' plot failed')
         except TypeError as e:
             plt.close(fig)
-            raise TypeError('forecast_id '+str(forecast_id)+' plot failed')
+            raise TypeError('project '+str(project_id)+' plot failed')
 
-    def plot_harvest(self, id_type, group_type, harvest_id=None,
+    def plot_harvest(self, id_type, group_type, id_value=None,
                     start_date=None, end_date=None, freq='MS',
-                    plot_type='bar'):
+                    plot_type='bar', units='Hours'):
         """Bar charts of Harvest time tracking."""
 
         start_date, end_date, freq = self.get_time_parameters(start_date, end_date, freq)
@@ -893,47 +812,47 @@ class Visualise:
                        'project-TOTAL, client-TOTAL and task-TOTAL')
 
         if id_type == 'person':
-            if harvest_id is not None and group_type != 'TOTAL':
-                id_name = self.hv.get_person_name(harvest_id)
+            if id_value is not None and group_type != 'TOTAL':
+                id_name = self.wim.get_person_name(id_value)
             else:
                 id_name = ''
 
             if group_type == 'project':
-                df = self.hv.people_projects[harvest_id].copy()
-                df.columns = [self.hv.get_project_name(idx) for idx in df.columns]
+                df = self.wim.tracked_person_projects[id_value].copy()
+                df.columns = [self.wim.get_project_name(idx) for idx in df.columns]
                 type_name = 'Project'
             elif group_type == 'client':
-                df = self.hv.people_clients[harvest_id].copy()
-                df.columns = [self.hv.get_client_name(idx) for idx in df.columns]
+                df = self.wim.tracked_person_clients[id_value].copy()
+                df.columns = [self.wim.get_client_name(idx) for idx in df.columns]
                 type_name = 'Client'
             elif group_type == 'task':
-                df = self.hv.people_tasks[harvest_id].copy()
-                df.columns = [self.hv.get_task_name(idx) for idx in df.columns]
+                df = self.wim.tracked_person_tasks[id_value].copy()
+                df.columns = [self.wim.get_task_name(idx) for idx in df.columns]
                 type_name = 'Task'
             elif group_type == 'TOTAL':
-                df = self.hv.people_totals.copy()
-                df.columns = [self.hv.get_person_name(idx) for idx in df.columns]
+                df = self.wim.tracked_person_totals.copy()
+                df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
                 type_name = 'People'
             else:
                 raise e
 
         elif id_type == 'project':
-            if harvest_id is not None and group_type != 'TOTAL':
-                id_name = self.hv.get_project_name(harvest_id)
+            if id_value is not None and group_type != 'TOTAL':
+                id_name = self.wim.get_project_name(id_value)
             else:
                 id_name = ''
 
             if group_type == 'person':
-                df = self.hv.projects_people[harvest_id].copy()
-                df.columns = [self.hv.get_person_name(idx) for idx in df.columns]
+                df = self.wim.tracked_project_people[id_value].copy()
+                df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
                 type_name = 'People'
             elif group_type == 'task':
-                df = self.hv.projects_tasks[harvest_id].copy()
-                df.columns = [self.hv.get_task_name(idx) for idx in df.columns]
+                df = self.wim.tracked_project_tasks[id_value].copy()
+                df.columns = [self.wim.get_task_name(idx) for idx in df.columns]
                 type_name = 'Task'
             elif group_type == 'TOTAL':
-                df = self.hv.projects_totals.copy()
-                df.columns = [self.hv.get_project_name(idx) for idx in df.columns]
+                df = self.wim.tracked_project_totals.copy()
+                df.columns = [self.wim.get_project_name(idx) for idx in df.columns]
                 type_name = 'Project'
             else:
                 raise e
@@ -942,8 +861,8 @@ class Visualise:
             id_name = ''
 
             if group_type == 'TOTAL':
-                df = self.hv.clients_totals.copy()
-                df.columns = [self.hv.get_client_name(idx) for idx in df.columns]
+                df = self.wim.tracked_client_totals.copy()
+                df.columns = [self.wim.get_client_name(idx) for idx in df.columns]
                 type_name = 'Client'
             else:
                 raise e
@@ -952,8 +871,8 @@ class Visualise:
             id_name = ''
 
             if group_type == 'TOTAL':
-                df = self.hv.tasks_totals.copy()
-                df.columns = [self.hv.get_task_name(idx) for idx in df.columns]
+                df = self.wim.tracked_task_totals.copy()
+                df.columns = [self.wim.get_task_name(idx) for idx in df.columns]
                 type_name = 'Task'
             else:
                 raise e
@@ -961,14 +880,23 @@ class Visualise:
         else:
             raise e
 
-        df = DataHandlers.select_date_range(df, start_date, end_date)
+        df = select_date_range(df, start_date, end_date)
+
+        if units == 'FTE days':
+            df = df / self.wim.work_hrs_per_day
+        elif units == 'FTE weeks':
+            df = df / (self.wim.work_hrs_per_day * 5)
+        elif units == 'FTE months':
+            df = df / (self.wim.work_hrs_per_day * 5 * 52 / 12)
+        else:
+            units = 'Hours'
 
         if plot_type == 'bar':
             fig = plt.figure(figsize=(10, df.shape[1]))
             ax = fig.gca()
 
             df.sum().sort_values().plot.barh(ax=ax)
-            ax.set_xlabel('Hours')
+            ax.set_xlabel(units)
 
         elif plot_type == 'pie':
             fig = plt.figure(figsize=(10, 10))
@@ -984,20 +912,28 @@ class Visualise:
 
             df = df.resample(freq).sum()
             df = self.format_date_index(df, freq)
+
+            if units == 'Hours':
+                fmt = '.0f'
+            else:
+                fmt = '.1f'
+
             sns.heatmap(df.T.sort_values(by=[col for col in df.T.columns], ascending=False),
-                        ax=ax, cmap='Reds', annot=True, cbar=False, fmt='.0f')
+                        ax=ax, cmap='Reds', annot=True, cbar=False, fmt=fmt)
 
         else:
             raise ValueError('plot_type must be bar or heatmap.')
 
-        title = '{:s} hours from {:s} to {:s}'.format(type_name,
-                                                      start_date.strftime('%d %b %y'),
-                                                      end_date.strftime('%d %b %y'))
 
+        title = '{:s} {:s} from {:s} to {:s}'.format(
+                    type_name,
+                    units,
+                    start_date.strftime('%d %b %y'),
+                    end_date.strftime('%d %b %y')
+                )
         if id_name != '':
             title = id_name + '\n' + title
 
         ax.set_title(title)
 
         return fig
-

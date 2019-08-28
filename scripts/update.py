@@ -1,38 +1,25 @@
-"""Run this script from the command line whilst in the api directory to update harvest and forecast data.
+"""Run this script to update database from the harvest and forecast apis.
 Usage:
-Update forecast data:
-python update.py forecast
 
-Update harvest data:
+Without updating time tracking:
+python update.py
+
+Including time tracking update:
 python update.py harvest
-
-Update forecast and harvest data:
-python update.py forecast harvest
-or
-python update.py harvest forecast
 """
 
 import sys
-import wimbledon.api.DataUpdater
+from wimbledon.harvest.db_interface import update_db
 import time
 
 start = time.time()
 
-for arg in sys.argv[1:]:
-    if arg == 'harvest':
-        print('='*50)
-        print('UPDATING HARVEST')
-        print('='*50)
-        wimbledon.api.DataUpdater.update_to_csv('../data', run_forecast=False, run_harvest=True)
+if 'harvest' in sys.argv:
+    with_tracked_time = True
+else:
+    with_tracked_time = False
 
-    elif arg == 'forecast':
-        print('='*50)
-        print('UPDATING FORECAST')
-        print('='*50)
-        wimbledon.api.DataUpdater.update_to_csv('../data', run_forecast=True, run_harvest=False)
-
-    else:
-        raise ValueError('Invalid argument. Valid options are harvest and forecast.')
+update_db(with_tracked_time=with_tracked_time)
 
 print('='*50)
 print('TOTAL UPDATE TIME: {:.1f}s'.format(time.time() - start))

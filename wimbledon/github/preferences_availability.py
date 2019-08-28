@@ -1,10 +1,11 @@
 import requests
 import json
 import pandas as pd
+import math
 from datetime import datetime
 import statistics
 from IPython.display import HTML, display
-from wimbledon.vis.Visualise import DataHandlers
+from wimbledon import Wimbledon
 from wimbledon import config
 
 
@@ -39,12 +40,12 @@ alternate_query = """
           number
           title
           url
-          comments(first:Y) {
+          comments(first:Z) {
             edges {
               node {
                 reactionGroups {
                     content
-                    users(first:20) {
+                    users(first:Y) {
                         edges {
                             node {
                                 login
@@ -74,7 +75,7 @@ def run_query(query, token):
         raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
 
 
-def get_reactions(token, issue, number_of_people=20):
+def get_reactions(token, issue, number_of_people=20, number_of_comments=5):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
     """
@@ -86,13 +87,15 @@ def get_reactions(token, issue, number_of_people=20):
         return False
 
     # Edit the query string to contain the relevant issue and number of GitHub users
-    modified_query = query.replace("X", str(issue)).replace("Y", str(number_of_people))
+    # This query gets the emojis on the issue itself (i.e. the top comment/ post)
+    modified_query = query.replace("X", str(int(issue))).replace("Y", str(number_of_people))
     result = run_query(modified_query, token)
     project_reactions_first_query = result['data']['repository']['issue']['reactionGroups']
     if reactions_exist(project_reactions_first_query):
         return project_reactions_first_query
 
-    modified_query = alternate_query.replace("X", str(issue)).replace("Y", str(number_of_people))
+    # If we don't find any emojis from the first query, this one searches subsequent comments (set to first 5 by default)
+    modified_query = alternate_query.replace("X", str(int(issue))).replace("Y", str(number_of_people)).replace("Z", str(number_of_comments))
     result = run_query(modified_query, token)
     project_comments = result['data']['repository']['issue']['comments']['edges']
     for comment in project_comments:
@@ -102,14 +105,14 @@ def get_reactions(token, issue, number_of_people=20):
     return project_reactions_first_query
 
 
-def get_person_availability(fc, person, start_date, end_date):
+def get_person_availability(wim, person, start_date, end_date):
     """
     Get the mean of a person's FTE proportion available for the start to end datetime objects, using their name or id
     """
-    peopledf = 1 - fc.people_totals.resample('MS').mean()  # pandas df for team members availability
+    peopledf = wim.people_free_capacity
     if isinstance(person, str):
         try:
-            person = fc.get_person_id(person)
+            person = wim.get_person_id(person)
         except:
             return 0.0
     peopledf = peopledf[(peopledf.index >= start_date) & (peopledf.index <= end_date)]
@@ -121,14 +124,14 @@ def get_person_availability(fc, person, start_date, end_date):
     return round(average_availability, 2)
 
 
-def get_project_requirement(fc, project, start_date, end_date):
+def get_project_requirement(wim, project, start_date, end_date):
     """
     Get the mean of a project's FTE requirement for the start to end datetime objects, using the project name or id
     """
-    projectdf = fc.project_resourcereq.resample('MS').mean()  # pandas df for project resource requirement
+    projectdf = wim.project_resourcereq.resample('MS').mean()  # pandas df for project resource requirement
     if isinstance(project, str):
         try:
-            project = fc.get_project_id(project)
+            project = wim.get_project_id(project)
         except:
             return 0.0
     projectdf = projectdf[(projectdf.index >= start_date) & (projectdf.index <= end_date)]
@@ -140,7 +143,7 @@ def get_project_requirement(fc, project, start_date, end_date):
     return round(average_requirement, 2)
 
 
-def get_preference_data(fc, github_token, emoji_mapping=None):
+def get_preference_data(wim, github_token, emoji_mapping=None):
     """
     Get each team members preference emoji for all projects with a GitHub issue.
     Return a pandas df with person against project and their preference emoji.
@@ -163,15 +166,15 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
               'THUMBS_DOWN': '❌',
               'THUMBS_UP': '👍',
               'LAUGH': '✅'}
-    names = list(fc.people.full_name)
+    names = list(wim.people.name)
     # Giovanni and Miguel have left but put emojis on future projects. Remove them
     names.remove("Giovanni Colavizza")
     names.remove("Miguel Morin")
     preference_data = {
         "Person": names
     }
-    issues = fc.projects["GitHub"].dropna()  # Get list of GitHub issues for projects
-    total_people = len(fc.people)
+    issues = wim.projects["github"].dropna()  # Get list of GitHub issues for projects
+    total_people = len(wim.people)
     for issue_num, project_id in zip(issues, issues.index):
         # Get a dict with the emoji reactions for this issue
         project_reactions = get_reactions(github_token, issue_num, number_of_people=total_people)
@@ -192,21 +195,21 @@ def get_preference_data(fc, github_token, emoji_mapping=None):
             else:
                 emoji = "❓"  # For team members who have not given a preference to the project
             emojis.append(emoji)
-        preference_data[fc.get_project_name(project_id)] = emojis
+        preference_data[wim.get_project_name(project_id)] = emojis
     preference_data_df = pd.DataFrame(preference_data).set_index('Person')
     # Remove any team members without emoji preferences for any project
     preference_data_df = preference_data_df.loc[~(preference_data_df=="❓").all(axis=1)]
     return preference_data_df
 
 
-def get_preferences(fc, preference_data_df, first_date=False, last_date=False, person=False, project=False, positive_only=False, emojis_only=False, css=None):
+def get_preferences(wim, preference_data_df, first_date=False, last_date=False, person=False, project=False, emojis_only=False, css=None):
     """
     Create a HTML table with each project that has a resource requirement against every REG team member with availability.
     Table values show the preference emojis alongside the mean availability the person has for the resource required period and
     the mean resource required for the range between the first month with resource required and the last.
     """
     # Get the data on project resource requirement from Forecast
-    resreqdf = fc.project_resourcereq.resample('MS').mean()  # grouped by month and mean taken
+    resreqdf = wim.project_resourcereq.resample('MS').mean()  # grouped by month and mean taken
     if person:
         names = [person]
     else:
@@ -218,7 +221,7 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
     if project:
         if isinstance(project, str):
             try:
-                project = fc.get_project_id(project)
+                project = wim.get_project_id(project)
             except:
                 pass
     # Get projects with some resource requirement but filter by those with a GitHub issue
@@ -227,37 +230,28 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
             # Get the dates for each month that the project has a resource requirement > 0
             date_indices = resreqdf.index[resreqdf[project_id] > 0]
             if len(date_indices) > 0:  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
-                issue_num = fc.projects.loc[project_id, "GitHub"]
-                if not isinstance(issue_num, float):  # if this project has a GitHub issue
+                issue_num = wim.projects.loc[project_id]["github"]
+                if not math.isnan(issue_num):  # if this project has a GitHub issue
                     first_resreq_date = date_indices[0].strftime("%Y-%m-%d")
                     last_resreq_date = date_indices[-1].strftime("%Y-%m-%d")
                     if first_date:
                         first_resreq_date = first_date
                     if last_date:
                         last_resreq_date = last_date
-                    resreq = get_project_requirement(fc, project_id, first_resreq_date, last_resreq_date)
-                    project_name = fc.projects.loc[project_id, "name"]
-                    project_title = project_name + " (" + str(issue_num) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
+                    resreq = get_project_requirement(wim, project_id, first_resreq_date, last_resreq_date)
+                    project_name = wim.projects.loc[project_id, "name"]
+                    project_title = project_name + " (" + str(int(issue_num)) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
                     emoji_data = []
                     for name in names:
-                        person_availability = get_person_availability(fc, name, first_resreq_date, last_resreq_date)
+                        person_availability = get_person_availability(wim, name, first_resreq_date, last_resreq_date)
                         percentage_availability = round((person_availability / resreq) * 100)
                         emoji = preference_data_df[project_name][name]
-                        # If a specific person or project is specified and positive_only is True, only include checks and thumbs
-                        if (not person and not project) or not positive_only or emoji == '✅' or emoji == '👍':
-                            if emojis_only:
-                                emoji_data.append(emoji)
-                            else:
-                                emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " +  str(round(resreq, 2)) + ")")
-                                # emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
-#                         if project and positive_only and (emoji == '❌' or emoji == '❓'):
-#                             print(name, emoji)
-#                             data["Person"].remove(name)
-#                         else:
-#                             print(name, emoji)
-
-                    if (not person and not project) or not positive_only or len(emoji_data) > 0:
-                        data[project_title] = emoji_data
+                        if emojis_only:
+                            emoji_data.append(emoji)
+                        else:  # Include availability
+                            emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
+                    # Store list of preference data for this project
+                    data[project_title] = emoji_data
     # Created an alphabetically sorted dataframe from the data
     preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
     # Create a HTML table from this dataframe that is scrollable
@@ -311,7 +305,7 @@ def get_preferences(fc, preference_data_df, first_date=False, last_date=False, p
     return html_table
 
 
-def get_all_preferences_table(fc=None):
+def get_all_preferences_table(wim=None):
     """
     Create the HTML table described in get_preferences() with default settings
     i.e. for all team members with at least one preference emoji and all projects
@@ -320,8 +314,8 @@ def get_all_preferences_table(fc=None):
     credentials = config.get_github_credentials()
     token = credentials["token"]
 
-    if not fc:
-        fc = DataHandlers.Forecast()
-    preference_data_df = get_preference_data(fc, token)
-    preferences_with_availability = get_preferences(fc, preference_data_df)
+    if not wim:
+        wim = Wimbledon(update_db=True, with_tracked_time=False)
+    preference_data_df = get_preference_data(wim, token)
+    preferences_with_availability = get_preferences(wim, preference_data_df)
     return preferences_with_availability

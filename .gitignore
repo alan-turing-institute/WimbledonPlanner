@@ -7,6 +7,7 @@ api/forecast_cache.sqlite
 tmp.*
 *.token
 *.secrets
+.vscode/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -143,3 +144,4 @@ settings.json
 
 # SQL
 *.sqlite
+wimbledon/api/sql/logfile
