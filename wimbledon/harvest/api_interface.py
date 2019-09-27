@@ -86,7 +86,7 @@ def get_forecast():
     return forecast_data
 
 
-def get_harvest(with_tracked_time=True):
+def get_harvest(with_tracked_time=True, with_assignments=False):
     """
     Extract harvest data using the python-harvest package.
 
@@ -191,11 +191,12 @@ def get_harvest(with_tracked_time=True):
     print('TASKS')
     tasks = get_all_pages(client.tasks)
 
-    print('USER ASSIGNMENTS')
-    user_assignments = get_all_pages(client.user_assignments)
+    if with_assignments:
+        print('USER ASSIGNMENTS')
+        user_assignments = get_all_pages(client.user_assignments)
 
-    print('TASK ASSIGNMENTS')
-    task_assignments = get_all_pages(client.task_assignments)
+        print('TASK ASSIGNMENTS')
+        task_assignments = get_all_pages(client.task_assignments)
 
     if with_tracked_time:
         '''
@@ -263,9 +264,11 @@ def get_harvest(with_tracked_time=True):
                     'projects': projects,
                     'roles': roles,
                     'users': users,
-                    'tasks': tasks,
-                    'user_assignments': user_assignments,
-                    'task_assignments': task_assignments}
+                    'tasks': tasks}
+    
+    if with_assignments:
+        harvest_data['user_assignments']: user_assignments
+        harvest_data['task_assignments']: task_assignments
     
     if with_tracked_time:
         harvest_data['time_entries'] = time_entries

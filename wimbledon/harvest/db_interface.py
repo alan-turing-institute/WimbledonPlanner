@@ -323,7 +323,8 @@ def update_db(conn=None, with_tracked_time=True):
 
     githubs = []
     for string in fc['projects'].tags:
-        tags = re.findall(r"(?<=\'GitHub:)(.*?)(?=[\'\,])", str(string))
+        tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])",
+                          str(string).lower())
 
         if len(tags) > 0:
             githubs.append(int(tags[0]))
