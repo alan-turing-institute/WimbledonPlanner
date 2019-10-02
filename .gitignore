@@ -145,3 +145,4 @@ settings.json
 # SQL
 *.sqlite
 wimbledon/api/sql/logfile
+.ionide
