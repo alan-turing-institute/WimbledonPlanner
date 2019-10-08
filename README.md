@@ -149,7 +149,9 @@ The Jupyter notebooks `visualise_forecast.ipynb` and `visualise_harvest.ipynb` i
 
 ## App
 
-The app running at https://wimbledon-planner.azurewebsites.net/ is defined by the file `app/app.py` in the parent directory of this repo. To run the app locally run:
+The app running at https://wimbledon-planner.azurewebsites.net/ is defined by the file `app/app.py` in the parent directory of this repo. Configuration for the app is set using environment variables passed in to the container from a key vault.
+
+To run the app locally instead you can run:
 
 ```bash
 > cd app
