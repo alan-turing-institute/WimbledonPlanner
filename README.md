@@ -122,7 +122,7 @@ If you want to delete an old database and create a new clean one you can run:
 
 To setup wimbledon to use an Azure/some other remote database you will need to define all the relevant parameters for your server (drivername, host, database, username, password and port) in `~/.wimbledon/.sql_config` or as the relevant environment variables.
 
-The web app uses the wimbledon-planner Azure Database for PostgreSQL server in the Research Engineering subscription on Azure, and the necessary parameters can be found in the wimbledon-planner key vault, also in the Research Engineering subscription.
+The web app uses the wimbledon-planner Azure Database for PostgreSQL server in the Wimbledon Planner subscription on Azure, and the necessary parameters can be found in the wimbledon-planner key vault, also in the Wimbledon Planner subscription.
 
 ### GitHub
 
