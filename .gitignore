@@ -136,13 +136,17 @@ dmypy.json
 # Pycharm
 .idea/
 
+# VS Code
+.ionide/
 
+# Secrets
 sql/secrets.py
-.Rproj.user
 settings.json
 .harvest_credentials
+
+# R Studio
+.Rproj.user
 
 # SQL
 *.sqlite
 wimbledon/api/sql/logfile
-.ionide
