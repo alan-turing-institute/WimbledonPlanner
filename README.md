@@ -15,6 +15,8 @@ This repo is used to build the web app hosted at https://wimbledon-planner.azure
 
 To update the data used by the web app go to https://wimbledon-planner.azurewebsites.net/update. This will take a couple of minutes after which you should get the message `DATA UPDATED!`
 
+The app is currently IP restricted to only be accessible at The Alan Turing Institute.
+
 ## Requirements
 
 Wimbledon Planner is designed to run on **Python 3.7**, using Python 3.6 may give errors due to some changes to the subprocess library between the two.
@@ -122,7 +124,7 @@ If you want to delete an old database and create a new clean one you can run:
 
 To setup wimbledon to use an Azure/some other remote database you will need to define all the relevant parameters for your server (drivername, host, database, username, password and port) in `~/.wimbledon/.sql_config` or as the relevant environment variables.
 
-The web app uses the wimbledon-planner Azure Database for PostgreSQL server in the Wimbledon Planner subscription on Azure, and the necessary parameters can be found in the wimbledon-planner key vault, also in the Wimbledon Planner subscription.
+The web app uses an Azure Database for PostgreSQL server, with the necessary parameters passed in to the app service container from an Azure key vault.
 
 ### GitHub
 
