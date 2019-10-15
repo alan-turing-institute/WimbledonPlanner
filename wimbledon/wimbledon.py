@@ -246,7 +246,7 @@ class Wimbledon:
 
     def get_id(self, name, id_type):
         """Get the name of an id based on the type of id it is. id_type can be
-        'person', 'project' or 'placeholder'"""
+        'person', 'project' or 'client', or 'task'."""
         if id_type == 'person':
             return self.get_person_id(name)
 
@@ -267,8 +267,7 @@ class Wimbledon:
 
             Dataframe with the rows being key_type (project or person ids), the columns
         dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
-
-        If add_placeholders=True, non-resource required placeholders will be included on the sheet."""
+]       """
         # TODO move this function somewhere else?
         if key_type == 'project':
             # copy to prevent overwriting original
@@ -309,6 +308,10 @@ class Wimbledon:
 
             else:
                 return ValueError('key type must be person or project')
+
+            # add "AVAILABLE" for people with free capacity
+            if key_type == 'person':
+                df['UNALLOCATED'] = self.people_free_capacity[key]
 
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)

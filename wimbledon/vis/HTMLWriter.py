@@ -82,6 +82,13 @@ def get_name_style(name, background_color=None, name_type=None):
                           font-weight: 600;
                           border: 1px solid red;
                 } """
+    elif 'UNALLOCATED' in name:
+        style = """.UNALLOCATED {
+                          background-color: white;
+                          color: green;
+                          font-weight: 600;
+                          border: 1px solid green;
+                } """
     else:
         name_id = get_name_id(name)
 
