@@ -1,3 +1,8 @@
+# change matplotlib backend to avoid it trying to pop up figure windows
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 from flask import Flask, send_from_directory, send_file
 
 from wimbledon.vis import Visualise
@@ -10,11 +15,6 @@ import subprocess
 import sys
 
 from datetime import datetime
-
-# change matplotlib backend to avoid it trying to pop up figure windows
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
 
 # Initialise Flask App
 app = Flask(__name__)
