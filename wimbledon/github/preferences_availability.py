@@ -301,6 +301,9 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                                background-color: #d4fad9;
                             }
             </style>"""
+    # remove unecessary row for "Name" label
+    preferences.index.name = None
+    
     emoji_table = preferences.to_html()  # Convert to HTML table
     html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
     return html_table
