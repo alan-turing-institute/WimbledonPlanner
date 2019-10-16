@@ -78,10 +78,11 @@ def get_name_style(name, background_color=None, name_type=None):
     elif 'UNAVAILABLE' in name:
         style = """.UNAVAILABLE {
                           background-color: white;
-                          color: red;
+                          color: gray;
                           font-weight: 600;
-                          border: 1px solid red;
+                          border: 1px solid gray;
                 } """
+                
     elif 'UNALLOCATED' in name:
         style = """.UNALLOCATED {
                           background-color: white;
@@ -89,6 +90,14 @@ def get_name_style(name, background_color=None, name_type=None):
                           font-weight: 600;
                           border: 1px solid green;
                 } """
+                
+    elif 'OVER CAPACITY' in name or 'OVER_CAPACITY' in name:
+        style = """.OVER_CAPACITY {
+                          background-color: white;
+                          color: red;
+                          font-weight: 600;
+                          border: 1px solid red;
+                } """        
     else:
         name_id = get_name_id(name)
 

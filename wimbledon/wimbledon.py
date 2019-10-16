@@ -309,10 +309,21 @@ class Wimbledon:
             else:
                 return ValueError('key type must be person or project')
 
-            # add "AVAILABLE" for people with free capacity
             if key_type == 'person':
-                df['UNALLOCATED'] = self.people_free_capacity[key]
+                # add flags for people with free capacity or over capacity
 
+                # unallocated
+                df['UNALLOCATED'] = self.people_free_capacity[key]
+                # set overallocated cases to 0
+                df.loc[df['UNALLOCATED'] < 0, 'UNALLOCATED'] = 0
+                
+                # over allocated
+                df['OVER CAPACITY'] = self.people_free_capacity[key]
+                # set under allocated cases to 0
+                df.loc[df['OVER CAPACITY'] > 0, 'OVER CAPACITY'] = 0
+                # make remaining values positive
+                df['OVER CAPACITY'] = df['OVER CAPACITY'].abs()
+               
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
 
