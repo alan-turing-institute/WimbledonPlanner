@@ -119,11 +119,6 @@ def get_person_availability(wim, person, start_date, end_date):
         availability_range = peopledf[person]
     except:
         return 0.0
-    # print("person", person)
-    # print("start_date", start_date)
-    # print("end_date", end_date)
-    # print(availability_range)
-    # print("------------------")
     try:
         average_availability = statistics.mean(availability_range)
     except:
