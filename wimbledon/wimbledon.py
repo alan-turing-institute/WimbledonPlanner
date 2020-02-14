@@ -427,12 +427,14 @@ class Wimbledon:
             sheet.sort_values(by=['client_name', 'project_name', 'row'],
                                 inplace=True)
             
-            # Move REG projects to end
+            # Move REG/Turing support projects to end
             clients = client_name.unique()
-            reg = sorted([client for client in clients
-                            if 'REG' in client])
-            others = sorted([client for client in clients
-                                if 'REG' not in client])
+            reg = [client for client in clients if 'REG' in client]
+            reg.append("Turing Service Areas")
+            reg.append("Turing Programme Support")
+            reg = sorted(reg)
+            
+            others = sorted([client for client in clients if client not in reg])
             sheet = sheet.reindex(others+reg, level=0)
 
             # Remove index headings
