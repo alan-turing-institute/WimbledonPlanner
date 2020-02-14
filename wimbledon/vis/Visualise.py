@@ -536,38 +536,55 @@ class Visualise:
         # DEMAND
         # ----------
         # Get totals for REG management, development and support clients
-        research_support_idx = self.wim.get_client_id('REG Support')
+        reg_service_idx = self.wim.get_client_id('REG Service Areas')
         reg_management_idx = self.wim.get_client_id('REG Management')
         reg_dev_idx = self.wim.get_client_id('REG Development Work')
+        turing_service_idx = self.wim.get_client_id('Turing Service Areas')
+        turing_prog_idx = self.wim.get_client_id('Turing Programme Support')
 
-        research_support_projs = self.wim.projects[self.wim.projects.client == research_support_idx].index
+        reg_service_projs = self.wim.projects[self.wim.projects.client == reg_service_idx].index
         reg_management_projs = self.wim.projects[self.wim.projects.client == reg_management_idx].index
         reg_dev_projs = self.wim.projects[self.wim.projects.client == reg_dev_idx].index
-
-        research_support_reqs = self.wim.project_confirmed[research_support_projs].sum(axis=1)
+        turing_service_projs = self.wim.projects[self.wim.projects.client == turing_service_idx].index
+        turing_prog_projs = self.wim.projects[self.wim.projects.client == turing_prog_idx].index
+        
+        reg_service_reqs = self.wim.project_confirmed[reg_service_projs].sum(axis=1)
         reg_management_reqs = self.wim.project_confirmed[reg_management_projs].sum(axis=1)
         reg_dev_reqs = self.wim.project_confirmed[reg_dev_projs].sum(axis=1)
-
+        turing_service_reqs = self.wim.project_confirmed[turing_service_projs].sum(axis=1)
+        turing_prog_reqs = self.wim.project_confirmed[turing_prog_projs].sum(axis=1)
+        
         # Get overall totals
-        project_confirmed = self.wim.project_confirmed.drop(self.wim.get_project_id('UNAVAILABLE'), axis=1)
+        project_confirmed = self.wim.project_confirmed.drop(self.wim.get_project_id('UNAVAILABLE'),
+                                                            axis=1)
         project_confirmed = project_confirmed.sum(axis=1)
 
         # project_confirmed = total for all non-research support, REG management or REG development projects
-        project_confirmed = project_confirmed - reg_management_reqs - reg_dev_reqs - research_support_reqs
+        project_confirmed = (project_confirmed
+                             - reg_management_reqs
+                             - reg_dev_reqs
+                             - reg_service_reqs
+                             - turing_service_reqs
+                             - turing_prog_reqs)
 
         # Get totals for unconfirmed and deferred projects
         unconfirmed = self.wim.project_unconfirmed.sum(axis=1)
         deferred = self.wim.project_deferred.sum(axis=1)
-
+        notfunded = self.wim.project_notfunded.sum(axis=1)
+        
         # merge all demand types into one dataframe ready for plotting
         demand = pd.DataFrame({'REG Management': reg_management_reqs,
                                'REG Development': reg_dev_reqs,
-                               'REG Support': research_support_reqs,
+                               'REG Service Areas': reg_service_reqs,
+                               'Turing Service Areas': turing_service_reqs,
+                               'Turing Programme Support': turing_prog_reqs,
                                'Confirmed projects': project_confirmed,
                                'Projects with funder': unconfirmed,
-                               'Deferred projects': deferred})
+                               'Deferred projects': deferred,
+                               'Not Funded projects': notfunded})
 
-        demand = select_date_range(demand, start_date, end_date, drop_zero_cols=False)
+        demand = select_date_range(demand, start_date, end_date,
+                                   drop_zero_cols=False)
 
         demand = demand.resample(freq).mean()
 
@@ -629,7 +646,9 @@ class Visualise:
         ax = fig.gca()
 
         demand.plot.area(ax=ax, x_compat=True, rot=90, alpha=0.8,
-                         color=['#041165', '#043E65', '#2E86C1', 'g', 'y', 'darkred'],
+                         color=['#041165', '#043E65', '#2E86C1',
+                                '#ffb0d7', '#c32ff5',
+                                'g', 'y', '#db7900', 'darkred'],
                          stacked=True, linewidth=0)
 
         capacity.cumsum(axis=1).plot(ax=ax, rot=90,

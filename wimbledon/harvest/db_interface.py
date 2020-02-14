@@ -79,7 +79,8 @@ def convert_index(df):
 
 
 def merge_placeholders(placeholders,
-                       names=['resource required', 'unconfirmed', 'deferred']):
+                       names=['resource required', 'unconfirmed', 'deferred',
+                              'not funded']):
     """consolidate names like Resource Required 1 into single placeholder
     RESOURCE REQUIRED"""
     

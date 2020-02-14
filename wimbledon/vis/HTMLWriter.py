@@ -28,6 +28,8 @@ def get_name_id(name):
         name_id = 'UNCONFIRMED'
     elif 'DEFERRED' in name:
         name_id = 'DEFERRED'
+    elif 'NOT FUNDED' in name:
+        name_id = "NOT_FUNDED"
     else:
         # remove everything between a < and a > (html tags)
         name = re.sub(r"(?<=\<)(.*?)(?=\>)", '', name)
@@ -40,6 +42,10 @@ def get_name_id(name):
         # strip punctuation (apparently quickest way: https://stackoverflow.com/a/266162)
         name_id = name.translate(str.maketrans('', '', string.punctuation))
         name_id = name_id.replace(' ', '_')
+        
+        # remove all digits at start of name (CSS class names can't start with
+        # digits)
+        name_id = re.sub(r"^\d*", "", name_id)
 
     return name_id
 
@@ -57,7 +63,17 @@ def get_name_style(name, background_color=None, name_type=None):
             border: 1px solid red;
         }
         """
-
+        
+    elif 'NOT FUNDED' in name or 'NOT_FUNDED' in name:
+        style = """
+        .NOT_FUNDED {
+            background-color: white;
+            color: green;
+            font-weight: 600;
+            border: 1px solid green;
+        }
+        """
+    
     elif 'UNCONFIRMED' in name:
         style = """
         .UNCONFIRMED {
