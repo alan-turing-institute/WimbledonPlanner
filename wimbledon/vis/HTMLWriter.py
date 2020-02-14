@@ -40,6 +40,10 @@ def get_name_id(name):
         # strip punctuation (apparently quickest way: https://stackoverflow.com/a/266162)
         name_id = name.translate(str.maketrans('', '', string.punctuation))
         name_id = name_id.replace(' ', '_')
+        
+        # remove all digits at start of name (CSS class names can't start with
+        # digits)
+        name_id = re.sub(r"^\d*", "", name_id)
 
     return name_id
 
