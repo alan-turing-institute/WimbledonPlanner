@@ -135,6 +135,12 @@ class Wimbledon:
                     self.people_capacities[person_id] -
                     self.people_allocations[person_id][unavailable_id]
                 )
+                # some cases unavailable allocations may have incorrectly been
+                # assigned at fte than person's nominal capacity - reset to
+                # zero to avoid negative values
+                negative = self.people_capacities[person_id] < 0
+                if negative.any():
+                    self.people_capacities[person_id][negative] = 0
 
         self.team_capacity = self.people_capacities.sum(axis=1)
 
@@ -152,11 +158,15 @@ class Wimbledon:
 
         # project_resourcereq: resource_required allocations to each project
         self.project_resourcereq = self.__get_project_required()
+        
+        # project_notfunded allocations to each project
+        self.project_notfunded = self.__get_project_notfunded()
 
         # project_confirmed: should not include unconfirmed or deferred totals
         self.project_confirmed = (self.project_confirmed -
                                   self.project_unconfirmed -
-                                  self.project_deferred)
+                                  self.project_deferred -
+                                  self.project_notfunded)
 
         self.project_allocated = (self.project_confirmed -
                                   self.project_resourcereq)
@@ -576,7 +586,23 @@ class Wimbledon:
             project_deferred[project] += allocs[project]
 
         return project_deferred
+    
+    def __get_project_notfunded(self):
+        """Get deferred project allocations"""
 
+        notfunded_idx = self.get_person_id('NOT FUNDED')
+
+        project_notfunded = pd.DataFrame(0,
+                                         index=self.date_range_workdays,
+                                         columns=self.projects.index)
+
+        allocs = self.people_allocations[notfunded_idx]
+
+        for project in allocs.columns:
+            project_notfunded[project] += allocs[project]
+
+        return project_notfunded
+    
     def __get_project_required(self):
         """Get resource required (i.e. needs someone assigned)
         for all projects."""
