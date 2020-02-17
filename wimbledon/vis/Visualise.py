@@ -536,18 +536,21 @@ class Visualise:
         # DEMAND
         # ----------
         # Get totals for REG management, development and support clients
+        corp_duties_idx = self.wim.get_client_id('Corporate Duties')
         reg_service_idx = self.wim.get_client_id('REG Service Areas')
         reg_management_idx = self.wim.get_client_id('REG Management')
         reg_dev_idx = self.wim.get_client_id('REG Development Work')
         turing_service_idx = self.wim.get_client_id('Turing Service Areas')
         turing_prog_idx = self.wim.get_client_id('Turing Programme Support')
 
+        corp_duties_projs = self.wim.projects[self.wim.projects.client == corp_duties_idx].index
         reg_service_projs = self.wim.projects[self.wim.projects.client == reg_service_idx].index
         reg_management_projs = self.wim.projects[self.wim.projects.client == reg_management_idx].index
         reg_dev_projs = self.wim.projects[self.wim.projects.client == reg_dev_idx].index
         turing_service_projs = self.wim.projects[self.wim.projects.client == turing_service_idx].index
         turing_prog_projs = self.wim.projects[self.wim.projects.client == turing_prog_idx].index
         
+        corp_duties_reqs = self.wim.project_confirmed[corp_duties_projs].sum(axis=1)
         reg_service_reqs = self.wim.project_confirmed[reg_service_projs].sum(axis=1)
         reg_management_reqs = self.wim.project_confirmed[reg_management_projs].sum(axis=1)
         reg_dev_reqs = self.wim.project_confirmed[reg_dev_projs].sum(axis=1)
@@ -561,6 +564,7 @@ class Visualise:
 
         # project_confirmed = total for all non-research support, REG management or REG development projects
         project_confirmed = (project_confirmed
+                             - corp_duties_reqs
                              - reg_management_reqs
                              - reg_dev_reqs
                              - reg_service_reqs
@@ -573,7 +577,8 @@ class Visualise:
         notfunded = self.wim.project_notfunded.sum(axis=1)
         
         # merge all demand types into one dataframe ready for plotting
-        demand = pd.DataFrame({'REG Management': reg_management_reqs,
+        demand = pd.DataFrame({'Corporate Duties': corp_duties_reqs,
+                               'REG Management': reg_management_reqs,
                                'REG Development': reg_dev_reqs,
                                'REG Service Areas': reg_service_reqs,
                                'Turing Service Areas': turing_service_reqs,
@@ -646,7 +651,7 @@ class Visualise:
         ax = fig.gca()
 
         demand.plot.area(ax=ax, x_compat=True, rot=90, alpha=0.8,
-                         color=['#041165', '#043E65', '#2E86C1',
+                         color=['black', '#041165', '#043E65', '#2E86C1',
                                 '#ffb0d7', '#c32ff5',
                                 'g', 'y', '#db7900', 'darkred'],
                          stacked=True, linewidth=0)
