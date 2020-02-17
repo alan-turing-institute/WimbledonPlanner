@@ -260,8 +260,5 @@ if __name__ == "__main__":
     dname = os.path.dirname(abspath)
     os.chdir(dname)
 
-    # get latest data
-    update()
-
     # run app
     app.run(host="0.0.0.0", port=int("8000"))
