@@ -74,7 +74,7 @@ def run_query(query, token):
         raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
 
 
-def get_reactions(token, issue, number_of_people=20, number_of_comments=5):
+def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
     """
