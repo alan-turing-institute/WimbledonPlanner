@@ -232,6 +232,7 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
             except:
                 pass
     # Get projects with some resource requirement but filter by those with a GitHub issue
+    project_titles = {}
     for project_id in resreqdf:
         if not project or project == project_id:  # If a project name or project id is provided, only get data for that project
             # Get the dates for each month that the project has a resource requirement > 0
@@ -248,11 +249,16 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                     resreq = get_project_requirement(wim, project_id, first_resreq_date, last_resreq_date)
                     project_name = wim.projects.loc[project_id, "name"]
                     
-                    project_title = project_name + "<br>#" + str(int(issue_num)) + "<br>" + first_resreq_date + " to " + last_resreq_date + "<br>" + str(round(resreq, 1)) + " FTE"
+                    project_title = (project_name + "<br>#" +
+                                     str(int(issue_num)) + "<br>" +
+                                     first_resreq_date + " to " +
+                                     last_resreq_date + "<br>" +
+                                     str(round(resreq, 1)) + " FTE")
                     # make column header a link to github issue
                     project_title = """<a href="{url}/{issue}">{title}</a>""".format(url="https://github.com/alan-turing-institute/Hut23/issues",
                                                                                      issue=int(issue_num),
-                                                                                     title=project_title)                                        
+                                                                                     title=project_title)
+                    project_titles[project_name] = project_title
                     emoji_data = []
                     for name in names:
                         person_availability = get_person_availability(wim, name, first_resreq_date, last_resreq_date)
@@ -261,11 +267,15 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                         if emojis_only:
                             emoji_data.append(emoji)
                         else:  # Include availability
-                            emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 1)) + ")")
+                            emoji_data.append(emoji + " " +
+                                              str(percentage_availability) +
+                                              "% (" + str(round(person_availability,1)) +
+                                              " / " + str(round(resreq, 1)) + ")")
                     # Store list of preference data for this project
-                    data[project_title] = emoji_data
+                    data[project_name] = emoji_data
     # Created an alphabetically sorted dataframe from the data
     preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
+    preferences = preferences.rename(columns=project_titles)
     # Create a HTML table from this dataframe that is scrollable
     # Default css can be overridden with argument
     if not css:
