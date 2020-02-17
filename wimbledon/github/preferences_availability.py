@@ -121,7 +121,10 @@ def get_person_availability(wim, person, start_date, end_date):
         availability_range = peopledf[person]
     except:
         return 0.0
-    average_availability = statistics.mean(availability_range)
+    try:
+        average_availability = statistics.mean(availability_range)
+    except:
+        return 0.0
     return round(average_availability, 2)
 
 
@@ -306,7 +309,7 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
             </style>"""
     # remove unecessary row for "Name" label
     preferences.index.name = None
-    
+
     emoji_table = preferences.to_html()  # Convert to HTML table
     html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
     return html_table
