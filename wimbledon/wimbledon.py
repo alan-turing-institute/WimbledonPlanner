@@ -430,6 +430,7 @@ class Wimbledon:
             # Move REG/Turing support projects to end
             clients = client_name.unique()
             reg = [client for client in clients if 'REG' in client]
+            reg.append("Corporate Duties")
             reg.append("Turing Service Areas")
             reg.append("Turing Programme Support")
             reg = sorted(reg)
