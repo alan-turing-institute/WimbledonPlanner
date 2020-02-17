@@ -244,7 +244,13 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                         last_resreq_date = last_date
                     resreq = get_project_requirement(wim, project_id, first_resreq_date, last_resreq_date)
                     project_name = wim.projects.loc[project_id, "name"]
+                    
                     project_title = project_name + " (" + str(int(issue_num)) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
+                    # make column header a link to github issue
+                    project_title = """<a href="{url}/{issue}">{title}</a>""".format(url="https://github.com/alan-turing-institute/Hut23/issues",
+                                                                                     issue=issue_num,
+                                                                                     title=project_title)
+                                        
                     emoji_data = []
                     for name in names:
                         person_availability = get_person_availability(wim, name, first_resreq_date, last_resreq_date)
