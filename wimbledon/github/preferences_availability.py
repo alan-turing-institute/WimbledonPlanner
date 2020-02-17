@@ -157,6 +157,8 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
      'miguelmorin': 'Miguel Morin',
      'OscartGiles': 'Oscar Giles',
      'AshwiniKV': 'Ashwini Venkatasubramaniam',
+     'annahadji': 'Anna Hadjitofi',
+     'misspawty': 'Flora Roumpani',
      'pafoster': 'Peter Foster',
     }
     if not emoji_mapping:
@@ -302,6 +304,9 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                                background-color: #d4fad9;
                             }
             </style>"""
+    # remove unecessary row for "Name" label
+    preferences.index.name = None
+    
     emoji_table = preferences.to_html()  # Convert to HTML table
     html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
     return html_table
