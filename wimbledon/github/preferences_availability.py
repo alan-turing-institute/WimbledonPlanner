@@ -78,20 +78,20 @@ def get_reactions(token, issue, number_of_people=20, number_of_comments=5):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
     """
-    def reactions_exist(project_reactions):
+    def reactions_count(project_reactions):
+        count = 0
         for reaction in project_reactions:
             for edge in reaction['users']['edges']:
                 if reaction['content']:
-                    return True
-        return False
+                    count += 1
+        return count
 
     # Edit the query string to contain the relevant issue and number of GitHub users
     # This query gets the emojis on the issue itself (i.e. the top comment/ post)
     modified_query = query.replace("X", str(int(issue))).replace("Y", str(number_of_people))
     result = run_query(modified_query, token)
-    project_reactions_first_query = result['data']['repository']['issue']['reactionGroups']
-    if reactions_exist(project_reactions_first_query):
-        return project_reactions_first_query
+    project_reactions = result['data']['repository']['issue']['reactionGroups']
+    project_reaction_groups_dict = {reactions_count(project_reactions): project_reactions}
 
     # If we don't find any emojis from the first query, this one searches subsequent comments (set to first 5 by default)
     modified_query = alternate_query.replace("X", str(int(issue))).replace("Y", str(number_of_people)).replace("Z", str(number_of_comments))
@@ -99,9 +99,11 @@ def get_reactions(token, issue, number_of_people=20, number_of_comments=5):
     project_comments = result['data']['repository']['issue']['comments']['edges']
     for comment in project_comments:
         project_reactions = comment['node']['reactionGroups']
-        if reactions_exist(project_reactions):
-            return project_reactions
-    return project_reactions_first_query
+        pr_count = reactions_count(project_reactions)
+        if pr_count > 0:
+            project_reaction_groups_dict[pr_count] = project_reactions
+            break
+    return project_reaction_groups_dict[max(project_reaction_groups_dict, key=int)]
 
 
 def get_person_availability(wim, person, start_date, end_date):
@@ -119,10 +121,7 @@ def get_person_availability(wim, person, start_date, end_date):
         availability_range = peopledf[person]
     except:
         return 0.0
-    try:
-        average_availability = statistics.mean(availability_range)
-    except:
-        return 0.0
+    average_availability = statistics.mean(availability_range)
     return round(average_availability, 2)
 
 
@@ -158,8 +157,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
      'miguelmorin': 'Miguel Morin',
      'OscartGiles': 'Oscar Giles',
      'AshwiniKV': 'Ashwini Venkatasubramaniam',
-     'annahadji': 'Anna Hadjitofi',
-     'misspawty': 'Flora Roumpani',
+     'pafoster': 'Peter Foster',
     }
     if not emoji_mapping:
         emoji_mapping = {'CONFUSED': '😕',  # Map the emojis from GitHub to those we want to display
@@ -304,9 +302,6 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                                background-color: #d4fad9;
                             }
             </style>"""
-    # remove unecessary row for "Name" label
-    preferences.index.name = None
-    
     emoji_table = preferences.to_html()  # Convert to HTML table
     html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
     return html_table
