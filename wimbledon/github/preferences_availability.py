@@ -236,8 +236,8 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
             if len(date_indices) > 0:  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
                 issue_num = wim.projects.loc[project_id]["github"]
                 if not math.isnan(issue_num):  # if this project has a GitHub issue
-                    first_resreq_date = date_indices[0].strftime("%Y-%m-%d")
-                    last_resreq_date = date_indices[-1].strftime("%Y-%m-%d")
+                    first_resreq_date = date_indices[0].strftime("%Y-%m")
+                    last_resreq_date = date_indices[-1].strftime("%Y-%m")
                     if first_date:
                         first_resreq_date = first_date
                     if last_date:
@@ -245,12 +245,11 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                     resreq = get_project_requirement(wim, project_id, first_resreq_date, last_resreq_date)
                     project_name = wim.projects.loc[project_id, "name"]
                     
-                    project_title = project_name + " (" + str(int(issue_num)) + ")\n" + first_resreq_date + " to " + last_resreq_date + ": " + str(round(resreq, 2))
+                    project_title = project_name + "<br>#" + str(int(issue_num)) + "<br>" + first_resreq_date + " to " + last_resreq_date + "<br>" + str(round(resreq, 1)) + " FTE"
                     # make column header a link to github issue
                     project_title = """<a href="{url}/{issue}">{title}</a>""".format(url="https://github.com/alan-turing-institute/Hut23/issues",
-                                                                                     issue=issue_num,
-                                                                                     title=project_title)
-                                        
+                                                                                     issue=int(issue_num),
+                                                                                     title=project_title)                                        
                     emoji_data = []
                     for name in names:
                         person_availability = get_person_availability(wim, name, first_resreq_date, last_resreq_date)
@@ -259,7 +258,7 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                         if emojis_only:
                             emoji_data.append(emoji)
                         else:  # Include availability
-                            emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 2)) + ")")
+                            emoji_data.append(emoji + " " + str(percentage_availability) + "% (" + str(person_availability) + " / " + str(round(resreq, 1)) + ")")
                     # Store list of preference data for this project
                     data[project_title] = emoji_data
     # Created an alphabetically sorted dataframe from the data
@@ -278,6 +277,7 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                               top: 0;
                               background-color: #4CAF50;
                               color: white;
+                              text-align: center;
                             }
                     tbody th {
                               position: sticky;
@@ -285,7 +285,7 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                               padding-top: 12px;
                               padding-top: 12px;
                               padding-bottom: 12px;
-                              text-align: left;
+                              text-align: center;
                               background-color: #4CAF50;
                               color: white;
                             }
@@ -297,6 +297,9 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                               border: 1px solid #ddd;
                               padding: 8px;
                             }
+                    tr {
+                              text-align: center;
+                    }
                     table {
                                font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
                                border-collapse: collapse;
@@ -309,11 +312,30 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                     tr:hover {
                                background-color: #d4fad9;
                             }
+                    th a {
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                    a {
+                            color: inherit;
+                            text-decoration: inherit;
+                    }
+                    thead th:hover { 
+                            background-color: #d4fad9;
+                            color: black;     
+                        }
+                    tr th:hover { 
+                            background-color: #d4fad9;
+                            color: black;     
+                        }
             </style>"""
     # remove unecessary row for "Name" label
     preferences.index.name = None
     
-    emoji_table = preferences.to_html()  # Convert to HTML table
+    emoji_table = preferences.to_html(escape=False)  # Convert to HTML table
     html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
     return html_table
 
