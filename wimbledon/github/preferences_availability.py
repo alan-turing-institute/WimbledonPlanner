@@ -277,15 +277,20 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                               top: 0;
                               background-color: #4CAF50;
                               color: white;
-                              text-align: center;
+                              text-align: left;
+                              padding-left: 5px;
+                              padding-right: 5px;
+                              padding-top: 5px;
+                              padding-right: 5px;
                             }
                     tbody th {
                               position: sticky;
                               left: 0;
-                              padding-top: 12px;
-                              padding-top: 12px;
-                              padding-bottom: 12px;
-                              text-align: center;
+                              padding-top: 10px;
+                              padding-bottom: 10px;
+                              padding-left: 5px;
+                              padding-right: 5px;
+                              text-align: left;
                               background-color: #4CAF50;
                               color: white;
                             }
@@ -298,7 +303,7 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                               padding: 8px;
                             }
                     tr {
-                              text-align: center;
+                              text-align: left;
                     }
                     table {
                                font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
