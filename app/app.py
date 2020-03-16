@@ -53,7 +53,7 @@ def home():
 
 
 @app.route('/update')
-def update():
+def update(update_db=True):
     """Query the Forecast API for the latest data and update the whiteboard
     visualisations.
 
@@ -71,7 +71,7 @@ def update():
         updated_at = datetime.now().strftime('%d %b %Y, %H:%M')
 
         vis = Visualise(with_tracked_time=False,
-                        update_db=True)
+                        update_db=update_db)
 
         # Generate preference table
         print('Generate preference table...')
@@ -151,7 +151,7 @@ def update():
 
 
 @app.route('/projects')
-def projects():
+def projects(update_db=False):
     """Get the projects whiteboard.
 
     Returns:
@@ -159,7 +159,7 @@ def projects():
     """
     try:
         if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html'):
-            update()
+            update(update_db=update_db)
 
         with open(app.config.get('DATA_DIR')+'/figs/projects/project_screen.html', 'r') as f:
             whiteboard = f.read()
@@ -171,7 +171,7 @@ def projects():
 
 
 @app.route('/people')
-def people():
+def people(update_db=False):
     """Get the people whiteboard
 
     Returns:
@@ -179,7 +179,7 @@ def people():
     """
     try:
         if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/people/person_screen.html'):
-            update()
+            update(update_db=update_db)
 
         with open(app.config.get('DATA_DIR')+'/figs/people/person_screen.html', 'r') as f:
             whiteboard = f.read()
@@ -191,7 +191,7 @@ def people():
 
 
 @app.route('/preferences')
-def preferences():
+def preferences(update_db=False):
     """Get the preferences table
 
     Returns:
@@ -199,7 +199,7 @@ def preferences():
     """
     try:
         if not os.path.isfile(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html'):
-            update()
+            update(update_db=update_db)
 
         with open(app.config.get('DATA_DIR')+'/figs/preferences/preferences.html', 'r') as f:
             whiteboard = f.read()
