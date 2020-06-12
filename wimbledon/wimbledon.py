@@ -201,7 +201,7 @@ class Wimbledon:
         person_id = self.people.loc[(self.people['name'] == name)]
 
         if len(person_id) != 1:
-            raise ValueError('Could not find unique person with name ' + name)
+            raise ValueError('Could not find unique person with name ' + name + '. This person may have unlinked Harvest & Forecast accounts.')
 
         return person_id.index[0]
 
