@@ -446,7 +446,7 @@ class Wimbledon:
             proj_idx = [self.get_project_id(name)
                         for name in proj_names]
             proj_gitissue = [self.projects.loc[idx, 'github']
-                                for idx in proj_idx]
+                             for idx in proj_idx]
             git_base_url = 'https://github.com/alan-turing-institute/Hut23/issues'
 
             proj_names_with_url = {}

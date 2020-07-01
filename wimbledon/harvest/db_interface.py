@@ -322,15 +322,24 @@ def update_db(conn=None, with_tracked_time=True):
     start_dates = prep_data(fc['projects'].start_date, string_to_date)
     end_dates = prep_data(fc['projects'].end_date, string_to_date)
 
+    # extract issue numbers from project codes or tags
     githubs = []
-    for string in fc['projects'].tags:
-        tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])",
-                          str(string).lower())
+    for i, row in fc['projects'].iterrows():
+        issue_number = None
 
-        if len(tags) > 0:
-            githubs.append(int(tags[0]))
+        if row["code"] is not None and "hut23-" in row["code"]:
+            # First check project codes for "hut23-xxx" labels
+            issue_number = int(row["code"].replace("hut23-", "").strip())
         else:
-            githubs.append(None)
+            # Then check for old "GitHub: xxx" tags
+            for string in fc['projects'].tags:
+                tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])",
+                                  str(string).lower())
+                if len(tags) > 0:
+                    issue_number = int(tags[0])
+                    break  # found an issue number - don't need to check more tags
+
+        githubs.append(issue_number)
 
     projects = [dict(id=project_fc_ids[i],
                      name=names[i],
@@ -400,7 +409,7 @@ def update_db(conn=None, with_tracked_time=True):
 
     db_utils.delete_not_in(schema.clients,
                            client_fc_ids + client_hv_ids,
-                           conn)        
+                           conn)     
 
     conn.close()
 
