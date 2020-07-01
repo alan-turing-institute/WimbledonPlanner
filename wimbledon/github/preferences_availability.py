@@ -163,6 +163,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
      'annahadji': 'Anna Hadjitofi',
      'misspawty': 'Flora Roumpani',
      'pafoster': 'Peter Foster',
+      'jd2019a': 'Joel Dearden',
     }
     if not emoji_mapping:
         emoji_mapping = {'CONFUSED': '😕',  # Map the emojis from GitHub to those we want to display
