@@ -38,7 +38,7 @@ def prep_data(series, typefn, convert_dict=None):
     return list(map(lambda x: to_type_or_none(x, typefn), series.values))
 
 
-def string_to_date(string, fmt='%Y-%m-%d'):
+def string_to_date(string, fmt="%Y-%m-%d"):
     return datetime.strptime(string, fmt).date()
 
 
@@ -50,14 +50,14 @@ def convert_index(df):
     original index value.
     3. Convert the indices to ints.
     """
-    if 'harvest_user_id' in df.columns or 'harvest_id' in df.columns:
+    if "harvest_user_id" in df.columns or "harvest_id" in df.columns:
         # the original index -> generally forecast ids
         fc_idx = df.index
 
-        if 'harvest_user_id' in df.columns:
-            hv = df['harvest_user_id']
+        if "harvest_user_id" in df.columns:
+            hv = df["harvest_user_id"]
         else:
-            hv = df['harvest_id']
+            hv = df["harvest_id"]
 
         # the desired index -> the harvest ids
         ids = hv
@@ -78,12 +78,12 @@ def convert_index(df):
     return ids, fc_to_hv_dict
 
 
-def merge_placeholders(placeholders,
-                       names=['resource required', 'unconfirmed', 'deferred',
-                              'not funded']):
+def merge_placeholders(
+    placeholders, names=["resource required", "unconfirmed", "deferred", "not funded"]
+):
     """consolidate names like Resource Required 1 into single placeholder
     RESOURCE REQUIRED"""
-    
+
     # avoid overwriting original df
     placeholders = placeholders.copy(deep=True)
     # dictionary of {old key: new key} for merged keys
@@ -91,16 +91,15 @@ def merge_placeholders(placeholders,
     for name in names:
         # find rows that contain a case insensitive match to name
         matches = placeholders[
-                    placeholders['name'].str.lower().
-                    str.contains(name.lower())
-                  ].sort_values(by='name')
+            placeholders["name"].str.lower().str.contains(name.lower())
+        ].sort_values(by="name")
 
         # preserve the first match
         keep_idx = matches.index[0]
         # keys of remaining matches will be replaced with first one
         merged_keys_dict.update({idx: keep_idx for idx in matches.index[1:]})
         # change preserved name to upper case of input name
-        placeholders.loc[keep_idx, 'name'] = name.upper()
+        placeholders.loc[keep_idx, "name"] = name.upper()
         # drop other matches from df
         placeholders.drop(matches.index[1:], inplace=True)
 
@@ -119,14 +118,16 @@ def combine_people_placeholders(people, placeholders):
     return people
 
 
-association_groups = {'Placeholder': 0,
-                      'REG Director': 1,
-                      'REG Principal': 2,
-                      'REG Senior': 3,
-                      'REG Permanent': 4,
-                      'REG FTC': 5,
-                      'REG Associate': 6,
-                      'University Partner': 7}
+association_groups = {
+    "Placeholder": 0,
+    "REG Director": 1,
+    "REG Principal": 2,
+    "REG Senior": 3,
+    "REG Permanent": 4,
+    "REG FTC": 5,
+    "REG Associate": 6,
+    "University Partner": 7,
+}
 
 
 def get_assoc_group(role_str):
@@ -134,7 +135,7 @@ def get_assoc_group(role_str):
         if group in role_str:
             return index
 
-    return association_groups['Placeholder']
+    return association_groups["Placeholder"]
 
 
 def update_db(conn=None, with_tracked_time=True):
@@ -142,189 +143,194 @@ def update_db(conn=None, with_tracked_time=True):
         conn = db_utils.get_db_connection()
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    print('=' * 50)
-    print('HARVEST')
-    print('=' * 50)
+    print("=" * 50)
+    print("HARVEST")
+    print("=" * 50)
     hv = api_interface.get_harvest(with_tracked_time=with_tracked_time)
 
     # Client
-    print('-' * 50)
-    print('CLIENTS')
-    print('-' * 50)
+    print("-" * 50)
+    print("CLIENTS")
+    print("-" * 50)
 
-    client_hv_ids, _ = convert_index(hv['clients'])
-    names = prep_data(hv['clients'].name, str)
+    client_hv_ids, _ = convert_index(hv["clients"])
+    names = prep_data(hv["clients"].name, str)
 
-    clients = [{'id': client_hv_ids[i],
-                'name': names[i]}
-               for i in range(len(client_hv_ids))]
+    clients = [
+        {"id": client_hv_ids[i], "name": names[i]} for i in range(len(client_hv_ids))
+    ]
 
     db_utils.upsert(schema.clients, clients, conn)
 
     # Person
-    print('-' * 50)
-    print('PEOPLE')
-    print('-' * 50)
+    print("-" * 50)
+    print("PEOPLE")
+    print("-" * 50)
 
-    people_hv_ids, fc_to_hv_people = convert_index(hv['users'])
-    names = prep_data(hv['users'].first_name + ' ' +
-                      hv['users'].last_name, str)
-    
+    people_hv_ids, fc_to_hv_people = convert_index(hv["users"])
+    names = prep_data(hv["users"].first_name + " " + hv["users"].last_name, str)
+
     # set capacities to zero for people who are archived
-    hv['users'].loc[hv['users'].is_active == False, 'weekly_capacity'] = 0
-    capacities = prep_data(hv['users'].weekly_capacity, int)
-    
-    people = [dict(id=people_hv_ids[i],
-                   name=names[i],
-                   capacity=capacities[i])
-              for i in range(len(people_hv_ids))]
+    hv["users"].loc[hv["users"].is_active == False, "weekly_capacity"] = 0
+    capacities = prep_data(hv["users"].weekly_capacity, int)
+
+    people = [
+        dict(id=people_hv_ids[i], name=names[i], capacity=capacities[i])
+        for i in range(len(people_hv_ids))
+    ]
 
     db_utils.upsert(schema.people, people, conn)
-    
-    # Project
-    print('-' * 50)
-    print('PROJECTS')
-    print('-' * 50)
 
-    project_hv_ids, _ = convert_index(hv['projects'])
-    names = prep_data(hv['projects'].name, str)
+    # Project
+    print("-" * 50)
+    print("PROJECTS")
+    print("-" * 50)
+
+    project_hv_ids, _ = convert_index(hv["projects"])
+    names = prep_data(hv["projects"].name, str)
     # NB: convert forecast client idx to harvest idx
-    clients = prep_data(hv['projects']['client.id'], int)
-    start_dates = prep_data(hv['projects']['starts_on'], string_to_date)
-    end_dates = prep_data(hv['projects']['ends_on'], string_to_date)
-    
-    projects = [dict(id=project_hv_ids[i],
-                     name=names[i],
-                     client=clients[i],
-                     start_date=start_dates[i],
-                     end_date=end_dates[i])
-                for i in range(len(project_hv_ids))]
+    clients = prep_data(hv["projects"]["client.id"], int)
+    start_dates = prep_data(hv["projects"]["starts_on"], string_to_date)
+    end_dates = prep_data(hv["projects"]["ends_on"], string_to_date)
+
+    projects = [
+        dict(
+            id=project_hv_ids[i],
+            name=names[i],
+            client=clients[i],
+            start_date=start_dates[i],
+            end_date=end_dates[i],
+        )
+        for i in range(len(project_hv_ids))
+    ]
 
     db_utils.upsert(schema.projects, projects, conn)
-    
+
     if with_tracked_time:
         # Task
-        print('-' * 50)
-        print('TASKS')
-        print('-' * 50)
-        task_ids, _ = convert_index(hv['tasks'])
-        names = prep_data(hv['tasks'].name, str)
+        print("-" * 50)
+        print("TASKS")
+        print("-" * 50)
+        task_ids, _ = convert_index(hv["tasks"])
+        names = prep_data(hv["tasks"].name, str)
 
-        tasks = [dict(id=task_ids[i],
-                    name=names[i])
-                for i in range(len(task_ids))]
+        tasks = [dict(id=task_ids[i], name=names[i]) for i in range(len(task_ids))]
 
         db_utils.upsert(schema.tasks, tasks, conn)
 
         # TimeEntry
-        print('-' * 50)
-        print('TIME ENTRIES')
-        print('-' * 50)
-        time_entry_ids, _ = convert_index(hv['time_entries'])
-        projects = prep_data(hv['time_entries']['project.id'], int)
-        people = prep_data(hv['time_entries']['user.id'], int)
-        tasks = prep_data(hv['time_entries']['task.id'], int)
-        dates = prep_data(hv['time_entries']['spent_date'], string_to_date)
-        hours = prep_data(hv['time_entries']['hours'], int)
+        print("-" * 50)
+        print("TIME ENTRIES")
+        print("-" * 50)
+        time_entry_ids, _ = convert_index(hv["time_entries"])
+        projects = prep_data(hv["time_entries"]["project.id"], int)
+        people = prep_data(hv["time_entries"]["user.id"], int)
+        tasks = prep_data(hv["time_entries"]["task.id"], int)
+        dates = prep_data(hv["time_entries"]["spent_date"], string_to_date)
+        hours = prep_data(hv["time_entries"]["hours"], int)
 
-        time_entries = [dict(id=time_entry_ids[i],
-                             project=projects[i],
-                             person=people[i],
-                             task=tasks[i],
-                             date=dates[i],
-                             hours=hours[i])
-                        for i in range(len(time_entry_ids))]
+        time_entries = [
+            dict(
+                id=time_entry_ids[i],
+                project=projects[i],
+                person=people[i],
+                task=tasks[i],
+                date=dates[i],
+                hours=hours[i],
+            )
+            for i in range(len(time_entry_ids))
+        ]
 
         db_utils.upsert(schema.time_entries, time_entries, conn)
-    
+
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # Get Forecast data
-    print('=' * 50)
-    print('FORECAST')
-    print('=' * 50)
+    print("=" * 50)
+    print("FORECAST")
+    print("=" * 50)
     fc = api_interface.get_forecast()
 
     # Client
-    print('-' * 50)
-    print('CLIENTS')
-    print('-' * 50)
+    print("-" * 50)
+    print("CLIENTS")
+    print("-" * 50)
 
-    client_fc_ids, fc_to_hv_clients = convert_index(fc['clients'])
-    names = prep_data(fc['clients'].name, str)
+    client_fc_ids, fc_to_hv_clients = convert_index(fc["clients"])
+    names = prep_data(fc["clients"].name, str)
 
-    clients = [{'id': client_fc_ids[i],
-                'name': names[i]}
-               for i in range(len(client_fc_ids))]
+    clients = [
+        {"id": client_fc_ids[i], "name": names[i]} for i in range(len(client_fc_ids))
+    ]
 
     db_utils.upsert(schema.clients, clients, conn)
 
     # Association
-    print('-' * 50)
-    print('ASSOCIATIONS')
-    print('-' * 50)
-    associations = [dict(id=idx, name=name)
-                    for name, idx in association_groups.items()]
+    print("-" * 50)
+    print("ASSOCIATIONS")
+    print("-" * 50)
+    associations = [dict(id=idx, name=name) for name, idx in association_groups.items()]
 
     db_utils.upsert(schema.associations, associations, conn)
 
     # Person
-    print('-' * 50)
-    print('PEOPLE')
-    print('-' * 50)
+    print("-" * 50)
+    print("PEOPLE")
+    print("-" * 50)
 
-    people_fc_ids, fc_to_hv_people = convert_index(fc['people'])
-    names = prep_data(fc['people'].first_name + ' ' +
-                      fc['people'].last_name, str)
+    people_fc_ids, fc_to_hv_people = convert_index(fc["people"])
+    names = prep_data(fc["people"].first_name + " " + fc["people"].last_name, str)
 
-    associations = prep_data(fc['people'].roles.apply(get_assoc_group), int)
-    
+    associations = prep_data(fc["people"].roles.apply(get_assoc_group), int)
+
     # set capacities to zero for people who are archived
-    fc['people'].loc[fc['people'].archived == True, 'weekly_capacity'] = 0
-    capacities = prep_data(fc['people'].weekly_capacity, int)
+    fc["people"].loc[fc["people"].archived == True, "weekly_capacity"] = 0
+    capacities = prep_data(fc["people"].weekly_capacity, int)
 
-    people = [dict(id=people_fc_ids[i],
-                   name=names[i],
-                   association=associations[i],
-                   capacity=capacities[i])
-              for i in range(len(people_fc_ids))]
+    people = [
+        dict(
+            id=people_fc_ids[i],
+            name=names[i],
+            association=associations[i],
+            capacity=capacities[i],
+        )
+        for i in range(len(people_fc_ids))
+    ]
 
     db_utils.upsert(schema.people, people, conn)
 
     # Placeholders
-    print('-' * 50)
-    print('PLACHEOLDERS')
-    print('-' * 50)
-    
+    print("-" * 50)
+    print("PLACHEOLDERS")
+    print("-" * 50)
+
     # consolidate placeholder names
-    placeholders, merged_placeholders = merge_placeholders(fc['placeholders'])
+    placeholders, merged_placeholders = merge_placeholders(fc["placeholders"])
     placeholder_ids, _ = convert_index(placeholders)
     names = prep_data(placeholders.name, str)
-    associations = prep_data(placeholders.roles.apply(get_assoc_group),
-                             int)
+    associations = prep_data(placeholders.roles.apply(get_assoc_group), int)
 
-    placeholders = [dict(id=placeholder_ids[i],
-                         name=names[i],
-                         association=associations[i])
-                    for i in range(len(placeholder_ids))]
+    placeholders = [
+        dict(id=placeholder_ids[i], name=names[i], association=associations[i])
+        for i in range(len(placeholder_ids))
+    ]
 
     db_utils.upsert(schema.people, placeholders, conn)
 
     # Project
-    print('-' * 50)
-    print('PROJECTS')
-    print('-' * 50)
+    print("-" * 50)
+    print("PROJECTS")
+    print("-" * 50)
 
-    project_fc_ids, fc_to_hv_projects = convert_index(fc['projects'])
-    names = prep_data(fc['projects'].name, str)
+    project_fc_ids, fc_to_hv_projects = convert_index(fc["projects"])
+    names = prep_data(fc["projects"].name, str)
     # NB: convert forecast client idx to harvest idx
-    clients = prep_data(fc['projects'].client_id, int,
-                        convert_dict=fc_to_hv_clients)
-    start_dates = prep_data(fc['projects'].start_date, string_to_date)
-    end_dates = prep_data(fc['projects'].end_date, string_to_date)
+    clients = prep_data(fc["projects"].client_id, int, convert_dict=fc_to_hv_clients)
+    start_dates = prep_data(fc["projects"].start_date, string_to_date)
+    end_dates = prep_data(fc["projects"].end_date, string_to_date)
 
     # extract issue numbers from project codes or tags
     githubs = []
-    for i, row in fc['projects'].iterrows():
+    for i, row in fc["projects"].iterrows():
         issue_number = None
 
         if row["code"] is not None and "hut23-" in row["code"]:
@@ -332,64 +338,72 @@ def update_db(conn=None, with_tracked_time=True):
             issue_number = int(row["code"].replace("hut23-", "").strip())
         else:
             # Then check for old "GitHub: xxx" tags
-            for string in fc['projects'].tags:
-                tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])",
-                                  str(string).lower())
+            for string in fc["projects"].tags:
+                tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])", str(string).lower())
                 if len(tags) > 0:
                     issue_number = int(tags[0])
                     break  # found an issue number - don't need to check more tags
 
         githubs.append(issue_number)
 
-    projects = [dict(id=project_fc_ids[i],
-                     name=names[i],
-                     client=clients[i],
-                     start_date=start_dates[i],
-                     end_date=end_dates[i],
-                     github=githubs[i])
-                for i in range(len(project_fc_ids))]
+    projects = [
+        dict(
+            id=project_fc_ids[i],
+            name=names[i],
+            client=clients[i],
+            start_date=start_dates[i],
+            end_date=end_dates[i],
+            github=githubs[i],
+        )
+        for i in range(len(project_fc_ids))
+    ]
 
     db_utils.upsert(schema.projects, projects, conn)
 
     # Assignment
-    print('-' * 50)
-    print('ASSIGNMENTS')
-    print('-' * 50)
+    print("-" * 50)
+    print("ASSIGNMENTS")
+    print("-" * 50)
 
     # replace keys for previously merged placeholders
-    fc['assignments']['placeholder_id'].replace(merged_placeholders,
-                                                inplace=True)
-                                     
-    assignment_ids, _ = convert_index(fc['assignments'])
+    fc["assignments"]["placeholder_id"].replace(merged_placeholders, inplace=True)
+
+    assignment_ids, _ = convert_index(fc["assignments"])
 
     # NB: convert forecast project idx to harvest idx
-    projects = prep_data(fc['assignments'].project_id, int,
-                         convert_dict=fc_to_hv_projects)
-                     
+    projects = prep_data(
+        fc["assignments"].project_id, int, convert_dict=fc_to_hv_projects
+    )
+
     # NB: combine people and placeholder ids
     # and convert forecast person idx to harvest idx
-    people = combine_people_placeholders(fc['assignments'].person_id,
-                                         fc['assignments'].placeholder_id)
+    people = combine_people_placeholders(
+        fc["assignments"].person_id, fc["assignments"].placeholder_id
+    )
     people = prep_data(people, int, convert_dict=fc_to_hv_people)
-    
-    start_dates = prep_data(fc['assignments'].start_date, string_to_date)
-    end_dates = prep_data(fc['assignments'].end_date, string_to_date)
-    allocations = prep_data(fc['assignments'].allocation, int)
 
-    assignments = [dict(id=assignment_ids[i],
-                        project=projects[i],
-                        person=people[i],
-                        start_date=start_dates[i],
-                        end_date=end_dates[i],
-                        allocation=allocations[i])
-                   for i in range(len(assignment_ids))]
+    start_dates = prep_data(fc["assignments"].start_date, string_to_date)
+    end_dates = prep_data(fc["assignments"].end_date, string_to_date)
+    allocations = prep_data(fc["assignments"].allocation, int)
+
+    assignments = [
+        dict(
+            id=assignment_ids[i],
+            project=projects[i],
+            person=people[i],
+            start_date=start_dates[i],
+            end_date=end_dates[i],
+            allocation=allocations[i],
+        )
+        for i in range(len(assignment_ids))
+    ]
 
     db_utils.upsert(schema.assignments, assignments, conn)
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    print('-' * 50)
-    print('DELETIONS - Rows no longer in Harvest or Forecast')
-    print('-' * 50)
+    print("-" * 50)
+    print("DELETIONS - Rows no longer in Harvest or Forecast")
+    print("-" * 50)
     # Delete ids that are no longer in Forecast/Harvest
     # NB: ORDER IS IMPORTANT!! E.g. Must delete assignments to a project before
     # that project can be deleted.
@@ -399,22 +413,18 @@ def update_db(conn=None, with_tracked_time=True):
         db_utils.delete_not_in(schema.time_entries, time_entry_ids, conn)
         db_utils.delete_not_in(schema.tasks, task_ids, conn)
 
-    db_utils.delete_not_in(schema.projects,
-                           project_fc_ids + project_hv_ids,
-                           conn)
+    db_utils.delete_not_in(schema.projects, project_fc_ids + project_hv_ids, conn)
 
-    db_utils.delete_not_in(schema.people,
-                           placeholder_ids + people_fc_ids + people_hv_ids,
-                           conn)
+    db_utils.delete_not_in(
+        schema.people, placeholder_ids + people_fc_ids + people_hv_ids, conn
+    )
 
-    db_utils.delete_not_in(schema.clients,
-                           client_fc_ids + client_hv_ids,
-                           conn)     
+    db_utils.delete_not_in(schema.clients, client_fc_ids + client_hv_ids, conn)
 
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # disable SettingWithCopyWarning
-    with pd.option_context('mode.chained_assignment', None):
+    with pd.option_context("mode.chained_assignment", None):
         update_db()

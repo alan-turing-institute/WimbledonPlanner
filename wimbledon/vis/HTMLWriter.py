@@ -22,27 +22,27 @@ def get_name_id(name):
     get_name_id converts name into a style suitable for a CSS class name by removing all the above.
     """
 
-    if 'RESOURCE REQUIRED' in name:
-        name_id = 'RESOURCE_REQUIRED'
-    elif 'UNCONFIRMED' in name:
-        name_id = 'UNCONFIRMED'
-    elif 'DEFERRED' in name:
-        name_id = 'DEFERRED'
-    elif 'NOT FUNDED' in name:
+    if "RESOURCE REQUIRED" in name:
+        name_id = "RESOURCE_REQUIRED"
+    elif "UNCONFIRMED" in name:
+        name_id = "UNCONFIRMED"
+    elif "DEFERRED" in name:
+        name_id = "DEFERRED"
+    elif "NOT FUNDED" in name:
         name_id = "NOT_FUNDED"
     else:
         # remove everything between a < and a > (html tags)
-        name = re.sub(r"(?<=\<)(.*?)(?=\>)", '', name)
-        name = name.replace('<', '')
-        name = name.replace('>', '')
+        name = re.sub(r"(?<=\<)(.*?)(?=\>)", "", name)
+        name = name.replace("<", "")
+        name = name.replace(">", "")
 
         # remove time allocation of format (x.x)
-        name = re.sub(r'\(\d\.\d\)', '', name)
+        name = re.sub(r"\(\d\.\d\)", "", name)
 
         # strip punctuation (apparently quickest way: https://stackoverflow.com/a/266162)
-        name_id = name.translate(str.maketrans('', '', string.punctuation))
-        name_id = name_id.replace(' ', '_')
-        
+        name_id = name.translate(str.maketrans("", "", string.punctuation))
+        name_id = name_id.replace(" ", "_")
+
         # remove all digits at start of name (CSS class names can't start with
         # digits)
         name_id = re.sub(r"^\d*", "", name_id)
@@ -54,7 +54,7 @@ def get_name_style(name, background_color=None, name_type=None):
     """Generate the css style class for the entity represented by string name. Pre-defined styles for
     placeholders or generate distinct colours for other names."""
 
-    if 'RESOURCE REQUIRED' in name or 'RESOURCE_REQUIRED' in name:
+    if "RESOURCE REQUIRED" in name or "RESOURCE_REQUIRED" in name:
         style = """
         .RESOURCE_REQUIRED {
             background-color: white;
@@ -63,8 +63,8 @@ def get_name_style(name, background_color=None, name_type=None):
             border: 1px solid red;
         }
         """
-        
-    elif 'NOT FUNDED' in name or 'NOT_FUNDED' in name:
+
+    elif "NOT FUNDED" in name or "NOT_FUNDED" in name:
         style = """
         .NOT_FUNDED {
             background-color: white;
@@ -73,8 +73,8 @@ def get_name_style(name, background_color=None, name_type=None):
             border: 1px solid green;
         }
         """
-    
-    elif 'UNCONFIRMED' in name:
+
+    elif "UNCONFIRMED" in name:
         style = """
         .UNCONFIRMED {
             background-color: white;
@@ -84,43 +84,43 @@ def get_name_style(name, background_color=None, name_type=None):
         }
         """
 
-    elif 'DEFERRED' in name:
+    elif "DEFERRED" in name:
         style = """.DEFERRED {
                           background-color: white;
                           color: orange;
                           font-weight: 600;
                           border: 1px solid orange;
                 } """
-    elif 'UNAVAILABLE' in name:
+    elif "UNAVAILABLE" in name:
         style = """.UNAVAILABLE {
                           background-color: white;
                           color: gray;
                           font-weight: 600;
                           border: 1px solid gray;
                 } """
-                
-    elif 'UNALLOCATED' in name:
+
+    elif "UNALLOCATED" in name:
         style = """.UNALLOCATED {
                           background-color: white;
                           color: green;
                           font-weight: 600;
                           border: 1px solid green;
                 } """
-                
-    elif 'OVER CAPACITY' in name or 'OVER_CAPACITY' in name:
+
+    elif "OVER CAPACITY" in name or "OVER_CAPACITY" in name:
         style = """.OVER_CAPACITY {
                           background-color: white;
                           color: red;
                           font-weight: 600;
                           border: 1px solid red;
-                } """        
+                } """
     else:
         name_id = get_name_id(name)
 
         text_color = distinctipy.get_hex(distinctipy.get_text_color(background_color))
         background_color = distinctipy.get_hex(background_color)
 
-        if name_type == 'client':
+        if name_type == "client":
             style = """.{name_id} {{
               background-color: {background_color};
               color: {text_color};
@@ -128,31 +128,35 @@ def get_name_style(name, background_color=None, name_type=None):
               font-size: 16;
               white-space:  normal;
               width: 300px;
-            }} """.format(name_id=name_id,
-                          text_color=text_color,
-                          background_color=background_color)
+            }} """.format(
+                name_id=name_id,
+                text_color=text_color,
+                background_color=background_color,
+            )
         else:
             style = """.{name_id} {{
               background-color: {background_color};
               color: {text_color};
-            }} """.format(name_id=name_id,
-                          text_color=text_color,
-                          background_color=background_color)
+            }} """.format(
+                name_id=name_id,
+                text_color=text_color,
+                background_color=background_color,
+            )
 
     return style
 
 
-def write_style(df, display='print'):
+def write_style(df, display="print"):
     """write the CSS to style the table"""
 
-    if display == 'nostyle':
-        return ''
+    if display == "nostyle":
+        return ""
 
     else:
         style = """<style  type="text/css" > """
         style += get_base_style()
 
-        if display == 'screen':
+        if display == "screen":
             style += get_screen_style()
 
         colors = get_colors(df)
@@ -160,17 +164,17 @@ def write_style(df, display='print'):
         for name, color in colors.items():
             style += get_name_style(name, color)
 
-        style += get_name_style('RESOURCE REQUIRED')
-        style += get_name_style('UNCONFIRMED')
-        style += get_name_style('DEFERRED')
-        style += get_name_style('UNAVAILABLE')
+        style += get_name_style("RESOURCE REQUIRED")
+        style += get_name_style("UNCONFIRMED")
+        style += get_name_style("DEFERRED")
+        style += get_name_style("UNAVAILABLE")
 
         group_colors = get_group_colors(df)
 
         for client, color in group_colors.items():
-            style += get_name_style(client, color, name_type='client')
+            style += get_name_style(client, color, name_type="client")
 
-        style += '</style>'
+        style += "</style>"
 
         return style
 
@@ -275,7 +279,7 @@ def get_screen_style():
     return style
 
 
-def write_header(columns, title='Research Engineering Project Allocations'):
+def write_header(columns, title="Research Engineering Project Allocations"):
     """write the table header (title and column names)"""
 
     header = """<thead> <tr>
@@ -285,11 +289,15 @@ def write_header(columns, title='Research Engineering Project Allocations'):
     </tr><tr>
         <th class="blank" ></th>
         <th class="blank" ></th>
-    """.format(n_columns=len(columns), title=title)
+    """.format(
+        n_columns=len(columns), title=title
+    )
 
     for colname in columns:
         header += """<th class="header" >{colname}</th>
-        """.format(colname=colname)
+        """.format(
+            colname=colname
+        )
 
     header += """</tr></thead>
     """
@@ -310,7 +318,9 @@ def get_separator(columns=None):
         """
         for title in columns:
             separator += """<td class="separator" >{title}</td>
-            """.format(title=title)
+            """.format(
+                title=title
+            )
 
         separator += """</tr>"""
 
@@ -328,7 +338,9 @@ def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
 
     for _ in range(n_columns):
         html += """<td class="colwidth" >{width_str}</td>
-        """.format(width_str=width_str)
+        """.format(
+            width_str=width_str
+        )
 
     html += """</tr>
     """
@@ -367,7 +379,11 @@ def write_table(df, title):
 
         table += """<tr>
         <th class="{group_id}" rowspan={n_rows}>{group_label}</th>
-        """.format(group_id=get_name_id(group_label), n_rows=n_rows+n_index_groups-1, group_label=group_label)  # n_rows+n_index_groups to take into account separator rows
+        """.format(
+            group_id=get_name_id(group_label),
+            n_rows=n_rows + n_index_groups - 1,
+            group_label=group_label,
+        )  # n_rows+n_index_groups to take into account separator rows
 
         # Loop over rows in this index group (each row being a project or a person)
         for index_idx, index_group in enumerate(index_groups):
@@ -376,34 +392,38 @@ def write_table(df, title):
             n_index = len(index_content)
 
             table += """<th class="index" rowspan={n_index}>{index_name}</th>
-            """.format(n_index=n_index, index_name=index_name)
+            """.format(
+                n_index=n_index, index_name=index_name
+            )
 
             for i in range(n_index):
                 row_content = index_content.iloc[i].values
 
                 for cell in row_content:
                     name = get_name_id(cell)
-                    if name.strip() == '':
+                    if name.strip() == "":
                         table += """<td class="blank"></td>
                         """
                     else:
                         table += """<td class="{name}" >{cell}</td>
-                        """.format(name=name, cell=cell)
+                        """.format(
+                            name=name, cell=cell
+                        )
 
                 table += """</tr>"""
 
-                if i < n_index-1:
+                if i < n_index - 1:
                     table += """
                     <tr>"""
 
-            if index_idx+1 < n_index_groups:
+            if index_idx + 1 < n_index_groups:
                 table += get_separator()
                 table += """
                             <tr>"""
 
         # end of inner loop over client projects
 
-        if group_idx+1 < n_groups:
+        if group_idx + 1 < n_groups:
             table += get_separator()
             table += """
             <tr>"""
@@ -424,14 +444,14 @@ def get_colors(df):
     # remove time allocation/html tags at end of names
     strip_df = df.copy(deep=True)
     for col in strip_df:
-        strip_df[col] = strip_df[col].str.replace(r'<br>', '', regex=True)
-        strip_df[col] = strip_df[col].str.replace(r'\(\d\.\d\)', '', regex=True)
+        strip_df[col] = strip_df[col].str.replace(r"<br>", "", regex=True)
+        strip_df[col] = strip_df[col].str.replace(r"\(\d\.\d\)", "", regex=True)
 
     # unique names in each column
     names = [strip_df[col].unique() for col in strip_df]
 
     # unpack list of lists
-    names = [cell for column in names for cell in column if cell is not '']
+    names = [cell for column in names for cell in column if cell is not ""]
     # set of names (i.e. unique names in whole sheet)
     # changed to using pd.Series then drop_duplicates to preserve order, i.e. from name appearing first to name
     # appearing last, which helps with keeping colours distinct
@@ -440,7 +460,7 @@ def get_colors(df):
     colors = dict()
 
     # to avoid white, uncomment this line:
-    colors['WHITE'] = (1, 1, 1)
+    colors["WHITE"] = (1, 1, 1)
 
     # to avoid black/dark colours, uncomment this line:
     # colors['BLACK'] = (0, 0, 0)
@@ -456,7 +476,9 @@ def get_colors(df):
         elif "DEFERRED" in key:
             continue
         else:
-            colors[key] = distinctipy.get_colors(1, exclude_colors=list(colors.values()))[0]
+            colors[key] = distinctipy.get_colors(
+                1, exclude_colors=list(colors.values())
+            )[0]
 
     return colors
 
@@ -481,13 +503,13 @@ def make_whiteboard(df, key_type, display, update_timestamp=None):
     display: whether to optimise the visualisation for display on a screen or for printing
     """
 
-    if key_type == 'project':
-        title = 'Research Engineering Project Allocations'
-    elif key_type == 'person':
-        title = 'Research Engineering Person Allocations'
+    if key_type == "project":
+        title = "Research Engineering Project Allocations"
+    elif key_type == "person":
+        title = "Research Engineering Person Allocations"
 
     if update_timestamp is not None:
-        title += ' (' + update_timestamp + ')'
+        title += " (" + update_timestamp + ")"
 
     html = write_style(df, display=display)
     html += write_table(df, title)
@@ -495,34 +517,36 @@ def make_whiteboard(df, key_type, display, update_timestamp=None):
     return html
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     key_type = sys.argv[1]
     display = sys.argv[2]
 
-    if key_type == 'person':
-        save_dir = '../../data/figs/people'
-        file_name = 'people.html'
-    elif key_type == 'project':
-        save_dir = '../../data/figs/projects'
-        file_name = 'projects.html'
+    if key_type == "person":
+        save_dir = "../../data/figs/people"
+        file_name = "people.html"
+    elif key_type == "project":
+        save_dir = "../../data/figs/projects"
+        file_name = "projects.html"
     else:
-        raise ValueError('first argument (key_type) must be project or person')
+        raise ValueError("first argument (key_type) must be project or person")
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    print('MAKE WIMBLEDON OBJECT')
+    print("MAKE WIMBLEDON OBJECT")
     wim = Wimbledon(with_tracked_time=False)
 
-    print('GET WHITEBOARD DATAFRAME')
-    df = wim.whiteboard(key_type,
-                        pd.datetime.now() - pd.Timedelta('30 days'),
-                        pd.datetime.now() + pd.Timedelta('365 days'),
-                        'MS')
+    print("GET WHITEBOARD DATAFRAME")
+    df = wim.whiteboard(
+        key_type,
+        pd.datetime.now() - pd.Timedelta("30 days"),
+        pd.datetime.now() + pd.Timedelta("365 days"),
+        "MS",
+    )
 
-    print('GET FORMATTED HTML WHITEBOARD')
+    print("GET FORMATTED HTML WHITEBOARD")
     html = make_whiteboard(df, key_type, display)
 
-    print('SAVE WHITEBOARD')
-    with open(save_dir+'/'+file_name, 'w') as f:
+    print("SAVE WHITEBOARD")
+    with open(save_dir + "/" + file_name, "w") as f:
         f.write(html)

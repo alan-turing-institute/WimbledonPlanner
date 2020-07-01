@@ -14,12 +14,12 @@ import time
 
 start = time.time()
 
-if 'harvest' in sys.argv:
+if "harvest" in sys.argv:
     with_tracked_time = True
 else:
     with_tracked_time = False
 
 update_db(with_tracked_time=with_tracked_time)
 
-print('='*50)
-print('TOTAL UPDATE TIME: {:.1f}s'.format(time.time() - start))
+print("=" * 50)
+print("TOTAL UPDATE TIME: {:.1f}s".format(time.time() - start))
