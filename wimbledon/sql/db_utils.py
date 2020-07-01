@@ -12,20 +12,20 @@ def get_db_connection():
 
 def get_db_engine():
     db_config = wimbledon.config.get_sql_config()
-    url = sqla.engine.url.URL(drivername=db_config['drivername'],
-                              username=db_config['username'],
-                              password=db_config['password'],
-                              host=db_config['host'],
-                              port=db_config['port'],
-                              database=db_config['database'])
+    url = sqla.engine.url.URL(
+        drivername=db_config["drivername"],
+        username=db_config["username"],
+        password=db_config["password"],
+        host=db_config["host"],
+        port=db_config["port"],
+        database=db_config["database"],
+    )
     engine = sqla.create_engine(url)
 
     return engine
 
 
-def upsert(table, data, conn,
-           index_elements=['id'],
-           exclude_columns=['id']):
+def upsert(table, data, conn, index_elements=["id"], exclude_columns=["id"]):
     """
     table: sqlalchemy table ojbect
     data: list of {colname: value} dicts
@@ -33,20 +33,21 @@ def upsert(table, data, conn,
     index_elements: index columns to check for conflicts on
     exclude_columns: don't update these columns
     """
-    print('First row in data:', data[0])
+    print("First row in data:", data[0])
 
     insert_stmt = psql_insert(table).values(data)
 
-    update_columns = {col.name: col for col in insert_stmt.excluded
-                      if col.name not in exclude_columns}
+    update_columns = {
+        col.name: col for col in insert_stmt.excluded if col.name not in exclude_columns
+    }
 
     upsert_stmt = insert_stmt.on_conflict_do_update(
-                    index_elements=index_elements,
-                    set_=update_columns)
+        index_elements=index_elements, set_=update_columns
+    )
 
     r = conn.execute(upsert_stmt)
 
-    print(r.rowcount, 'rows added/updated in', table.name)
+    print(r.rowcount, "rows added/updated in", table.name)
 
 
 def delete_not_in(table, ids, conn):
@@ -56,4 +57,4 @@ def delete_not_in(table, ids, conn):
     """
     delete_stmt = table.delete().where(table.c.id.notin_(ids))
     r = conn.execute(delete_stmt)
-    print(r.rowcount, 'rows deleted from', table.name)
+    print(r.rowcount, "rows deleted from", table.name)

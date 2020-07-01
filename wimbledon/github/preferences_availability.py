@@ -61,44 +61,60 @@ alternate_query = """
 }
 """
 
+
 def run_query(query, token):
     """
     A simple function to use requests.post to make the API call. Note the json= section.
     Takes as input a string containing a GraphQL query string
     """
     headers = {"Authorization": "Bearer " + token}
-    request = requests.post('https://api.github.com/graphql', json={'query': query}, headers=headers)
+    request = requests.post(
+        "https://api.github.com/graphql", json={"query": query}, headers=headers
+    )
     if request.status_code == 200:
         return request.json()
     else:
-        raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
+        raise Exception(
+            "Query failed to run by returning code of {}. {}".format(
+                request.status_code, query
+            )
+        )
 
 
 def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
     """
+
     def reactions_count(project_reactions):
         count = 0
         for reaction in project_reactions:
-            for edge in reaction['users']['edges']:
-                if reaction['content']:
+            for edge in reaction["users"]["edges"]:
+                if reaction["content"]:
                     count += 1
         return count
 
     # Edit the query string to contain the relevant issue and number of GitHub users
     # This query gets the emojis on the issue itself (i.e. the top comment/ post)
-    modified_query = query.replace("X", str(int(issue))).replace("Y", str(number_of_people))
+    modified_query = query.replace("X", str(int(issue))).replace(
+        "Y", str(number_of_people)
+    )
     result = run_query(modified_query, token)
-    project_reactions = result['data']['repository']['issue']['reactionGroups']
-    project_reaction_groups_dict = {reactions_count(project_reactions): project_reactions}
+    project_reactions = result["data"]["repository"]["issue"]["reactionGroups"]
+    project_reaction_groups_dict = {
+        reactions_count(project_reactions): project_reactions
+    }
 
     # If we don't find any emojis from the first query, this one searches subsequent comments (set to first 5 by default)
-    modified_query = alternate_query.replace("X", str(int(issue))).replace("Y", str(number_of_people)).replace("Z", str(number_of_comments))
+    modified_query = (
+        alternate_query.replace("X", str(int(issue)))
+        .replace("Y", str(number_of_people))
+        .replace("Z", str(number_of_comments))
+    )
     result = run_query(modified_query, token)
-    project_comments = result['data']['repository']['issue']['comments']['edges']
+    project_comments = result["data"]["repository"]["issue"]["comments"]["edges"]
     for comment in project_comments:
-        project_reactions = comment['node']['reactionGroups']
+        project_reactions = comment["node"]["reactionGroups"]
         pr_count = reactions_count(project_reactions)
         if pr_count > 0:
             project_reaction_groups_dict[pr_count] = project_reactions
@@ -132,13 +148,17 @@ def get_project_requirement(wim, project, start_date, end_date):
     """
     Get the mean of a project's FTE requirement for the start to end datetime objects, using the project name or id
     """
-    projectdf = wim.project_resourcereq.resample('MS').mean()  # pandas df for project resource requirement
+    projectdf = wim.project_resourcereq.resample(
+        "MS"
+    ).mean()  # pandas df for project resource requirement
     if isinstance(project, str):
         try:
             project = wim.get_project_id(project)
         except:
             return 0.0
-    projectdf = projectdf[(projectdf.index >= start_date) & (projectdf.index <= end_date)]
+    projectdf = projectdf[
+        (projectdf.index >= start_date) & (projectdf.index <= end_date)
+    ]
     try:
         requirement_range = projectdf[project]
     except:
@@ -154,77 +174,92 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
     Custom emoji mapping can be provided.
     """
     gid_mapping = {  # People without their full names on github.
-     'myyong': 'May Yong',
-     'nbarlowATI': 'Nick Barlow',
-     'thobson88': 'Timothy Hobson',
-     'miguelmorin': 'Miguel Morin',
-     'OscartGiles': 'Oscar Giles',
-     'AshwiniKV': 'Ashwini Venkatasubramaniam',
-     'annahadji': 'Anna Hadjitofi',
-     'misspawty': 'Flora Roumpani',
-     'pafoster': 'Peter Foster',
-      'jd2019a': 'Joel Dearden',
+        "myyong": "May Yong",
+        "nbarlowATI": "Nick Barlow",
+        "thobson88": "Timothy Hobson",
+        "miguelmorin": "Miguel Morin",
+        "OscartGiles": "Oscar Giles",
+        "AshwiniKV": "Ashwini Venkatasubramaniam",
+        "annahadji": "Anna Hadjitofi",
+        "misspawty": "Flora Roumpani",
+        "pafoster": "Peter Foster",
+        "jd2019a": "Joel Dearden",
     }
     if not emoji_mapping:
-        emoji_mapping = {'CONFUSED': '😕',  # Map the emojis from GitHub to those we want to display
-              'EYES': '👀',
-              'HEART': '❤️',
-              'HOORAY': '🎉',
-              'ROCKET': '🚀',
-              'THUMBS_DOWN': '❌',
-              'THUMBS_UP': '👍',
-              'LAUGH': '✅'}
+        emoji_mapping = {
+            "CONFUSED": "😕",  # Map the emojis from GitHub to those we want to display
+            "EYES": "👀",
+            "HEART": "❤️",
+            "HOORAY": "🎉",
+            "ROCKET": "🚀",
+            "THUMBS_DOWN": "❌",
+            "THUMBS_UP": "👍",
+            "LAUGH": "✅",
+        }
     names = list(wim.people.name)
     # Giovanni and Miguel have left but put emojis on future projects. Remove them
     names.remove("Giovanni Colavizza")
     names.remove("Miguel Morin")
-    preference_data = {
-        "Person": names
-    }
+    preference_data = {"Person": names}
     issues = wim.projects["github"].dropna()  # Get list of GitHub issues for projects
     total_people = len(wim.people)
     for issue_num, project_id in zip(issues, issues.index):
         # Get a dict with the emoji reactions for this issue
-        project_reactions = get_reactions(github_token, issue_num, number_of_people=total_people)
+        project_reactions = get_reactions(
+            github_token, issue_num, number_of_people=total_people
+        )
         emojis = []
         # Get the relevant emoji for each team member for this GitHub issue and associated project
         for name in names:
             emoji_name = None
             for reaction in project_reactions:
-                for edge in reaction['users']['edges']:
-                    if edge['node']['name'] == name:
-                        emoji_name = reaction['content']
+                for edge in reaction["users"]["edges"]:
+                    if edge["node"]["name"] == name:
+                        emoji_name = reaction["content"]
                     if not emoji_name:
-                        if edge['node']['login'] in gid_mapping:
-                            if gid_mapping[edge['node']['login']] == name:
-                                emoji_name = reaction['content']
+                        if edge["node"]["login"] in gid_mapping:
+                            if gid_mapping[edge["node"]["login"]] == name:
+                                emoji_name = reaction["content"]
             if emoji_name:
                 emoji = emoji_mapping[emoji_name]
             else:
-                emoji = "❓"  # For team members who have not given a preference to the project
+                emoji = (
+                    "❓"
+                )  # For team members who have not given a preference to the project
             emojis.append(emoji)
         preference_data[wim.get_project_name(project_id)] = emojis
-    preference_data_df = pd.DataFrame(preference_data).set_index('Person')
+    preference_data_df = pd.DataFrame(preference_data).set_index("Person")
     # Remove any team members without emoji preferences for any project
-    preference_data_df = preference_data_df.loc[~(preference_data_df=="❓").all(axis=1)]
+    preference_data_df = preference_data_df.loc[
+        ~(preference_data_df == "❓").all(axis=1)
+    ]
     return preference_data_df
 
 
-def get_preferences(wim, preference_data_df, first_date=False, last_date=False, person=False, project=False, emojis_only=False, css=None):
+def get_preferences(
+    wim,
+    preference_data_df,
+    first_date=False,
+    last_date=False,
+    person=False,
+    project=False,
+    emojis_only=False,
+    css=None,
+):
     """
     Create a HTML table with each project that has a resource requirement against every REG team member with availability.
     Table values show the preference emojis alongside the mean availability the person has for the resource required period and
     the mean resource required for the range between the first month with resource required and the last.
     """
     # Get the data on project resource requirement from Forecast
-    resreqdf = wim.project_resourcereq.resample('MS').mean()  # grouped by month and mean taken
+    resreqdf = wim.project_resourcereq.resample(
+        "MS"
+    ).mean()  # grouped by month and mean taken
     if person:
         names = [person]
     else:
         names = list(preference_data_df.index)
-    data = {
-        "Person": names
-    }
+    data = {"Person": names}
     # If a project name or project id is provided, only get data for that project
     if project:
         if isinstance(project, str):
@@ -235,10 +270,14 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
     # Get projects with some resource requirement but filter by those with a GitHub issue
     project_titles = {}
     for project_id in resreqdf:
-        if not project or project == project_id:  # If a project name or project id is provided, only get data for that project
+        if (
+            not project or project == project_id
+        ):  # If a project name or project id is provided, only get data for that project
             # Get the dates for each month that the project has a resource requirement > 0
             date_indices = resreqdf.index[resreqdf[project_id] > 0]
-            if len(date_indices) > 0:  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+            if (
+                len(date_indices) > 0
+            ):  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
                 issue_num = wim.projects.loc[project_id]["github"]
                 if not math.isnan(issue_num):  # if this project has a GitHub issue
                     first_resreq_date = date_indices[0].strftime("%Y-%m")
@@ -247,35 +286,56 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                         first_resreq_date = first_date
                     if last_date:
                         last_resreq_date = last_date
-                    resreq = get_project_requirement(wim, project_id, first_resreq_date, last_resreq_date)
+                    resreq = get_project_requirement(
+                        wim, project_id, first_resreq_date, last_resreq_date
+                    )
                     project_name = wim.projects.loc[project_id, "name"]
-                    
-                    project_title = (project_name + "<br>#" +
-                                     str(int(issue_num)) + "<br>" +
-                                     first_resreq_date + " to " +
-                                     last_resreq_date + "<br>" +
-                                     str(round(resreq, 1)) + " FTE")
+
+                    project_title = (
+                        project_name
+                        + "<br>#"
+                        + str(int(issue_num))
+                        + "<br>"
+                        + first_resreq_date
+                        + " to "
+                        + last_resreq_date
+                        + "<br>"
+                        + str(round(resreq, 1))
+                        + " FTE"
+                    )
                     # make column header a link to github issue
-                    project_title = """<a href="{url}/{issue}">{title}</a>""".format(url="https://github.com/alan-turing-institute/Hut23/issues",
-                                                                                     issue=int(issue_num),
-                                                                                     title=project_title)
+                    project_title = """<a href="{url}/{issue}">{title}</a>""".format(
+                        url="https://github.com/alan-turing-institute/Hut23/issues",
+                        issue=int(issue_num),
+                        title=project_title,
+                    )
                     project_titles[project_name] = project_title
                     emoji_data = []
                     for name in names:
-                        person_availability = get_person_availability(wim, name, first_resreq_date, last_resreq_date)
-                        percentage_availability = round((person_availability / resreq) * 100)
+                        person_availability = get_person_availability(
+                            wim, name, first_resreq_date, last_resreq_date
+                        )
+                        percentage_availability = round(
+                            (person_availability / resreq) * 100
+                        )
                         emoji = preference_data_df[project_name][name]
                         if emojis_only:
                             emoji_data.append(emoji)
                         else:  # Include availability
-                            emoji_data.append(emoji + " " +
-                                              str(percentage_availability) +
-                                              "% (" + str(round(person_availability,1)) +
-                                              " / " + str(round(resreq, 1)) + ")")
+                            emoji_data.append(
+                                emoji
+                                + " "
+                                + str(percentage_availability)
+                                + "% ("
+                                + str(round(person_availability, 1))
+                                + " / "
+                                + str(round(resreq, 1))
+                                + ")"
+                            )
                     # Store list of preference data for this project
                     data[project_name] = emoji_data
     # Created an alphabetically sorted dataframe from the data
-    preferences = pd.DataFrame(data).set_index('Person').sort_index().sort_index(axis=1)
+    preferences = pd.DataFrame(data).set_index("Person").sort_index().sort_index(axis=1)
     preferences = preferences.rename(columns=project_titles)
     # Create a HTML table from this dataframe that is scrollable
     # Default css can be overridden with argument
@@ -352,9 +412,11 @@ def get_preferences(wim, preference_data_df, first_date=False, last_date=False, 
                         }
             </style>"""
     # remove unecessary row for "Name" label
-    preferences.index.name = None    
+    preferences.index.name = None
     emoji_table = preferences.to_html(escape=False)  # Convert to HTML table
-    html_table = css + """<div class="tableFixHead">""" + emoji_table + """</div>"""  # Add CSS to table
+    html_table = (
+        css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
+    )  # Add CSS to table
     return html_table
 
 

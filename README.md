@@ -153,7 +153,7 @@ Since Wimbledon retrieves preference information from https://github.com/alan-tu
 
 To create an access token, [follow this guide](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) and select the following scopes:
 
-![Scopes](api/img/scopes.png)
+![Scopes](notes/scopes.png)
 
 ## Interactive Notebooks
 
