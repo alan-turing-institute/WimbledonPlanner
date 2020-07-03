@@ -145,29 +145,6 @@ def get_person_availability(wim, person, start_date, end_date):
     return round(average_availability, 2)
 
 
-def get_project_requirement(wim, project, start_date, end_date):
-    """
-    Get the mean of a project's FTE requirement for the start to end datetime objects, using the project name or id
-    """
-    projectdf = wim.project_resourcereq.resample(
-        "MS"
-    ).mean()  # pandas df for project resource requirement
-    if isinstance(project, str):
-        try:
-            project = wim.get_project_id(project)
-        except:
-            return 0.0
-    projectdf = projectdf[
-        (projectdf.index >= start_date) & (projectdf.index <= end_date)
-    ]
-    try:
-        requirement_range = projectdf[project]
-    except:
-        return 0.0
-    average_requirement = statistics.mean(requirement_range)
-    return round(average_requirement, 2)
-
-
 def get_preference_data(wim, github_token, emoji_mapping=None):
     """
     Get each team members preference emoji for all projects with a GitHub issue.
@@ -254,9 +231,18 @@ def get_preferences(
     the mean resource required for the range between the first month with resource required and the last.
     """
     # Get the data on project resource requirement from Forecast
-    resreqdf = wim.project_resourcereq.resample(
-        "MS"
-    ).mean()  # grouped by month and mean taken
+    # grouped by month and mean taken
+    resreqdf = wim.project_resourcereq.resample("MS").mean()
+    #  Also consider unconfirmed projects
+    unconfdf = wim.project_unconfirmed.resample("MS").mean()
+
+    if first_date:
+        resreqdf = resreqdf[resreqdf.index >= first_date]
+        unconfdf = unconfdf[unconfdf.index >= first_date]
+    if last_date:
+        resreqdf = resreqdf[resreqdf.index <= last_date]
+        unconfdf = unconfdf[unconfdf.index <= last_date]
+      
     if person:
         names = [person]
     else:
@@ -269,73 +255,126 @@ def get_preferences(
                 project = wim.get_project_id(project)
             except:
                 pass
+
     # Get projects with some resource requirement but filter by those with a GitHub issue
     project_titles = {}
     for project_id in resreqdf:
-        if (
-            not project or project == project_id
-        ):  # If a project name or project id is provided, only get data for that project
-            # Get the dates for each month that the project has a resource requirement > 0
-            date_indices = resreqdf.index[resreqdf[project_id] > 0]
-            if (
-                len(date_indices) > 0
-            ):  # if at least one month in the dataframe has a resource requirement of more than 0 FTE
-                issue_num = wim.projects.loc[project_id]["github"]
-                if not math.isnan(issue_num):  # if this project has a GitHub issue
-                    first_resreq_date = date_indices[0].strftime("%Y-%m")
-                    last_resreq_date = date_indices[-1].strftime("%Y-%m")
-                    if first_date:
-                        first_resreq_date = first_date
-                    if last_date:
-                        last_resreq_date = last_date
-                    resreq = get_project_requirement(
-                        wim, project_id, first_resreq_date, last_resreq_date
-                    )
-                    project_name = wim.projects.loc[project_id, "name"]
+        if not project or project == project_id:
+            # If a project name or project id is provided, only get data for that project
+            # Get the dates for each month that the project has a resource requirement > 0           
+            dates_resreq = resreqdf.index[resreqdf[project_id] > 0]
+            dates_unconf = unconfdf.index[unconfdf[project_id] > 0]
+            issue_num = wim.projects.loc[project_id]["github"]
+            if (len(dates_resreq) > 0 or len(dates_unconf) > 0) and not math.isnan(
+                issue_num
+            ):
+                project_name = wim.projects.loc[project_id, "name"]
 
-                    project_title = (
-                        project_name
-                        + "<br>#"
-                        + str(int(issue_num))
-                        + "<br>"
-                        + first_resreq_date
-                        + " to "
-                        + last_resreq_date
-                        + "<br>"
-                        + str(round(resreq, 1))
-                        + " FTE"
+                req_or_unconf_df = resreqdf + unconfdf
+                dates_req_or_unconf = req_or_unconf_df.index[
+                    req_or_unconf_df[project_id] > 0
+                ]
+                unconf_or_req_start_date = dates_req_or_unconf[0]
+                unconf_or_req_end_date = dates_req_or_unconf[-1]
+
+                if first_date and unconf_or_req_start_date < first_date:
+                    unconf_or_req_start_date = first_date
+                if last_date and unconf_or_req_end_date > last_date:
+                    unconf_or_req_end_date = last_date
+
+                project_title = (
+                    project_name
+                    + "<br>#"
+                    + str(int(issue_num))
+                    + "<br>"
+                    + unconf_or_req_start_date.strftime("%Y-%m")
+                    + " to "
+                    + unconf_or_req_end_date.strftime("%Y-%m")
+                    + "<br>"
+                )
+
+                if len(dates_resreq) > 0:
+                    # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+                    first_resreq_date = dates_resreq[0]
+                    last_resreq_date = dates_resreq[-1]
+                    if first_date and first_resreq_date < first_date:
+                        first_resreq_date = first_date
+                    if last_date and last_resreq_date > last_date:
+                        last_resreq_date = last_date
+                    
+                    # get mean project requirement in date range
+                    resreq = resreqdf.loc[
+                        (resreqdf.index >= first_resreq_date)
+                        & (resreqdf.index <= last_resreq_date),
+                        project_id,
+                    ].mean()
+
+                    if resreq >= 0.01:
+                        project_title += str(round(resreq, 1)) + " FTE"
+                else:
+                    resreq = 0
+
+                if len(dates_unconf) > 0:
+                    # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+                    first_unconf_date = dates_unconf[0]
+                    last_unconf_date = dates_unconf[-1]
+                    if first_date and first_unconf_date < first_date:
+                        first_unconf_date = first_date
+                    if last_date and last_unconf_date > last_date:
+                        last_unconf_date = last_date
+                    
+                    # get mean project requirement in date range
+                    unconf = unconfdf.loc[
+                        (unconfdf.index >= first_unconf_date)
+                        & (unconfdf.index <= last_unconf_date),
+                        project_id,
+                    ].mean()
+
+                    if unconf >= 0.01:
+                        # add a separator between required and unconfirmed FTE if both present
+                        if len(dates_resreq) > 0:
+                            pre = " + "
+                            post = " UNC"
+                        else:
+                            pre = ""
+                            post = " UNC FTE"
+                        project_title += pre + "" + str(round(unconf, 1)) + post
+                else:
+                    unconf = 0
+
+                # make column header a link to github issue
+                project_title = """<a href="{url}/{issue}">{title}</a>""".format(
+                    url="https://github.com/alan-turing-institute/Hut23/issues",
+                    issue=int(issue_num),
+                    title=project_title,
+                )
+                project_titles[project_name] = project_title
+                emoji_data = []
+                for name in names:
+                    person_availability = get_person_availability(
+                        wim, name, unconf_or_req_start_date, unconf_or_req_end_date
                     )
-                    # make column header a link to github issue
-                    project_title = """<a href="{url}/{issue}">{title}</a>""".format(
-                        url="https://github.com/alan-turing-institute/Hut23/issues",
-                        issue=int(issue_num),
-                        title=project_title,
+
+                    percentage_availability = round(
+                        (person_availability / (unconf + resreq)) * 100
                     )
-                    project_titles[project_name] = project_title
-                    emoji_data = []
-                    for name in names:
-                        person_availability = get_person_availability(
-                            wim, name, first_resreq_date, last_resreq_date
+                    emoji = preference_data_df[project_name][name]
+                    if emojis_only:
+                        emoji_data.append(emoji)
+                    else:  # Include availability
+                        emoji_data.append(
+                            emoji
+                            + " "
+                            + str(percentage_availability)
+                            + "% ("
+                            + str(round(person_availability, 1))
+                            + " / "
+                            + str(round(unconf + resreq, 1))
+                            + ")"
                         )
-                        percentage_availability = round(
-                            (person_availability / resreq) * 100
-                        )
-                        emoji = preference_data_df[project_name][name]
-                        if emojis_only:
-                            emoji_data.append(emoji)
-                        else:  # Include availability
-                            emoji_data.append(
-                                emoji
-                                + " "
-                                + str(percentage_availability)
-                                + "% ("
-                                + str(round(person_availability, 1))
-                                + " / "
-                                + str(round(resreq, 1))
-                                + ")"
-                            )
-                    # Store list of preference data for this project
-                    data[project_name] = emoji_data
+                # Store list of preference data for this project
+                data[project_name] = emoji_data
+
     # Created an alphabetically sorted dataframe from the data
     preferences = pd.DataFrame(data).set_index("Person").sort_index().sort_index(axis=1)
     preferences = preferences.rename(columns=project_titles)
@@ -422,7 +461,7 @@ def get_preferences(
     return html_table
 
 
-def get_all_preferences_table(wim=None):
+def get_all_preferences_table(wim=None, first_date=None, last_date=None):
     """
     Create the HTML table described in get_preferences() with default settings
     i.e. for all team members with at least one preference emoji and all projects
@@ -434,5 +473,7 @@ def get_all_preferences_table(wim=None):
     if not wim:
         wim = Wimbledon(update_db=True, with_tracked_time=False)
     preference_data_df = get_preference_data(wim, token)
-    preferences_with_availability = get_preferences(wim, preference_data_df)
+    preferences_with_availability = get_preferences(
+        wim, preference_data_df, first_date=first_date, last_date=last_date
+    )
     return preferences_with_availability
