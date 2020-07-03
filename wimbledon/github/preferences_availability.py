@@ -119,6 +119,7 @@ def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
         if pr_count > 0:
             project_reaction_groups_dict[pr_count] = project_reactions
             break
+
     return project_reaction_groups_dict[max(project_reaction_groups_dict, key=int)]
 
 
@@ -184,6 +185,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
         "misspawty": "Flora Roumpani",
         "pafoster": "Peter Foster",
         "jd2019a": "Joel Dearden",
+        "entopia": "Flora Roumpani",
     }
     if not emoji_mapping:
         emoji_mapping = {
