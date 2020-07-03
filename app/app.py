@@ -77,7 +77,9 @@ def update(update_db=True):
 
         # Generate preference table
         print("Generate preference table...")
-        preferences_table = pref.get_all_preferences_table(wim=vis.wim)
+        preferences_table = pref.get_all_preferences_table(
+            wim=vis.wim, first_date=vis.START_DATE, last_date=vis.END_DATE
+        )
 
         # Save preference table to file
         check_dir(app.config.get("DATA_DIR") + "/figs/preferences")
