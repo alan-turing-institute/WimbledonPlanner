@@ -254,9 +254,14 @@ def get_preferences(
     the mean resource required for the range between the first month with resource required and the last.
     """
     # Get the data on project resource requirement from Forecast
-    resreqdf = wim.project_resourcereq.resample(
-        "MS"
-    ).mean()  # grouped by month and mean taken
+    # grouped by month and mean taken
+    resreqdf = wim.project_resourcereq.resample("MS").mean()
+
+    # Also consider unconfirmed projects
+    # TODO: Distinguish resource required from unconfirmed in final table
+    unconfdf = wim.project_unconfirmed.resample("MS").mean()
+    resreqdf += unconfdf
+
     if person:
         names = [person]
     else:
