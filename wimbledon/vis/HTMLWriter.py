@@ -4,14 +4,15 @@ and convert it into a styled HTML table.
 The primary function is make_whiteboard(df, key_type, display)"""
 
 from distinctipy import distinctipy
-
 import pandas as pd
+
 from wimbledon import Wimbledon
+
 import string
 import re
 import sys
 import os.path
-
+from datetime import datetime
 
 def get_name_id(name):
     """name is a string of cell contents which may include:
@@ -539,8 +540,8 @@ if __name__ == "__main__":
     print("GET WHITEBOARD DATAFRAME")
     df = wim.whiteboard(
         key_type,
-        pd.datetime.now() - pd.Timedelta("30 days"),
-        pd.datetime.now() + pd.Timedelta("365 days"),
+        datetime.now() - pd.Timedelta("30 days"),
+        datetime.now() + pd.Timedelta("365 days"),
         "MS",
     )
 

@@ -1,6 +1,7 @@
 import time
 import os.path
 import sys
+from datetime import datetime
 
 import pandas as pd
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         start_date = pd.to_datetime(sys.argv[1])
     else:
-        start_date = pd.datetime.now() - pd.Timedelta("30 days")
+        start_date = datetime.now() - pd.Timedelta("30 days")
 
     if len(sys.argv) > 2:
         end_date = pd.to_datetime(sys.argv[2])

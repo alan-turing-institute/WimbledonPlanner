@@ -208,7 +208,7 @@ def get_harvest(with_tracked_time=True, with_assignments=False):
     if with_tracked_time:
         """
         Issues with python-harvest module:
-        
+
         time_entries: Currently fails due to time_entries.cost_rate should be "float" instead of "NoneType" error
 
         client_contacts, invoices, estimates, expenses: Also fail, usually due to some missing field error, but not sure we
