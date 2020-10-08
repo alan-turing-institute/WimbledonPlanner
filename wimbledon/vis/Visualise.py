@@ -3,14 +3,13 @@ import pandas as pd
 
 from copy import deepcopy
 import re
+from  datetime import datetime
 
 from wimbledon import Wimbledon
 from wimbledon import select_date_range
-
 from wimbledon.vis import HTMLWriter
 
 from distinctipy import colorsets
-
 colorsets.set_palette()
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -66,12 +65,12 @@ class Visualise:
 
         #  set default time parameters
         if start_date is None:
-            self.START_DATE = pd.datetime.now() - pd.Timedelta("30 days")
+            self.START_DATE = datetime.now() - pd.Timedelta("30 days")
         else:
             self.START_DATE = start_date
 
         if end_date is None:
-            self.END_DATE = pd.datetime.now() + pd.Timedelta("365 days")
+            self.END_DATE = datetime.now() + pd.Timedelta("365 days")
         else:
             self.END_DATE = end_date
 
@@ -385,11 +384,11 @@ class Visualise:
 
     def highlight_allocations(self, df):
         """Function to conditionally style a data frame:
-            Total allocations above 1.0 are highlighted red,
-            above 0.8 orange, 0.8 yellow, and below 0.8 green.
+        Total allocations above 1.0 are highlighted red,
+        above 0.8 orange, 0.8 yellow, and below 0.8 green.
 
-            Individual project allocations are coloured blue when
-            the person is active and grey when inactive on that project"""
+        Individual project allocations are coloured blue when
+        the person is active and grey when inactive on that project"""
 
         def highlight_tot(series):
             """function used to apply highlighting to the TOTAL column"""
@@ -647,10 +646,10 @@ class Visualise:
         )
 
         if today is None:
-            today = pd.datetime.now()
+            today = datetime.now()
 
         # move start date to 1st of specified month (fixes some display issues)
-        start_date = pd.datetime(start_date.year, start_date.month, 1)
+        start_date = datetime(start_date.year, start_date.month, 1)
 
         # ----------
         # DEMAND

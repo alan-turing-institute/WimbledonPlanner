@@ -50,7 +50,7 @@ class Wimbledon:
         proj_hrs_per_day=None,
     ):
         """Load and group Wimbledon data.
-        
+
         Keyword Arguments:
             update_db {bool} -- update the database before loading data (default: {False})
             work_hrs_per_day {numeric} -- hours in normal working day (default: 8)
@@ -285,9 +285,9 @@ class Wimbledon:
     def whiteboard(self, key_type, start_date, end_date, freq):
         """Create the raw, unstyled, whiteboard visualisation.
 
-            Dataframe with the rows being key_type (project or person ids), the columns
-        dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
-]       """
+                    Dataframe with the rows being key_type (project or person ids), the columns
+                dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
+        ]"""
         # TODO move this function somewhere else?
         if key_type == "project":
             # copy to prevent overwriting original
@@ -743,14 +743,14 @@ class Wimbledon:
 
     def __client_from_project_tracking(self, tracking):
         """Group previously calculated project tracking values by client.
-        
+
         Arguments:
             tracking {pd.DataFrame or dict} -- a single dataframe or a dict of
             dataframes containing project ids as columns.
-        
+
         Raises:
             TypeError: if tracking is not an instance of pd.DataFrame or dict.
-        
+
         Returns:
             pd.DataFrame or dict -- same format as tracking except with columns
             now being client ids.

@@ -27,7 +27,8 @@ import time
 import os.path
 import sys
 import string
-import subprocess
+import subprocesse
+from datetime import datetime
 
 import pandas as pd
 
@@ -141,8 +142,8 @@ def harvest_vs_forecast(vis):
         try:
             plot = vis.plot_forecast_harvest(
                 project_id,
-                start_date=pd.datetime.now() - pd.Timedelta("365 days"),
-                end_date=pd.datetime.now(),
+                start_date=datetime.now() - pd.Timedelta("365 days"),
+                end_date=datetime.now(),
             )
 
             save_fig(plot, HARVEST_DIR, save_name)

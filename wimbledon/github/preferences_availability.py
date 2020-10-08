@@ -202,9 +202,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
             if emoji_name:
                 emoji = emoji_mapping[emoji_name]
             else:
-                emoji = (
-                    "❓"
-                )  # For team members who have not given a preference to the project
+                emoji = "❓"  # For team members who have not given a preference to the project
             emojis.append(emoji)
         preference_data[wim.get_project_name(project_id)] = emojis
     preference_data_df = pd.DataFrame(preference_data).set_index("Person")
@@ -218,7 +216,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
 def get_preferences(
     wim,
     preference_data_df,
-    first_date=False,
+    first_date=datetime.now(),
     last_date=False,
     person=False,
     project=False,
@@ -230,19 +228,31 @@ def get_preferences(
     Table values show the preference emojis alongside the mean availability the person has for the resource required period and
     the mean resource required for the range between the first month with resource required and the last.
     """
-    # Get the data on project resource requirement from Forecast
-    # grouped by month and mean taken
-    resreqdf = wim.project_resourcereq.resample("MS").mean()
-    #  Also consider unconfirmed projects
-    unconfdf = wim.project_unconfirmed.resample("MS").mean()
+
+    # Get the data on project resource required, unconfirmed and allocated from Forecast
+    resreqdf = wim.project_resourcereq
+    unconfdf = wim.project_unconfirmed
+    allocdf = wim.project_allocated
+    totdf = resreqdf + unconfdf + allocdf
 
     if first_date:
         resreqdf = resreqdf[resreqdf.index >= first_date]
         unconfdf = unconfdf[unconfdf.index >= first_date]
+        allocdf = allocdf[allocdf.index >= first_date]
+        totdf = totdf[totdf.index >= first_date]
+
     if last_date:
         resreqdf = resreqdf[resreqdf.index <= last_date]
         unconfdf = unconfdf[unconfdf.index <= last_date]
-      
+        allocdf = allocdf[allocdf.index <= last_date]
+        totdf = totdf[totdf.index <= last_date]
+
+    # grouped by month and mean taken
+    #resreqdf = resreqdf.resample("MS").mean()
+    #unconfdf = unconfdf.resample("MS").mean()
+    #allocdf = allocdf.resample("MS").mean()
+    #totdf = totdf.resample("MS").mean()
+
     if person:
         names = [person]
     else:
@@ -261,37 +271,60 @@ def get_preferences(
     for project_id in resreqdf:
         if not project or project == project_id:
             # If a project name or project id is provided, only get data for that project
-            # Get the dates for each month that the project has a resource requirement > 0           
+            # Get the dates for each month that the project has a resource requirement > 0
             dates_resreq = resreqdf.index[resreqdf[project_id] > 0]
             dates_unconf = unconfdf.index[unconfdf[project_id] > 0]
+            dates_alloc = allocdf.index[allocdf[project_id] > 0]
+
             issue_num = wim.projects.loc[project_id]["github"]
-            if (len(dates_resreq) > 0 or len(dates_unconf) > 0) and not math.isnan(
-                issue_num
-            ):
+            if (
+                len(dates_resreq) > 0 or len(dates_unconf) > 0 or len(dates_alloc) > 0
+            ) and not math.isnan(issue_num):
                 project_name = wim.projects.loc[project_id, "name"]
 
-                req_or_unconf_df = resreqdf + unconfdf
-                dates_req_or_unconf = req_or_unconf_df.index[
-                    req_or_unconf_df[project_id] > 0
+                dates_req = totdf.index[
+                    totdf[project_id] > 0
                 ]
-                unconf_or_req_start_date = dates_req_or_unconf[0]
-                unconf_or_req_end_date = dates_req_or_unconf[-1]
+                req_start_date = dates_req[0]
+                req_end_date = dates_req[-1]
 
-                if first_date and unconf_or_req_start_date < first_date:
-                    unconf_or_req_start_date = first_date
-                if last_date and unconf_or_req_end_date > last_date:
-                    unconf_or_req_end_date = last_date
+                if first_date and req_start_date < first_date:
+                    req_start_date = first_date
+                if last_date and req_end_date > last_date:
+                    req_end_date = last_date
 
                 project_title = (
                     project_name
                     + "<br>#"
                     + str(int(issue_num))
                     + "<br>"
-                    + unconf_or_req_start_date.strftime("%Y-%m")
+                    + req_start_date.strftime("%Y-%m")
                     + " to "
-                    + unconf_or_req_end_date.strftime("%Y-%m")
+                    + req_end_date.strftime("%Y-%m")
                     + "<br>"
+                    + "FTE: "
                 )
+
+                if len(dates_alloc) > 0:
+                    # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+                    first_alloc_date = dates_alloc[0]
+                    last_alloc_date = dates_alloc[-1]
+                    if first_date and first_alloc_date < first_date:
+                        first_alloc_date = first_date
+                    if last_date and last_alloc_date > last_date:
+                        last_alloc_date = last_date
+
+                    # get mean project requirement in date range
+                    alloc = allocdf.loc[
+                        (allocdf.index >= first_alloc_date)
+                        & (allocdf.index <= last_alloc_date),
+                        project_id,
+                    ].mean()
+
+                    if alloc >= 0.01:
+                        project_title += str(round(alloc, 1)) + " A"
+                else:
+                    alloc = 0
 
                 if len(dates_resreq) > 0:
                     # if at least one month in the dataframe has a resource requirement of more than 0 FTE
@@ -301,7 +334,7 @@ def get_preferences(
                         first_resreq_date = first_date
                     if last_date and last_resreq_date > last_date:
                         last_resreq_date = last_date
-                    
+
                     # get mean project requirement in date range
                     resreq = resreqdf.loc[
                         (resreqdf.index >= first_resreq_date)
@@ -310,7 +343,13 @@ def get_preferences(
                     ].mean()
 
                     if resreq >= 0.01:
-                        project_title += str(round(resreq, 1)) + " FTE"
+                        if len(dates_alloc) > 0:
+                            pre = " + "
+                            post = " R"
+                        else:
+                            pre = ""
+                            post = " R"
+                        project_title += pre + "" + str(round(resreq, 1)) + post
                 else:
                     resreq = 0
 
@@ -322,7 +361,7 @@ def get_preferences(
                         first_unconf_date = first_date
                     if last_date and last_unconf_date > last_date:
                         last_unconf_date = last_date
-                    
+
                     # get mean project requirement in date range
                     unconf = unconfdf.loc[
                         (unconfdf.index >= first_unconf_date)
@@ -332,12 +371,12 @@ def get_preferences(
 
                     if unconf >= 0.01:
                         # add a separator between required and unconfirmed FTE if both present
-                        if len(dates_resreq) > 0:
+                        if len(dates_resreq) > 0 or len(dates_alloc) > 0:
                             pre = " + "
-                            post = " UNC"
+                            post = " U"
                         else:
                             pre = ""
-                            post = " UNC FTE"
+                            post = " U"
                         project_title += pre + "" + str(round(unconf, 1)) + post
                 else:
                     unconf = 0
@@ -352,14 +391,18 @@ def get_preferences(
                 emoji_data = []
                 for name in names:
                     person_availability = get_person_availability(
-                        wim, name, unconf_or_req_start_date, unconf_or_req_end_date
+                        wim, name, req_start_date, req_end_date
                     )
 
-                    percentage_availability = round(
-                        (person_availability / (unconf + resreq)) * 100
-                    )
+                    if (unconf + resreq) > 0:
+                        percentage_availability = round(
+                            (person_availability / (unconf + resreq)) * 100
+                        )
+                    else:
+                        percentage_availability = None
+
                     emoji = preference_data_df[project_name][name]
-                    if emojis_only:
+                    if emojis_only or percentage_availability is None:
                         emoji_data.append(emoji)
                     else:  # Include availability
                         emoji_data.append(
@@ -461,7 +504,7 @@ def get_preferences(
     return html_table
 
 
-def get_all_preferences_table(wim=None, first_date=None, last_date=None):
+def get_all_preferences_table(wim=None, first_date=datetime.now(), last_date=None):
     """
     Create the HTML table described in get_preferences() with default settings
     i.e. for all team members with at least one preference emoji and all projects
