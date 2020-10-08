@@ -7,7 +7,6 @@ import json
 import requests
 
 import pandas as pd
-from pandas.io.json import json_normalize
 
 import time
 
@@ -47,7 +46,7 @@ def get_forecast():
         """Takes an api response in the pyforecast foremat and converts it into a pandas data frame."""
         results = [json.loads(result.to_json()) for result in api_response]
 
-        df = json_normalize(results)
+        df = pd.json_normalize(results)
         df.set_index("id", inplace=True)
 
         return df
@@ -228,7 +227,7 @@ def get_harvest(with_tracked_time=True, with_assignments=False):
             response = requests.get(url, headers=headers)
             json_response = response.json()
 
-            df = json_normalize(json_response[table])
+            df = pd.json_normalize(json_response[table])
 
             diff = time.time() - req_time
             print("{:.1f} seconds".format(diff))
@@ -241,7 +240,7 @@ def get_harvest(with_tracked_time=True, with_assignments=False):
                 response = requests.get(url, headers=headers)
                 json_response = response.json()
 
-                new_entries = json_normalize(json_response[table])
+                new_entries = pd.json_normalize(json_response[table])
                 df = df.append(new_entries)
 
                 diff = time.time() - req_time

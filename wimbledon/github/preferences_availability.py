@@ -233,25 +233,25 @@ def get_preferences(
     resreqdf = wim.project_resourcereq
     unconfdf = wim.project_unconfirmed
     allocdf = wim.project_allocated
-    req_df = resreqdf + unconfdf + allocdf
+    totdf = resreqdf + unconfdf + allocdf
 
     if first_date:
         resreqdf = resreqdf[resreqdf.index >= first_date]
         unconfdf = unconfdf[unconfdf.index >= first_date]
         allocdf = allocdf[allocdf.index >= first_date]
-        reqdf = reqdf[reqdf.index >= first_date]
+        totdf = totdf[totdf.index >= first_date]
 
     if last_date:
         resreqdf = resreqdf[resreqdf.index <= last_date]
         unconfdf = unconfdf[unconfdf.index <= last_date]
         allocdf = allocdf[allocdf.index <= last_date]
-        reqdf = reqdf[reqdf.index <= last_date]
+        totdf = totdf[totdf.index <= last_date]
 
     # grouped by month and mean taken
-    resreqdf = resreqdf.resample("MS").mean()
-    unconfdf = unconfdf.resample("MS").mean()
-    allocdf = allocdf.resample("MS").mean()
-    reqdf = reqdf.resample("MS").mean()
+    #resreqdf = resreqdf.resample("MS").mean()
+    #unconfdf = unconfdf.resample("MS").mean()
+    #allocdf = allocdf.resample("MS").mean()
+    #totdf = totdf.resample("MS").mean()
 
     if person:
         names = [person]
@@ -282,8 +282,8 @@ def get_preferences(
             ) and not math.isnan(issue_num):
                 project_name = wim.projects.loc[project_id, "name"]
 
-                dates_req = req_df.index[
-                    req_df[project_id] > 0
+                dates_req = totdf.index[
+                    totdf[project_id] > 0
                 ]
                 req_start_date = dates_req[0]
                 req_end_date = dates_req[-1]
@@ -343,7 +343,6 @@ def get_preferences(
                     ].mean()
 
                     if resreq >= 0.01:
-                        project_title += str(round(resreq, 1)) + " R"
                         if len(dates_alloc) > 0:
                             pre = " + "
                             post = " R"
