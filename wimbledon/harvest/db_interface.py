@@ -127,6 +127,7 @@ association_groups = {
     "REG FTC": 5,
     "REG Associate": 6,
     "University Partner": 7,
+    "Fast Stream": 8,
 }
 
 
@@ -141,6 +142,14 @@ def get_assoc_group(role_str):
 def update_db(conn=None, with_tracked_time=True):
     if conn is None:
         conn = db_utils.get_db_connection()
+
+    # Association
+    print("-" * 50)
+    print("ASSOCIATIONS")
+    print("-" * 50)
+    associations = [dict(id=idx, name=name) for name, idx in association_groups.items()]
+
+    db_utils.upsert(schema.associations, associations, conn)
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     print("=" * 50)
@@ -169,13 +178,19 @@ def update_db(conn=None, with_tracked_time=True):
 
     people_hv_ids, fc_to_hv_people = convert_index(hv["users"])
     names = prep_data(hv["users"].first_name + " " + hv["users"].last_name, str)
+    associations = prep_data(hv["users"].roles.apply(get_assoc_group), int)
 
     # set capacities to zero for people who are archived
     hv["users"].loc[hv["users"].is_active == False, "weekly_capacity"] = 0
     capacities = prep_data(hv["users"].weekly_capacity, int)
 
     people = [
-        dict(id=people_hv_ids[i], name=names[i], capacity=capacities[i])
+        dict(
+            id=people_hv_ids[i],
+            name=names[i],
+            capacity=capacities[i],
+            association=associations[i],
+        )
         for i in range(len(people_hv_ids))
     ]
 
@@ -263,14 +278,6 @@ def update_db(conn=None, with_tracked_time=True):
     ]
 
     db_utils.upsert(schema.clients, clients, conn)
-
-    # Association
-    print("-" * 50)
-    print("ASSOCIATIONS")
-    print("-" * 50)
-    associations = [dict(id=idx, name=name) for name, idx in association_groups.items()]
-
-    db_utils.upsert(schema.associations, associations, conn)
 
     # Person
     print("-" * 50)

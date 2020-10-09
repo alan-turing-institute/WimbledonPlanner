@@ -247,12 +247,6 @@ def get_preferences(
         allocdf = allocdf[allocdf.index <= last_date]
         totdf = totdf[totdf.index <= last_date]
 
-    # grouped by month and mean taken
-    #resreqdf = resreqdf.resample("MS").mean()
-    #unconfdf = unconfdf.resample("MS").mean()
-    #allocdf = allocdf.resample("MS").mean()
-    #totdf = totdf.resample("MS").mean()
-
     if person:
         names = [person]
     else:
@@ -282,9 +276,7 @@ def get_preferences(
             ) and not math.isnan(issue_num):
                 project_name = wim.projects.loc[project_id, "name"]
 
-                dates_req = totdf.index[
-                    totdf[project_id] > 0
-                ]
+                dates_req = totdf.index[totdf[project_id] > 0]
                 req_start_date = dates_req[0]
                 req_end_date = dates_req[-1]
 

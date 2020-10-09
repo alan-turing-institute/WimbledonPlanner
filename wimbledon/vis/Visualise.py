@@ -3,13 +3,14 @@ import pandas as pd
 
 from copy import deepcopy
 import re
-from  datetime import datetime
+from datetime import datetime
 
 from wimbledon import Wimbledon
 from wimbledon import select_date_range
 from wimbledon.vis import HTMLWriter
 
 from distinctipy import colorsets
+
 colorsets.set_palette()
 import matplotlib.pyplot as plt
 import seaborn as sns

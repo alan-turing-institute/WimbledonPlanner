@@ -14,6 +14,7 @@ import sys
 import os.path
 from datetime import datetime
 
+
 def get_name_id(name):
     """name is a string of cell contents which may include:
     HTML tags

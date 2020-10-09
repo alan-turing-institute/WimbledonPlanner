@@ -275,8 +275,8 @@ def get_harvest(with_tracked_time=True, with_assignments=False):
     }
 
     if with_assignments:
-        harvest_data["user_assignments"]: user_assignments
-        harvest_data["task_assignments"]: task_assignments
+        harvest_data["user_assignments"] = user_assignments
+        harvest_data["task_assignments"] = task_assignments
 
     if with_tracked_time:
         harvest_data["time_entries"] = time_entries
