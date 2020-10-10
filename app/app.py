@@ -4,7 +4,7 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 
-from flask import Flask, send_from_directory, send_file
+from flask import Flask, send_from_directory, send_file, render_template
 
 from wimbledon.vis import Visualise
 from wimbledon.harvest.api_interface import update_to_csv
@@ -39,20 +39,7 @@ def home():
     else:
         updated_at = "Never"
 
-    return """
-    WimbledonPlanner: Hut23 Project Planning<br>
-    Last Updated: {updated_at}<br><br>
-    Browse to:<br>
-     * <a href="/projects">/projects</a> for projects whiteboard<br>
-     * <a href="/people">/people</a> for people whiteboard<br>
-     * <a href="/preferences">/preferences</a> for team member preferences and availability<br>
-     * <a href="/demand_vs_capacity">/demand_vs_capacity</a> to view the project
-     demand vs team capacity plot<br>
-     * <a href="/update">/update</a> to update the data and visualisations (slow!)<br>
-     * <a href="/download">/download</a> to download the visualisations<br>
-    """.format(
-        updated_at=updated_at
-    )
+    return render_template("index.html", updated_at=updated_at)
 
 
 @app.route("/update")
@@ -181,7 +168,7 @@ def update(update_db=True):
         with open(app.config.get("DATA_DIR") + "/.last_update", "w") as f:
             f.write(updated_at)
 
-        return "DATA UPDATED! " + updated_at + '<br><a href="/">back to home</a>'
+        return render_template("update.html", updated_at=updated_at)
 
     except:
         return traceback.format_exc()
