@@ -163,6 +163,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
         "pafoster": "Peter Foster",
         "jd2019a": "Joel Dearden",
         "entopia": "Flora Roumpani",
+        "ots22": "Oliver Strickson",
     }
     if not emoji_mapping:
         emoji_mapping = {
