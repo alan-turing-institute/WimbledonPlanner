@@ -13,19 +13,24 @@ import time
 import sqlalchemy as sqla
 import subprocess
 import os
-
+from datetime import date, timedelta
 
 def check_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 
-def get_forecast():
+def get_forecast(
+    start_date=date(2016, 1, 1),
+    end_date=date.today() + timedelta(days=365 * 3)
+):
     """
     Extract forecast data from its API using the pyforecast package.
 
     NB: The forecast API is not public and is undocumented. See:
     https://help.getharvest.com/forecast/faqs/faq-list/api/
+    
+    start_date, end_date: date range to query assignments between.
     """
     start = time.time()
 
@@ -70,7 +75,9 @@ def get_forecast():
     milestones = response_to_df(api.get_milestones())
 
     print("ASSIGNMENTS")
-    assignments = response_to_df(api.get_assignments())
+    assignments = response_to_df(
+        api.get_assignments(start_date=start_date, end_date=end_date)
+    )
 
     print("=" * 50)
     print("DONE! ({:.1f}s)".format(time.time() - start))

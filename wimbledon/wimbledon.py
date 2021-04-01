@@ -6,6 +6,7 @@ import os.path
 import subprocess
 import re
 import numpy as np
+import warnings
 
 import wimbledon.config
 import wimbledon.harvest.db_interface
@@ -207,10 +208,11 @@ class Wimbledon:
         person_id = self.people.loc[(self.people["name"] == name)]
 
         if len(person_id) != 1:
-            raise ValueError(
+            warnings.warn(
                 "Could not find unique person with name "
                 + name
-                + ". This person may have unlinked Harvest & Forecast accounts."
+                + ". This person may have unlinked Harvest & Forecast accounts. "
+                " Returning first available index. This may cause errors elsewhere!"
             )
 
         return person_id.index[0]
@@ -478,7 +480,6 @@ class Wimbledon:
             sheet.rename(proj_names_with_url, axis="index", level=1, inplace=True)
 
         elif key_type == "person":
-
             # Get person association group
             person_idx = [
                 self.get_person_id(name) for name in sheet.index.get_level_values(0)
