@@ -413,17 +413,11 @@ class Wimbledon:
 
                 # format dates nicely
                 if freq == "MS":
-                    key_sheet = pd.DataFrame(
-                        key_sheet, index=key_sheet.index.strftime("%b-%Y")
-                    )
+                    key_sheet.index = key_sheet.index.strftime("%b-%Y")
                 elif freq == "W-MON":
-                    key_sheet = pd.DataFrame(
-                        key_sheet, index=key_sheet.index.strftime("%d-%b-%Y")
-                    )
+                    key_sheet.index = key_sheet.index.strftime("%d-%b-%Y")
                 else:
-                    key_sheet = pd.DataFrame(
-                        key_sheet, index=key_sheet.index.strftime("%Y-%m-%d")
-                    )
+                    key_sheet.index = key_sheet.index.strftime("%Y-%m-%d")
 
                 # store the allocations - transpose to get rows as keys and columns as dates
                 sheet[df.columns.name] = key_sheet.T

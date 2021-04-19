@@ -98,11 +98,11 @@ class Visualise:
 
         # change date format for prettier printing
         if freq == "MS":
-            df = pd.DataFrame(df, index=df.index.strftime("%b-%Y"))
+            df.index = df.index.strftime("%b-%Y")
         elif freq == "W-MON":
-            df = pd.DataFrame(df, index=df.index.strftime("%d-%b-%Y"))
+            df.index = df.index.strftime("%d-%b-%Y")
         else:
-            df = pd.DataFrame(df, index=df.index.strftime("%Y-%m-%d"))
+            df.index = df.index.strftime("%Y-%m-%d")
 
         return df
 
