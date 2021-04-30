@@ -115,8 +115,8 @@ class Wimbledon:
             5 * self.work_hrs_per_day * 60 * 60
         )
 
-        # people_allocations: dict with key person_id, contains df of (date, project_id) with allocation
-        # people_totals: df of (date, person_id) with total allocations
+        # people_allocations: dict with key person_id, contains df of (date, project_id)
+        #  with allocation people_totals: df of (date, person_id) with total allocations
         self.people_allocations, self.people_totals = self.__get_allocations("person")
 
         # resource required, unconfirmed, deferred allocations
@@ -124,42 +124,47 @@ class Wimbledon:
         self.unconfirmed_allocations = self.get_person_allocations("UNCONFIRMED")
         self.deferred_allocations = self.get_person_allocations("DEFERRED")
 
-        # calculate team capacity: capacity in people table minus any allocations to unavailable project
-        unavailable_id = self.get_project_id("UNAVAILABLE")
-
+        # calculate team capacity: capacity in people table minus any allocations to
+        # unavailable project
         self.people_capacities = pd.DataFrame(
             index=self.date_range_workdays, columns=self.people.index
         )
-
+        unavail_client = self.get_client_id("UNAVAILABLE")
+        unavail_projects = self.get_client_projects(unavail_client)
         for person_id in self.people.index:
             self.people_capacities[person_id] = self.people.capacity[person_id]
 
-            if unavailable_id in self.people_allocations[person_id].columns:
-                self.people_capacities[person_id] = (
-                    self.people_capacities[person_id]
-                    - self.people_allocations[person_id][unavailable_id]
-                )
-                # some cases unavailable allocations may have incorrectly been
-                # assigned at fte than person's nominal capacity - reset to
-                # zero to avoid negative values
-                negative = self.people_capacities[person_id] < 0
-                if negative.any():
-                    self.people_capacities[person_id][negative] = 0
+            for proj_id in self.people_allocations[person_id].columns:
+                if proj_id in unavail_projects:
+                    self.people_capacities[person_id] = (
+                        self.people_capacities[person_id]
+                        - self.people_allocations[person_id][proj_id]
+                    )
+                    # check for incorrect allocations leading to negative capacity
+                    negative = self.people_capacities[person_id] < 0
+                    if negative.any():
+                        warnings.warn(
+                            f"Person ID {person_id} has negative capacities. "
+                            "Reset to 0."
+                        )
+                        self.people_capacities[person_id][negative] = 0
 
         self.team_capacity = self.people_capacities.sum(axis=1)
-
         self.people_free_capacity = self.people_capacities - self.people_totals
 
-        # project_allocations: dict with key project_id, contains df of (date, person_id) with allocation
-        # project_confirmed: df of (date, project_id) with total allocations across PEOPLE ONLY
+        # project_allocations: dict with key project_id, contains df of
+        # (date, person_id) with allocation project_confirmed: df of (date, project_id)
+        # with total allocations across PEOPLE ONLY
         self.project_allocations, self.project_confirmed = self.__get_allocations(
             "project"
         )
 
-        # project_unconfirmed: df of (date, project_id) with total allocation to unconfirmed placeholders
+        # project_unconfirmed: df of (date, project_id) with total allocation to
+        # unconfirmed placeholders
         self.project_unconfirmed = self.__get_project_unconfirmed()
 
-        # project_deferred:  df of (date, project_id) with total allocation to deferred placeholders
+        # project_deferred:  df of (date, project_id) with total allocation to deferred
+        # placeholders
         self.project_deferred = self.__get_project_deferred()
 
         # project_resourcereq: resource_required allocations to each project
@@ -232,6 +237,9 @@ class Wimbledon:
     def get_client_id(self, client_name):
         return self.clients.index[self.clients.name == client_name][0]
 
+    def get_client_projects(self, client_id):
+        return self.projects.index[self.projects.client == client_id]
+
     def get_task_name(self, task_id):
         """Get the name of a task from its id"""
         return self.tasks.loc[task_id, "name"]
@@ -301,8 +309,13 @@ class Wimbledon:
         else:
             return ValueError("key type must be person or project")
 
-        sheet = {}
+        unavail_client = self.get_client_id("UNAVAILABLE")
+        unavail_project_ids = self.get_client_projects(unavail_client)
+        unavail_project_names = [
+            self.get_project_name(idx) for idx in unavail_project_ids
+        ]
 
+        sheet = {}
         # set of unique project names used for cell colouring later
         names = set()
 
@@ -313,7 +326,7 @@ class Wimbledon:
 
             # replace ids with names. for project id: include resource required.
             if key_type == "project":
-                if self.get_name(key, "project") == "UNAVAILABLE":
+                if key in unavail_project_ids:
                     # don't display allocations to unavailable project
                     continue
 
@@ -335,12 +348,10 @@ class Wimbledon:
 
             if key_type == "person":
                 # add flags for people with free capacity or over capacity
-
                 # unallocated
                 df["UNALLOCATED"] = self.people_free_capacity[key]
                 # set overallocated cases to 0
                 df.loc[df["UNALLOCATED"] < 0, "UNALLOCATED"] = 0
-
                 # over allocated
                 df["OVER CAPACITY"] = self.people_free_capacity[key]
                 # set under allocated cases to 0
@@ -352,7 +363,7 @@ class Wimbledon:
             df = select_date_range(df, start_date, end_date)
 
             if key_type == "person":
-                if "UNAVAILABLE" in df.columns and len(df.columns) == 1:
+                if df.columns.isin(unavail_project_names).all():
                     # don't display people who are only assigned as unavailable
                     continue
 
@@ -571,11 +582,20 @@ class Wimbledon:
 
         # total assignment each day
         totals = pd.DataFrame(index=self.date_range_workdays, columns=id_values)
+        unavail_client = self.get_client_id("UNAVAILABLE")
+        unavail_projects = self.get_client_projects(unavail_client)
         for idx in allocations.keys():
-            unavailable_id = self.get_project_id("UNAVAILABLE")
-            if ref_column == "project" and unavailable_id in allocations[idx].columns:
+            if ref_column == "project":
                 # don't include unavailable project in totals
-                totals[idx] = allocations[idx].drop(unavailable_id, axis=1).sum(axis=1)
+                alloc_wo_unavil = allocations[idx].drop(
+                    [
+                        proj
+                        for proj in allocations[idx].columns
+                        if proj in unavail_projects
+                    ],
+                    axis=1,
+                )
+                totals[idx] = alloc_wo_unavil.sum(axis=1)
             else:
                 totals[idx] = allocations[idx].sum(axis=1)
 

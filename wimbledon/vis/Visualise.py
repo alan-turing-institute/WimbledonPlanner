@@ -772,7 +772,9 @@ class Visualise:
 
         capacity = capacity.resample(freq).mean()
 
-        capacity = select_date_range(capacity, start_date, end_date, drop_zero_cols=False)
+        capacity = select_date_range(
+            capacity, start_date, end_date, drop_zero_cols=False
+        )
 
         # Load institute capacity from file
         csv = pd.read_csv(self.script_dir + "/reg_capacity.csv", index_col="Month")
