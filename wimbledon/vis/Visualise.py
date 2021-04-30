@@ -123,9 +123,17 @@ class Visualise:
         )
 
         sheet = self.wim.whiteboard(key_type, start_date, end_date, freq)
-
+        unavail_client = self.wim.get_client_id("UNAVAILABLE")
+        unavail_project_names = [
+            self.wim.get_project_name(idx)
+            for idx in self.wim.get_client_projects(unavail_client)
+        ]
         html = HTMLWriter.make_whiteboard(
-            sheet, key_type, display, update_timestamp=update_timestamp
+            sheet,
+            key_type,
+            display,
+            update_timestamp=update_timestamp,
+            unavail_projects=unavail_project_names,
         )
 
         return html
@@ -338,9 +346,15 @@ class Visualise:
             df = self.get_allocations(id_value, id_type, start_date, end_date, freq)
 
             if id_type == "person":
-                if "UNAVAILABLE" in df.columns:
-                    df.drop("UNAVAILABLE", axis=1, inplace=True)
-
+                unavail_client = self.wim.get_client_id("UNAVAILABLE")
+                unavail_project_names = [
+                    self.wim.get_project_name(idx)
+                    for idx in self.wim.get_client_projects(unavail_client)
+                ]
+                df.drop(
+                    [proj for proj in df.columns if proj in unavail_project_names],
+                    inplace=True,
+                )
                 # people nominally allocated 100%
                 nominal_allocation = self.wim.people_capacities[id_value]
                 time_label = "Time Capacity"
@@ -636,7 +650,7 @@ class Visualise:
 
             return fig
 
-        except ValueError as e:
+        except ValueError:
             return None
 
     def plot_demand_vs_capacity(
@@ -692,8 +706,15 @@ class Visualise:
         turing_prog_reqs = self.wim.project_confirmed[turing_prog_projs].sum(axis=1)
 
         # Get overall totals
+        unavail_client = self.wim.get_client_id("UNAVAILABLE")
+        unavail_project_ids = self.wim.get_client_projects(unavail_client)
         project_confirmed = self.wim.project_confirmed.drop(
-            self.wim.get_project_id("UNAVAILABLE"), axis=1
+            [
+                proj
+                for proj in self.wim.project_confirmed.columns
+                if proj in unavail_project_ids
+            ],
+            axis=1,
         )
         project_confirmed = project_confirmed.sum(axis=1)
 
@@ -772,7 +793,9 @@ class Visualise:
 
         capacity = capacity.resample(freq).mean()
 
-        capacity = select_date_range(capacity, start_date, end_date, drop_zero_cols=False)
+        capacity = select_date_range(
+            capacity, start_date, end_date, drop_zero_cols=False
+        )
 
         # Load institute capacity from file
         csv = pd.read_csv(self.script_dir + "/reg_capacity.csv", index_col="Month")

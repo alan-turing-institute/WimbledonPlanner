@@ -15,21 +15,21 @@ import subprocess
 import os
 from datetime import date, timedelta
 
+
 def check_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 
 def get_forecast(
-    start_date=date(2016, 1, 1),
-    end_date=date.today() + timedelta(days=365 * 3)
+    start_date=date(2016, 1, 1), end_date=date.today() + timedelta(days=365 * 3)
 ):
     """
     Extract forecast data from its API using the pyforecast package.
 
     NB: The forecast API is not public and is undocumented. See:
     https://help.getharvest.com/forecast/faqs/faq-list/api/
-    
+
     start_date, end_date: date range to query assignments between.
     """
     start = time.time()
