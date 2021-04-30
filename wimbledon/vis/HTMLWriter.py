@@ -94,6 +94,7 @@ def get_name_style(name, background_color=None, name_type=None, unavail_projects
                           border: 1px solid orange;
                 } """
     elif name in unavail_projects:
+        print("TRUE")
         name_id = get_name_id(name)
         style = """.{name_id} {{
             background-color: white;
@@ -169,14 +170,16 @@ def write_style(df, display="print", unavail_projects=[]):
         for name, color in colors.items():
             style += get_name_style(name, color, unavail_projects=unavail_projects)
 
-        style += get_name_style("RESOURCE REQUIRED")
-        style += get_name_style("UNCONFIRMED")
-        style += get_name_style("DEFERRED")
+        style += get_name_style("RESOURCE REQUIRED", unavail_projects=unavail_projects)
+        style += get_name_style("UNCONFIRMED", unavail_projects=unavail_projects)
+        style += get_name_style("DEFERRED", unavail_projects=unavail_projects)
 
         group_colors = get_group_colors(df)
 
         for client, color in group_colors.items():
-            style += get_name_style(client, color, name_type="client")
+            style += get_name_style(
+                client, color, name_type="client", unavail_projects=unavail_projects
+            )
 
         style += "</style>"
 
@@ -556,7 +559,13 @@ if __name__ == "__main__":
     )
 
     print("GET FORMATTED HTML WHITEBOARD")
-    html = make_whiteboard(df, key_type, display)
+    unavail_client = wim.get_client_id("UNAVAILABLE")
+    unavail_project_names = [
+        wim.get_project_name(idx) for idx in wim.get_client_projects(unavail_client)
+    ]
+    html = make_whiteboard(
+        df, key_type, display, unavail_projects=unavail_project_names
+    )
 
     print("SAVE WHITEBOARD")
     with open(save_dir + "/" + file_name, "w") as f:

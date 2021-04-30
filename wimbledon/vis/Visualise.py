@@ -12,6 +12,7 @@ from wimbledon.vis import HTMLWriter
 from distinctipy import colorsets
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 colorsets.set_palette()
 
 
@@ -157,6 +158,11 @@ class Visualise:
         start_date, end_date, freq = self.get_time_parameters(
             start_date, end_date, freq
         )
+        unavail_client = self.wim.get_client_id("UNAVAILABLE")
+        unavail_project_names = [
+            self.wim.get_project_name(idx)
+            for idx in self.wim.get_client_projects(unavail_client)
+        ]
 
         whiteboards = dict()
 
@@ -166,15 +172,23 @@ class Visualise:
         # get unstyled whiteboard
         sheet = self.wim.whiteboard("project", start_date, end_date, freq)
         whiteboard_raw = HTMLWriter.make_whiteboard(
-            sheet, "project", "nostyle", update_timestamp=update_timestamp
+            sheet,
+            "project",
+            "nostyle",
+            update_timestamp=update_timestamp,
+            unavail_projects=unavail_project_names,
         )
 
         # add screen style
-        style = HTMLWriter.write_style(sheet, display="screen")
+        style = HTMLWriter.write_style(
+            sheet, display="screen", unavail_projects=unavail_project_names
+        )
         whiteboards["project_screen"] = style + whiteboard_raw
 
         # add print style
-        style = HTMLWriter.write_style(sheet, display="print")
+        style = HTMLWriter.write_style(
+            sheet, display="print", unavail_projects=unavail_project_names
+        )
         whiteboards["project_print"] = style + whiteboard_raw
 
         # ######
@@ -183,15 +197,23 @@ class Visualise:
         # get unstyled whiteboard
         sheet = self.wim.whiteboard("person", start_date, end_date, freq)
         whiteboard_raw = HTMLWriter.make_whiteboard(
-            sheet, "person", "nostyle", update_timestamp=update_timestamp
+            sheet,
+            "person",
+            "nostyle",
+            update_timestamp=update_timestamp,
+            unavail_projects=unavail_project_names,
         )
 
         # add screen style
-        style = HTMLWriter.write_style(sheet, display="screen")
+        style = HTMLWriter.write_style(
+            sheet, display="screen", unavail_projects=unavail_project_names
+        )
         whiteboards["person_screen"] = style + whiteboard_raw
 
         # add print style
-        style = HTMLWriter.write_style(sheet, display="print")
+        style = HTMLWriter.write_style(
+            sheet, display="print", unavail_projects=unavail_project_names
+        )
         whiteboards["person_print"] = style + whiteboard_raw
 
         return whiteboards
