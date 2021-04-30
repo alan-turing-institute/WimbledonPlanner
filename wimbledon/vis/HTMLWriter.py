@@ -52,9 +52,10 @@ def get_name_id(name):
     return name_id
 
 
-def get_name_style(name, background_color=None, name_type=None):
+def get_name_style(name, background_color=None, name_type=None, unavail_projects=[]):
     """Generate the css style class for the entity represented by string name. Pre-defined styles for
     placeholders or generate distinct colours for other names."""
+    print(name, unavail_projects, name in unavail_projects)
 
     if "RESOURCE REQUIRED" in name or "RESOURCE_REQUIRED" in name:
         style = """
@@ -93,13 +94,16 @@ def get_name_style(name, background_color=None, name_type=None):
                           font-weight: 600;
                           border: 1px solid orange;
                 } """
-    elif "UNAVAILABLE" in name:
-        style = """.UNAVAILABLE {
-                          background-color: white;
-                          color: gray;
-                          font-weight: 600;
-                          border: 1px solid gray;
-                } """
+    elif name in unavail_projects:
+        name_id = get_name_id(name)
+        style = """.{name_id} {{
+            background-color: white;
+            color: gray;
+            font-weight: 600;
+            border: 1px solid gray;
+        }} """.format(
+            name_id=name_id,
+        )
 
     elif "UNALLOCATED" in name:
         style = """.UNALLOCATED {
@@ -148,7 +152,7 @@ def get_name_style(name, background_color=None, name_type=None):
     return style
 
 
-def write_style(df, display="print"):
+def write_style(df, display="print", unavail_projects=[]):
     """write the CSS to style the table"""
 
     if display == "nostyle":
@@ -164,12 +168,11 @@ def write_style(df, display="print"):
         colors = get_colors(df)
 
         for name, color in colors.items():
-            style += get_name_style(name, color)
+            style += get_name_style(name, color, unavail_projects=unavail_projects)
 
         style += get_name_style("RESOURCE REQUIRED")
         style += get_name_style("UNCONFIRMED")
         style += get_name_style("DEFERRED")
-        style += get_name_style("UNAVAILABLE")
 
         group_colors = get_group_colors(df)
 
@@ -494,7 +497,7 @@ def get_group_colors(df):
     return group_colors
 
 
-def make_whiteboard(df, key_type, display, update_timestamp=None):
+def make_whiteboard(df, key_type, display, update_timestamp=None, unavail_projects=[]):
     """Main function to generate the whiteboard visualisation - string containing CSS and HTML code.
 
     df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
@@ -513,7 +516,7 @@ def make_whiteboard(df, key_type, display, update_timestamp=None):
     if update_timestamp is not None:
         title += " (" + update_timestamp + ")"
 
-    html = write_style(df, display=display)
+    html = write_style(df, display=display, unavail_projects=unavail_projects)
     html += write_table(df, title)
 
     return html

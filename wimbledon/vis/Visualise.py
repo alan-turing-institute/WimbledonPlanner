@@ -123,9 +123,17 @@ class Visualise:
         )
 
         sheet = self.wim.whiteboard(key_type, start_date, end_date, freq)
-
+        unavail_client = self.wim.get_client_id("UNAVAILABLE")
+        unavail_project_names = [
+            self.wim.get_project_name(idx)
+            for idx in self.wim.get_client_projects(unavail_client)
+        ]
         html = HTMLWriter.make_whiteboard(
-            sheet, key_type, display, update_timestamp=update_timestamp
+            sheet,
+            key_type,
+            display,
+            update_timestamp=update_timestamp,
+            unavail_projects=unavail_project_names,
         )
 
         return html
