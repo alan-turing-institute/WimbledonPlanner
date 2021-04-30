@@ -55,8 +55,6 @@ def get_name_id(name):
 def get_name_style(name, background_color=None, name_type=None, unavail_projects=[]):
     """Generate the css style class for the entity represented by string name. Pre-defined styles for
     placeholders or generate distinct colours for other names."""
-    print(name, unavail_projects, name in unavail_projects)
-
     if "RESOURCE REQUIRED" in name or "RESOURCE_REQUIRED" in name:
         style = """
         .RESOURCE_REQUIRED {
