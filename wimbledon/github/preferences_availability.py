@@ -1,5 +1,4 @@
 import requests
-import json
 import pandas as pd
 import math
 from datetime import datetime
@@ -83,7 +82,8 @@ def run_query(query, token):
 
 def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
     """
-    Get a dictionary of the emoji reactions that exist for a GitHub issue in the strutcture specified by the GraphQL queries
+    Get a dictionary of the emoji reactions that exist for a GitHub issue in the
+    strutcture specified by the GraphQL queries
     """
 
     def reactions_count(project_reactions):
@@ -105,7 +105,8 @@ def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
         reactions_count(project_reactions): project_reactions
     }
 
-    # If we don't find any emojis from the first query, this one searches subsequent comments (set to first 5 by default)
+    # If we don't find any emojis from the first query, this one searches subsequent
+    # comments (set to first 5 by default)
     modified_query = (
         alternate_query.replace("X", str(int(issue)))
         .replace("Y", str(number_of_people))
@@ -125,22 +126,23 @@ def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
 
 def get_person_availability(wim, person, start_date, end_date):
     """
-    Get the mean of a person's FTE proportion available for the start to end datetime objects, using their name or id
+    Get the mean of a person's FTE proportion available for the start to end datetime
+    objects, using their name or id
     """
     peopledf = wim.people_free_capacity
     if isinstance(person, str):
         try:
             person = wim.get_person_id(person)
-        except:
+        except (IndexError, KeyError):
             return 0.0
     peopledf = peopledf[(peopledf.index >= start_date) & (peopledf.index <= end_date)]
     try:
         availability_range = peopledf[person]
-    except:
+    except (IndexError, KeyError):
         return 0.0
     try:
         average_availability = statistics.mean(availability_range)
-    except:
+    except statistics.StatisticsError:
         return 0.0
     return round(average_availability, 2)
 
@@ -189,7 +191,8 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
             github_token, issue_num, number_of_people=total_people
         )
         emojis = []
-        # Get the relevant emoji for each team member for this GitHub issue and associated project
+        # Get the relevant emoji for each team member for this GitHub issue and
+        # associated project
         for name in names:
             emoji_name = None
             for reaction in project_reactions:
@@ -203,7 +206,7 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
             if emoji_name:
                 emoji = emoji_mapping[emoji_name]
             else:
-                emoji = "❓"  # For team members who have not given a preference to the project
+                emoji = "❓"  # For team members who have not given a preference to the
             emojis.append(emoji)
         preference_data[wim.get_project_name(project_id)] = emojis
     preference_data_df = pd.DataFrame(preference_data).set_index("Person")
@@ -225,9 +228,11 @@ def get_preferences(
     css=None,
 ):
     """
-    Create a HTML table with each project that has a resource requirement against every REG team member with availability.
-    Table values show the preference emojis alongside the mean availability the person has for the resource required period and
-    the mean resource required for the range between the first month with resource required and the last.
+    Create a HTML table with each project that has a resource requirement against every
+    REG team member with availability. Table values show the preference emojis alongside
+    the mean availability the person has for the resource required period and the mean
+    resource required for the range between the first month with resource required and
+    the last.
     """
 
     # Get the data on project resource required, unconfirmed and allocated from Forecast
@@ -258,15 +263,17 @@ def get_preferences(
         if isinstance(project, str):
             try:
                 project = wim.get_project_id(project)
-            except:
+            except (IndexError, KeyError):
                 pass
 
-    # Get projects with some resource requirement but filter by those with a GitHub issue
+    # Get projects with some resource requirement but filter by those with a GitHub
+    # issue
     project_titles = {}
     for project_id in resreqdf:
         if not project or project == project_id:
-            # If a project name or project id is provided, only get data for that project
-            # Get the dates for each month that the project has a resource requirement > 0
+            # If a project name or project id is provided, only get data for that
+            # project. Get the dates for each month that the project has a resource
+            # requirement > 0
             dates_resreq = resreqdf.index[resreqdf[project_id] > 0]
             dates_unconf = unconfdf.index[unconfdf[project_id] > 0]
             dates_alloc = allocdf.index[allocdf[project_id] > 0]
@@ -299,7 +306,8 @@ def get_preferences(
                 )
 
                 if len(dates_alloc) > 0:
-                    # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+                    # if at least one month in the dataframe has a resource requirement
+                    # of more than 0 FTE
                     first_alloc_date = dates_alloc[0]
                     last_alloc_date = dates_alloc[-1]
                     if first_date and first_alloc_date < first_date:
@@ -320,7 +328,8 @@ def get_preferences(
                     alloc = 0
 
                 if len(dates_resreq) > 0:
-                    # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+                    # if at least one month in the dataframe has a resource requirement
+                    # of more than 0 FTE
                     first_resreq_date = dates_resreq[0]
                     last_resreq_date = dates_resreq[-1]
                     if first_date and first_resreq_date < first_date:
@@ -347,7 +356,8 @@ def get_preferences(
                     resreq = 0
 
                 if len(dates_unconf) > 0:
-                    # if at least one month in the dataframe has a resource requirement of more than 0 FTE
+                    # if at least one month in the dataframe has a resource requirement
+                    # of more than 0 FTE
                     first_unconf_date = dates_unconf[0]
                     last_unconf_date = dates_unconf[-1]
                     if first_date and first_unconf_date < first_date:
@@ -363,7 +373,8 @@ def get_preferences(
                     ].mean()
 
                     if unconf >= 0.01:
-                        # add a separator between required and unconfirmed FTE if both present
+                        # add a separator between required and unconfirmed FTE if both
+                        # present
                         if len(dates_resreq) > 0 or len(dates_alloc) > 0:
                             pre = " + "
                             post = " U"
@@ -457,11 +468,11 @@ def get_preferences(
                               text-align: left;
                     }
                     table {
-                               font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-                               border-collapse: collapse;
-                               width: 100%;
-                               white-space: pre;
-                            }
+                            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+                            border-collapse: collapse;
+                            width: 100%;
+                            white-space: pre;
+                        }
                     tr:nth-child(even){
                                background-color: #f2f2f2;
                             }
@@ -479,13 +490,13 @@ def get_preferences(
                             color: inherit;
                             text-decoration: inherit;
                     }
-                    thead th:hover { 
+                    thead th:hover {
                             background-color: #d4fad9;
-                            color: black;     
+                            color: black;
                         }
-                    tr th:hover { 
+                    tr th:hover {
                             background-color: #d4fad9;
-                            color: black;     
+                            color: black;
                         }
             </style>"""
     # remove unecessary row for "Name" label

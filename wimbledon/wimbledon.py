@@ -1,10 +1,6 @@
 import pandas as pd
 import holidays
 from copy import deepcopy
-import sqlalchemy as sqla
-import os.path
-import subprocess
-import re
 import numpy as np
 import warnings
 
@@ -105,7 +101,8 @@ class Wimbledon:
         else:
             self.proj_hrs_per_day = proj_hrs_per_day
 
-        # convert assignments in seconds per day to fractions of 1 FTE (defined by self.work_hrs_per_day)
+        # convert assignments in seconds per day to fractions of 1 FTE
+        # (defined by self.work_hrs_per_day)
         self.assignments["allocation"] = self.assignments["allocation"] / (
             self.work_hrs_per_day * 60 * 60
         )

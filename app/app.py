@@ -1,21 +1,21 @@
-# change matplotlib backend to avoid it trying to pop up figure windows
-import matplotlib as mpl
 
-mpl.use("Agg")
-import matplotlib.pyplot as plt
-
-from flask import Flask, send_from_directory, send_file, render_template
-
-from wimbledon.vis import Visualise
-from wimbledon.harvest.api_interface import update_to_csv
-from wimbledon.github import preferences_availability as pref
 import os
 import zipfile
 import traceback
 import subprocess
 import sys
-
 from datetime import datetime
+
+from flask import Flask, send_from_directory, send_file, render_template
+
+from wimbledon.vis import Visualise
+from wimbledon.github import preferences_availability as pref
+
+# change matplotlib backend to avoid it trying to pop up figure windows
+import matplotlib as mpl
+mpl.use("Agg")
+import matplotlib.pyplot as plt
+
 
 # Initialise Flask App
 app = Flask(__name__)
@@ -110,7 +110,7 @@ def update(update_db=True):
         )
         result = subprocess.run(cmd, shell=True, check=True, capture_output=True)
 
-        if result.returncode is not 0:
+        if result.returncode != 0:
             raise ValueError(
                 "whiteboard_to_pdf.sh returned with code " + str(result.returncode)
             )
@@ -129,14 +129,14 @@ def update(update_db=True):
         ) as f:
             f.write(
                 """<!DOCTYPE html>
-                        <html>
-                            <head>
-                                 <title>Index</title>
-                            </head>
-                            <body>
-                                 <img src="demand_vs_capacity.png" alt="demand_vs_capacity">
-                            </body>
-                            </html>"""
+                <html>
+                    <head>
+                        <title>Index</title>
+                    </head>
+                    <body>
+                        <img src="demand_vs_capacity.png" alt="demand_vs_capacity">
+                    </body>
+                </html>"""
             )
 
         print("Make zip file...")

@@ -2,7 +2,6 @@ import json
 import os.path
 import os
 import wimbledon
-import sqlalchemy as sqla
 
 CONFIG_DIR = os.path.expanduser("~/.wimbledon")
 
@@ -62,8 +61,9 @@ def set_harvest_credentials(harvest_account_id, forecast_account_id, access_toke
 
 def get_harvest_credentials():
     """
-    Load Harvest credentials from ~/.wimbledon/.harvest_credentials, which should be a json file containing the keys
-    harvest_account_id, forecast_account_id and access_token, or from HARVEST_ACCOUNT_ID, FORECAST_ACCOUNT_ID and
+    Load Harvest credentials from ~/.wimbledon/.harvest_credentials, which should be a
+    json file containing the keys harvest_account_id, forecast_account_id and
+    access_token, or from HARVEST_ACCOUNT_ID, FORECAST_ACCOUNT_ID and
     HARVEST_ACCESS_TOKEN environment variables.
 
     :return:
@@ -207,8 +207,8 @@ def get_sql_config():
 
 def get_github_credentials():
     """
-    Load GitHub credentials from ~/.wimbledon/.github_credentials, which should be a json file containing the key: token,
-    or from GITHUB_TOKEN environment variable.
+    Load GitHub credentials from ~/.wimbledon/.github_credentials, which should be a
+    json file containing the key: token, or from GITHUB_TOKEN environment variable.
 
     :return:
     """

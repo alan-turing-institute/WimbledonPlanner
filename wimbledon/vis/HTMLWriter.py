@@ -1,5 +1,5 @@
-"""The functions in this file take a dataframe output from a Wimbledon.whiteboard dataframe
-and convert it into a styled HTML table.
+"""The functions in this file take a dataframe output from a Wimbledon.whiteboard
+dataframe and convert it into a styled HTML table.
 
 The primary function is make_whiteboard(df, key_type, display)"""
 
@@ -21,7 +21,8 @@ def get_name_id(name):
     A time allocation of format (x.x)
     Punctuation
 
-    get_name_id converts name into a style suitable for a CSS class name by removing all the above.
+    get_name_id converts name into a style suitable for a CSS class name by removing all
+    the above.
     """
 
     if "RESOURCE REQUIRED" in name:
@@ -41,7 +42,7 @@ def get_name_id(name):
         # remove time allocation of format (x.x)
         name = re.sub(r"\(\d\.\d\)", "", name)
 
-        # strip punctuation (apparently quickest way: https://stackoverflow.com/a/266162)
+        # strip punctuation (https://stackoverflow.com/a/266162)
         name_id = name.translate(str.maketrans("", "", string.punctuation))
         name_id = name_id.replace(" ", "_")
 
@@ -53,8 +54,8 @@ def get_name_id(name):
 
 
 def get_name_style(name, background_color=None, name_type=None, unavail_projects=[]):
-    """Generate the css style class for the entity represented by string name. Pre-defined styles for
-    placeholders or generate distinct colours for other names."""
+    """Generate the css style class for the entity represented by string name.
+    Pre-defined styles for placeholders or generate distinct colours for other names."""
     if "RESOURCE REQUIRED" in name or "RESOURCE_REQUIRED" in name:
         style = """
         .RESOURCE_REQUIRED {
@@ -253,7 +254,8 @@ def get_base_style():
 def get_screen_style():
     """additional css used for screen display mode to:
     * Freeze row and column headers and add scroll bars
-    * Highlight index group (project/person name) on hover (for project sheet - click sends to GitHub issue)
+    * Highlight index group (project/person name) on hover (for project sheet - click
+    sends to GitHub issue)
     """
 
     style = """ div.container {
@@ -309,7 +311,8 @@ def write_header(columns, title="Research Engineering Project Allocations"):
 
 
 def get_separator(columns=None):
-    """blank row used to get visible separation between row groups (i.e. gap between people/projects)"""
+    """blank row used to get visible separation between row groups (i.e. gap between
+    people/projects)"""
 
     if columns is None:
         separator = """<tr class="separator">
@@ -331,8 +334,8 @@ def get_separator(columns=None):
 
 
 def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
-    """adds a hidden row to the bottom of the table with text width_str, forcing each column to be at least
-    as wide as width_str"""
+    """adds a hidden row to the bottom of the table with text width_str, forcing each
+    column to be at least as wide as width_str"""
 
     html = """<tr>
         <th class="colwidth" rowspan=1></th>
@@ -353,8 +356,9 @@ def fix_colwidth(n_columns, width_str="MAKE COLUMN THIS WIDE"):
 
 def write_table(df, title):
     """creates the html for the whiteboard visualisation using:
-    df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
-    (programme, project) for the project sheet, and cell values of format "name (allocation)"
+    df: a dataframe  with data periods as columns, a multi-index of (role, person)
+    for the people sheet or (programme, project) for the project sheet, and cell values
+    of format "name (allocation)"
     """
 
     table = """
@@ -454,10 +458,10 @@ def get_colors(df):
     names = [strip_df[col].unique() for col in strip_df]
 
     # unpack list of lists
-    names = [cell for column in names for cell in column if cell is not ""]
+    names = [cell for column in names for cell in column if cell != ""]
     # set of names (i.e. unique names in whole sheet)
-    # changed to using pd.Series then drop_duplicates to preserve order, i.e. from name appearing first to name
-    # appearing last, which helps with keeping colours distinct
+    # changed to using pd.Series then drop_duplicates to preserve order, i.e. from name
+    # appearing first to name appearing last, which helps with keeping colours distinct
     names = pd.Series(names).drop_duplicates().values
 
     colors = dict()
@@ -496,14 +500,18 @@ def get_group_colors(df):
 
 
 def make_whiteboard(df, key_type, display, update_timestamp=None, unavail_projects=[]):
-    """Main function to generate the whiteboard visualisation - string containing CSS and HTML code.
+    """Main function to generate the whiteboard visualisation - string containing CSS
+    and HTML code.
 
-    df: a dataframe  with data periods as columns, a multi-index of (role, person) for the people sheet or
-    (programme, project) for the project sheet, and cell values of format "name (allocation)"
+    df: a dataframe  with data periods as columns, a multi-index of (role, person) for
+    the people sheet or (programme, project) for the project sheet, and cell values of
+    format "name (allocation)"
 
-    key_type: whether this is a project or person visualisation (only used to pick title)
+    key_type: whether this is a project or person visualisation (only used to pick
+    title)
 
-    display: whether to optimise the visualisation for display on a screen or for printing
+    display: whether to optimise the visualisation for display on a screen or for
+    printing
     """
 
     if key_type == "project":

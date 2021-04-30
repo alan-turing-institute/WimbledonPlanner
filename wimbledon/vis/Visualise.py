@@ -1,6 +1,6 @@
+import os
 import numpy as np
 import pandas as pd
-
 from copy import deepcopy
 import re
 from datetime import datetime
@@ -10,12 +10,9 @@ from wimbledon import select_date_range
 from wimbledon.vis import HTMLWriter
 
 from distinctipy import colorsets
-
-colorsets.set_palette()
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import os
+colorsets.set_palette()
 
 
 def extract_name(text):
@@ -394,7 +391,7 @@ class Visualise:
 
             return fig
 
-        except ValueError as e:
+        except ValueError:
             return None
 
     def highlight_allocations(self, df):
@@ -425,7 +422,8 @@ class Visualise:
             return style
 
         def highlight_active(series):
-            """Function used to apply highlighting to all columns except the TOTAL column"""
+            """Function used to apply highlighting to all columns except the TOTAL
+            column"""
             style = []
             for i in range(len(series)):
                 if series[i] > 0:
@@ -436,7 +434,8 @@ class Visualise:
             return style
 
         def highlight_unallocated(series):
-            """function used to apply highlighting to UNALLOCATED project requirements column"""
+            """function used to apply highlighting to UNALLOCATED project requirements
+            column"""
             one_person_req = (series > 0) & (series <= 0.5)
             two_person_req = series > 0.5
             is_good = series == 0
@@ -718,7 +717,8 @@ class Visualise:
         )
         project_confirmed = project_confirmed.sum(axis=1)
 
-        # project_confirmed = total for all non-research support, REG management or REG development projects
+        # project_confirmed = total for all non-research support, REG management or
+        # REG development projects
         project_confirmed = (
             project_confirmed
             - corp_duties_reqs
@@ -974,8 +974,10 @@ class Visualise:
     ):
 
         """compare planned time for a project in forecast to tracked time in harvest.
-        If stack is True: Area plot for harvest data split into each person's contribution.
-        If err_bar is True: Add lines representing forecast projection +/- err_size*100 %"""
+        If stack is True: Area plot for harvest data split into each person's
+        contribution.
+        If err_bar is True: Add lines representing forecast projection
+        +/- err_size*100 %"""
         start_date, end_date, freq = self.get_time_parameters(
             start_date, end_date, freq
         )
@@ -1049,10 +1051,10 @@ class Visualise:
 
             return fig
 
-        except ValueError as e:
+        except ValueError:
             plt.close(fig)
             raise ValueError("project " + str(project_id) + " plot failed")
-        except TypeError as e:
+        except TypeError:
             plt.close(fig)
             raise TypeError("project " + str(project_id) + " plot failed")
 
@@ -1074,9 +1076,9 @@ class Visualise:
         )
 
         e = ValueError(
-            "Invalid id_type, group_type combination. Valid options are: person-project, "
-            "person-client, person-task, person-TOTAL, project-person, project-task, "
-            "project-TOTAL, client-TOTAL and task-TOTAL"
+            "Invalid id_type, group_type combination. Valid options are: "
+            "person-project, person-client, person-task, person-TOTAL, project-person, "
+            "project-task, project-TOTAL, client-TOTAL and task-TOTAL"
         )
 
         if id_type == "person":

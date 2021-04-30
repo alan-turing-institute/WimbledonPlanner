@@ -6,23 +6,18 @@ import wimbledon.sql.schema as schema
 import wimbledon.sql.db_utils as db_utils
 from wimbledon.harvest import api_interface
 
-import sqlalchemy as sqla
-
 import re
 import pandas as pd
-import numpy as np
 from datetime import datetime
 
 
 def to_type_or_none(value, typefn):
-    """performs typefn(value) if possible, else
-    returns None.
-    Warning: if value is float and typefn is int,
-    will get floor(value) back!
+    """performs typefn(value) if possible, else returns None.
+    Warning: if value is float and typefn is int, will get floor(value) back!
     """
     try:
         return typefn(value)
-    except:
+    except Exception:
         return None
 
 

@@ -10,8 +10,6 @@ import pandas as pd
 
 import time
 
-import sqlalchemy as sqla
-import subprocess
 import os
 from datetime import date, timedelta
 
@@ -48,7 +46,8 @@ def get_forecast(
     print()
 
     def response_to_df(api_response):
-        """Takes an api response in the pyforecast foremat and converts it into a pandas data frame."""
+        """Takes an api response in the pyforecast foremat and converts it into a
+        pandas data frame."""
         results = [json.loads(result.to_json()) for result in api_response]
 
         df = pd.json_normalize(results)
@@ -99,9 +98,10 @@ def get_harvest(with_tracked_time=True, with_assignments=False):
     """
     Extract harvest data using the python-harvest package.
 
-    NB: The master branch of python-harvest currently seems to be using the v1 version of the api. This version of the API
-    is deprecated. The branch "v2_dev" of python-harvest works with harvests v2 API but doesn't seem to be fully functioning for
-    all tables, most noticeably the time_entries table.
+    NB: The master branch of python-harvest currently seems to be using the v1 version
+    of the api. This version of the API is deprecated. The branch "v2_dev" of
+    python-harvest works with harvests v2 API but doesn't seem to be fully functioning
+    for all tables, most noticeably the time_entries table.
     """
 
     start = time.time()
@@ -135,9 +135,9 @@ def get_harvest(with_tracked_time=True, with_assignments=False):
         return df
 
     def unpack_class_columns(df):
-        """python-harvest returns some columns as an instance of another harvest data type.
-        This function unpacks the values of those columns, creating a new column for each
-        of the unpacked attributes (with name <COL_NAME>.<ATTRIBUTE_NAME>)"""
+        """python-harvest returns some columns as an instance of another harvest data
+        type. This function unpacks the values of those columns, creating a new column
+        for each of the unpacked attributes (with name <COL_NAME>.<ATTRIBUTE_NAME>)"""
 
         # all columns which have ambiguous pandas 'object' type
         obj_cols = df.columns[df.dtypes == "object"]
