@@ -25,8 +25,8 @@ def get_name_id(name):
     the above.
     """
 
-    if "RESOURCE REQUIRED" in name:
-        name_id = "RESOURCE_REQUIRED"
+    if "PEOPLE REQUIRED" in name:
+        name_id = "PEOPLE_REQUIRED"
     elif "UNCONFIRMED" in name:
         name_id = "UNCONFIRMED"
     elif "DEFERRED" in name:
@@ -56,9 +56,9 @@ def get_name_id(name):
 def get_name_style(name, background_color=None, name_type=None, unavail_projects=[]):
     """Generate the css style class for the entity represented by string name.
     Pre-defined styles for placeholders or generate distinct colours for other names."""
-    if "RESOURCE REQUIRED" in name or "RESOURCE_REQUIRED" in name:
+    if "PEOPLE REQUIRED" in name or "PEOPLE_REQUIRED" in name:
         style = """
-        .RESOURCE_REQUIRED {
+        .PEOPLE_REQUIRED {
             background-color: white;
             color: red;
             font-weight: 600;
@@ -170,7 +170,7 @@ def write_style(df, display="print", unavail_projects=[]):
         for name, color in colors.items():
             style += get_name_style(name, color, unavail_projects=unavail_projects)
 
-        style += get_name_style("RESOURCE REQUIRED", unavail_projects=unavail_projects)
+        style += get_name_style("PEOPLE REQUIRED", unavail_projects=unavail_projects)
         style += get_name_style("UNCONFIRMED", unavail_projects=unavail_projects)
         style += get_name_style("DEFERRED", unavail_projects=unavail_projects)
 
@@ -479,7 +479,7 @@ def get_colors(df):
     # colors['RED'] = (1, 0, 0)
 
     for key in names:
-        if "RESOURCE REQUIRED" in key:
+        if "PEOPLE REQUIRED" in key:
             continue
         elif "UNCONFIRMED" in key:
             continue

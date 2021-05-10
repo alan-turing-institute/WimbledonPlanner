@@ -116,8 +116,8 @@ class Wimbledon:
         #  with allocation people_totals: df of (date, person_id) with total allocations
         self.people_allocations, self.people_totals = self.__get_allocations("person")
 
-        # resource required, unconfirmed, deferred allocations
-        self.resourcereq_allocations = self.get_person_allocations("RESOURCE REQUIRED")
+        # people required, unconfirmed, deferred allocations
+        self.peoplereq_allocations = self.get_person_allocations("PEOPLE REQUIRED")
         self.unconfirmed_allocations = self.get_person_allocations("UNCONFIRMED")
         self.deferred_allocations = self.get_person_allocations("DEFERRED")
 
@@ -321,7 +321,7 @@ class Wimbledon:
             # get the projects's person allocations
             df = data_dict[key]
 
-            # replace ids with names. for project id: include resource required.
+            # replace ids with names. for project id: include people required.
             if key_type == "project":
                 if key in unavail_project_ids:
                     # don't display allocations to unavailable project
@@ -647,10 +647,10 @@ class Wimbledon:
         return project_notfunded
 
     def __get_project_required(self):
-        """Get resource required (i.e. needs someone assigned)
+        """Get people required (i.e. needs someone assigned)
         for all projects."""
 
-        resreq_idx = self.get_person_id("RESOURCE REQUIRED")
+        resreq_idx = self.get_person_id("PEOPLE REQUIRED")
 
         project_resreq = pd.DataFrame(
             0, index=self.date_range_workdays, columns=self.projects.index

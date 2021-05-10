@@ -315,9 +315,9 @@ class Visualise:
                 # replace ids with names
                 df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
 
-                # remove resource required placeholders
+                # remove people required placeholders
                 cols = [
-                    col for col in df.columns if "resource required" not in col.lower()
+                    col for col in df.columns if "people required" not in col.lower()
                 ]
                 df = df[cols]
 
@@ -617,7 +617,7 @@ class Visualise:
                     )
                 elif id_value == "RESOURCE_REQ":
                     title = (
-                        "Project Resource Required (FTE @ "
+                        "Project People Required (FTE @ "
                         + str(self.wim.work_hrs_per_day)
                         + " hrs/day)"
                     )

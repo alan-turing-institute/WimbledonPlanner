@@ -230,12 +230,12 @@ def get_preferences(
     """
     Create a HTML table with each project that has a resource requirement against every
     REG team member with availability. Table values show the preference emojis alongside
-    the mean availability the person has for the resource required period and the mean
-    resource required for the range between the first month with resource required and
+    the mean availability the person has for the people required period and the mean
+    people required for the range between the first month with people required and
     the last.
     """
 
-    # Get the data on project resource required, unconfirmed and allocated from Forecast
+    # Get the data on project people required, unconfirmed and allocated from Forecast
     resreqdf = wim.project_resourcereq
     unconfdf = wim.project_unconfirmed
     allocdf = wim.project_allocated
