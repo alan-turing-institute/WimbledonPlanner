@@ -74,10 +74,10 @@ def convert_index(df):
 
 
 def merge_placeholders(
-    placeholders, names=["resource required", "unconfirmed", "deferred", "not funded"]
+    placeholders, names=["people required", "unconfirmed", "deferred", "not funded"]
 ):
-    """consolidate names like Resource Required 1 into single placeholder
-    RESOURCE REQUIRED"""
+    """consolidate names like People Required 1 into single placeholder
+    PEOPLE REQUIRED"""
 
     # avoid overwriting original df
     placeholders = placeholders.copy(deep=True)

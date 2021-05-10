@@ -259,9 +259,9 @@ class Visualise:
                     self.wim.get_project_name(project_id) for project_id in df.columns
                 ]
 
-            elif id_value == "RESOURCE_REQ":
+            elif id_value == "PEOPLE_REQ":
                 # initialise df
-                df = self.wim.project_resourcereq.copy()
+                df = self.wim.project_peoplereq.copy()
 
                 # slice the given date range from the dataframe
                 df = select_date_range(df, start_date, end_date, drop_zero_cols=True)
@@ -275,7 +275,7 @@ class Visualise:
                 # initialise df
                 df = (
                     self.wim.project_confirmed.copy()
-                    - self.wim.project_resourcereq.copy()
+                    - self.wim.project_peoplereq.copy()
                 )
 
                 # slice the given date range from the dataframe
@@ -315,9 +315,9 @@ class Visualise:
                 # replace ids with names
                 df.columns = [self.wim.get_person_name(idx) for idx in df.columns]
 
-                # remove resource required placeholders
+                # remove people required placeholders
                 cols = [
-                    col for col in df.columns if "resource required" not in col.lower()
+                    col for col in df.columns if "people required" not in col.lower()
                 ]
                 df = df[cols]
 
@@ -547,12 +547,12 @@ class Visualise:
             df = self.get_allocations(id_value, id_type, start_date, end_date, freq)
 
             if id_type == "project" and "ALL" not in str(id_value):
-                # add the project's missing resource allocation
+                # add the project's missing people allocation
                 if freq == "D":
-                    df["UNALLOCATED"] = self.wim.project_resourcereq[id_value]
+                    df["UNALLOCATED"] = self.wim.project_peoplereq[id_value]
                 else:
                     df["UNALLOCATED"] = (
-                        self.wim.project_resourcereq[id_value].resample(freq).mean()
+                        self.wim.project_peoplereq[id_value].resample(freq).mean()
                     )
 
             elif id_type == "person" and "ALL" not in str(id_value):
@@ -615,9 +615,9 @@ class Visualise:
                         + str(self.wim.work_hrs_per_day)
                         + " hrs/day)"
                     )
-                elif id_value == "RESOURCE_REQ":
+                elif id_value == "PEOPLE_REQ":
                     title = (
-                        "Project Resource Required (FTE @ "
+                        "Project People Required (FTE @ "
                         + str(self.wim.work_hrs_per_day)
                         + " hrs/day)"
                     )

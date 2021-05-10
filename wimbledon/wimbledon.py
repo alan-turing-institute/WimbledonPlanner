@@ -116,8 +116,8 @@ class Wimbledon:
         #  with allocation people_totals: df of (date, person_id) with total allocations
         self.people_allocations, self.people_totals = self.__get_allocations("person")
 
-        # resource required, unconfirmed, deferred allocations
-        self.resourcereq_allocations = self.get_person_allocations("RESOURCE REQUIRED")
+        # people required, unconfirmed, deferred allocations
+        self.peoplereq_allocations = self.get_person_allocations("PEOPLE REQUIRED")
         self.unconfirmed_allocations = self.get_person_allocations("UNCONFIRMED")
         self.deferred_allocations = self.get_person_allocations("DEFERRED")
 
@@ -164,8 +164,8 @@ class Wimbledon:
         # placeholders
         self.project_deferred = self.__get_project_deferred()
 
-        # project_resourcereq: resource_required allocations to each project
-        self.project_resourcereq = self.__get_project_required()
+        # project_peoplereq: people_required allocations to each project
+        self.project_peoplereq = self.__get_project_required()
 
         # project_notfunded allocations to each project
         self.project_notfunded = self.__get_project_notfunded()
@@ -178,7 +178,7 @@ class Wimbledon:
             - self.project_notfunded
         )
 
-        self.project_allocated = self.project_confirmed - self.project_resourcereq
+        self.project_allocated = self.project_confirmed - self.project_peoplereq
 
         # Time Tracking
         if with_tracked_time:
@@ -321,7 +321,7 @@ class Wimbledon:
             # get the projects's person allocations
             df = data_dict[key]
 
-            # replace ids with names. for project id: include resource required.
+            # replace ids with names. for project id: include people required.
             if key_type == "project":
                 if key in unavail_project_ids:
                     # don't display allocations to unavailable project
@@ -647,21 +647,21 @@ class Wimbledon:
         return project_notfunded
 
     def __get_project_required(self):
-        """Get resource required (i.e. needs someone assigned)
+        """Get people required (i.e. needs someone assigned)
         for all projects."""
 
-        resreq_idx = self.get_person_id("RESOURCE REQUIRED")
+        peoplereq_idx = self.get_person_id("PEOPLE REQUIRED")
 
-        project_resreq = pd.DataFrame(
+        project_peoplereq = pd.DataFrame(
             0, index=self.date_range_workdays, columns=self.projects.index
         )
 
-        allocs = self.people_allocations[resreq_idx]
+        allocs = self.people_allocations[peoplereq_idx]
 
         for project in allocs.columns:
-            project_resreq[project] += allocs[project]
+            project_peoplereq[project] += allocs[project]
 
-        return project_resreq
+        return project_peoplereq
 
     def __get_tracking(self, id_column, ref_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,
