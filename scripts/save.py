@@ -86,8 +86,8 @@ def forecast_summary(vis, display="screen"):
     fig = vis.heatmap_allocations("PROJECT_ALLOCATED", "institute")
     save_fig(fig, PROJECTS_DIR, "Project_Allocated")
 
-    fig = vis.heatmap_allocations("PROJECT_RESREQ", "institute")
-    save_fig(fig, PROJECTS_DIR, "Project_ResReq")
+    fig = vis.heatmap_allocations("PROJECT_PEOPLEREQ", "institute")
+    save_fig(fig, PROJECTS_DIR, "Project_PeopleReq")
 
     # people summary plots
     fig = vis.heatmap_allocations("ALL_PEOPLE", "institute")

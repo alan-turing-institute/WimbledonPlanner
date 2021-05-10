@@ -164,8 +164,8 @@ class Wimbledon:
         # placeholders
         self.project_deferred = self.__get_project_deferred()
 
-        # project_resourcereq: resource_required allocations to each project
-        self.project_resourcereq = self.__get_project_required()
+        # project_peoplereq: people_required allocations to each project
+        self.project_peoplereq = self.__get_project_required()
 
         # project_notfunded allocations to each project
         self.project_notfunded = self.__get_project_notfunded()
@@ -178,7 +178,7 @@ class Wimbledon:
             - self.project_notfunded
         )
 
-        self.project_allocated = self.project_confirmed - self.project_resourcereq
+        self.project_allocated = self.project_confirmed - self.project_peoplereq
 
         # Time Tracking
         if with_tracked_time:
@@ -650,18 +650,18 @@ class Wimbledon:
         """Get people required (i.e. needs someone assigned)
         for all projects."""
 
-        resreq_idx = self.get_person_id("PEOPLE REQUIRED")
+        peoplereq_idx = self.get_person_id("PEOPLE REQUIRED")
 
-        project_resreq = pd.DataFrame(
+        project_peoplereq = pd.DataFrame(
             0, index=self.date_range_workdays, columns=self.projects.index
         )
 
-        allocs = self.people_allocations[resreq_idx]
+        allocs = self.people_allocations[peoplereq_idx]
 
         for project in allocs.columns:
-            project_resreq[project] += allocs[project]
+            project_peoplereq[project] += allocs[project]
 
-        return project_resreq
+        return project_peoplereq
 
     def __get_tracking(self, id_column, ref_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,

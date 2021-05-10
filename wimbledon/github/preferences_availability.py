@@ -228,7 +228,7 @@ def get_preferences(
     css=None,
 ):
     """
-    Create a HTML table with each project that has a resource requirement against every
+    Create a HTML table with each project that has a people requirement against every
     REG team member with availability. Table values show the preference emojis alongside
     the mean availability the person has for the people required period and the mean
     people required for the range between the first month with people required and
@@ -236,19 +236,19 @@ def get_preferences(
     """
 
     # Get the data on project people required, unconfirmed and allocated from Forecast
-    resreqdf = wim.project_resourcereq
+    peoplereqdf = wim.project_peoplereq
     unconfdf = wim.project_unconfirmed
     allocdf = wim.project_allocated
-    totdf = resreqdf + unconfdf + allocdf
+    totdf = peoplereqdf + unconfdf + allocdf
 
     if first_date:
-        resreqdf = resreqdf[resreqdf.index >= first_date]
+        peoplereqdf = peoplereqdf[peoplereqdf.index >= first_date]
         unconfdf = unconfdf[unconfdf.index >= first_date]
         allocdf = allocdf[allocdf.index >= first_date]
         totdf = totdf[totdf.index >= first_date]
 
     if last_date:
-        resreqdf = resreqdf[resreqdf.index <= last_date]
+        peoplereqdf = peoplereqdf[peoplereqdf.index <= last_date]
         unconfdf = unconfdf[unconfdf.index <= last_date]
         allocdf = allocdf[allocdf.index <= last_date]
         totdf = totdf[totdf.index <= last_date]
@@ -266,21 +266,21 @@ def get_preferences(
             except (IndexError, KeyError):
                 pass
 
-    # Get projects with some resource requirement but filter by those with a GitHub
+    # Get projects with some people requirement but filter by those with a GitHub
     # issue
     project_titles = {}
-    for project_id in resreqdf:
+    for project_id in peoplereqdf:
         if not project or project == project_id:
             # If a project name or project id is provided, only get data for that
-            # project. Get the dates for each month that the project has a resource
+            # project. Get the dates for each month that the project has a people
             # requirement > 0
-            dates_resreq = resreqdf.index[resreqdf[project_id] > 0]
+            dates_peoplereq = peoplereqdf.index[peoplereqdf[project_id] > 0]
             dates_unconf = unconfdf.index[unconfdf[project_id] > 0]
             dates_alloc = allocdf.index[allocdf[project_id] > 0]
 
             issue_num = wim.projects.loc[project_id]["github"]
             if (
-                len(dates_resreq) > 0 or len(dates_unconf) > 0 or len(dates_alloc) > 0
+                len(dates_peoplereq) > 0 or len(dates_unconf) > 0 or len(dates_alloc) > 0
             ) and not math.isnan(issue_num):
                 project_name = wim.projects.loc[project_id, "name"]
 
@@ -306,7 +306,7 @@ def get_preferences(
                 )
 
                 if len(dates_alloc) > 0:
-                    # if at least one month in the dataframe has a resource requirement
+                    # if at least one month in the dataframe has a people requirement
                     # of more than 0 FTE
                     first_alloc_date = dates_alloc[0]
                     last_alloc_date = dates_alloc[-1]
@@ -327,36 +327,36 @@ def get_preferences(
                 else:
                     alloc = 0
 
-                if len(dates_resreq) > 0:
-                    # if at least one month in the dataframe has a resource requirement
+                if len(dates_peoplereq) > 0:
+                    # if at least one month in the dataframe has a people requirement
                     # of more than 0 FTE
-                    first_resreq_date = dates_resreq[0]
-                    last_resreq_date = dates_resreq[-1]
-                    if first_date and first_resreq_date < first_date:
-                        first_resreq_date = first_date
-                    if last_date and last_resreq_date > last_date:
-                        last_resreq_date = last_date
+                    first_peoplereq_date = dates_peoplereq[0]
+                    last_peoplereq_date = dates_peoplereq[-1]
+                    if first_date and first_peoplereq_date < first_date:
+                        first_peoplereq_date = first_date
+                    if last_date and last_peoplereq_date > last_date:
+                        last_peoplereq_date = last_date
 
                     # get mean project requirement in date range
-                    resreq = resreqdf.loc[
-                        (resreqdf.index >= first_resreq_date)
-                        & (resreqdf.index <= last_resreq_date),
+                    peoplereq = peoplereqdf.loc[
+                        (peoplereqdf.index >= first_peoplereq_date)
+                        & (peoplereqdf.index <= last_peoplereq_date),
                         project_id,
                     ].mean()
 
-                    if resreq >= 0.01:
+                    if peoplereq >= 0.01:
                         if len(dates_alloc) > 0:
                             pre = " + "
                             post = " R"
                         else:
                             pre = ""
                             post = " R"
-                        project_title += pre + "" + str(round(resreq, 1)) + post
+                        project_title += pre + "" + str(round(peoplereq, 1)) + post
                 else:
-                    resreq = 0
+                    peoplereq = 0
 
                 if len(dates_unconf) > 0:
-                    # if at least one month in the dataframe has a resource requirement
+                    # if at least one month in the dataframe has a people requirement
                     # of more than 0 FTE
                     first_unconf_date = dates_unconf[0]
                     last_unconf_date = dates_unconf[-1]
@@ -375,7 +375,7 @@ def get_preferences(
                     if unconf >= 0.01:
                         # add a separator between required and unconfirmed FTE if both
                         # present
-                        if len(dates_resreq) > 0 or len(dates_alloc) > 0:
+                        if len(dates_peoplereq) > 0 or len(dates_alloc) > 0:
                             pre = " + "
                             post = " U"
                         else:
@@ -398,9 +398,9 @@ def get_preferences(
                         wim, name, req_start_date, req_end_date
                     )
 
-                    if (unconf + resreq) > 0:
+                    if (unconf + peoplereq) > 0:
                         percentage_availability = round(
-                            (person_availability / (unconf + resreq)) * 100
+                            (person_availability / (unconf + peoplereq)) * 100
                         )
                     else:
                         percentage_availability = None
@@ -416,7 +416,7 @@ def get_preferences(
                             + "% ("
                             + str(round(person_availability, 1))
                             + " / "
-                            + str(round(unconf + resreq, 1))
+                            + str(round(unconf + peoplereq, 1))
                             + ")"
                         )
                 # Store list of preference data for this project
@@ -512,7 +512,7 @@ def get_all_preferences_table(wim=None, first_date=datetime.now(), last_date=Non
     """
     Create the HTML table described in get_preferences() with default settings
     i.e. for all team members with at least one preference emoji and all projects
-    with some resource requirement.
+    with some people requirement.
     """
     credentials = config.get_github_credentials()
     token = credentials["token"]
