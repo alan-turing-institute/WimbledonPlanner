@@ -7,58 +7,108 @@ from wimbledon import Wimbledon
 from wimbledon import config
 
 
-query = """
-{
-  repository(owner:"alan-turing-institute", name:"Hut23") {
-    issue(number:X) {
-          number
-          title
-          url
-
-          reactionGroups {
-            content
-            users(first:Y) {
-                edges {
-                    node {
-                        login
-                        name
-                    }
-                }
-            }
-            }
-    }
-  }
-}
+repo_query_template = """
+{{
+    repository(owner:"alan-turing-institute", name:"Hut23") {{
+        {issue_queries}
+    }}
+}}
 """
 
-alternate_query = """
-{
-  repository(owner:"alan-turing-institute", name:"Hut23") {
-    issue(number:X) {
-          number
-          title
-          url
-          comments(first:Z) {
-            edges {
-              node {
-                reactionGroups {
+issue_query_template = """
+issue{issue_number}: issue(number:{issue_number}) {{
+    number
+    title
+    url
+
+    reactionGroups {{
+        content
+        users(first:{n_users}) {{
+            edges {{
+                node {{
+                    login
+                    name
+                }}
+            }}
+        }}
+    }}
+}}
+"""
+
+comment_query_template = """
+issue{issue_number}: issue(number:{issue_number}) {{
+    number
+    title
+    url
+    comments(first:{n_comment}) {{
+        edges {{
+            node {{
+                reactionGroups {{
                     content
-                    users(first:Y) {
-                        edges {
-                            node {
+                    users(first:{n_users}) {{
+                        edges {{
+                            node {{
                                 login
                                 name
-                            }
-                        }
-                    }
-                    }
-              }
-            }
-          }
-    }
-  }
-}
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        }}
+    }}
+}}
 """
+
+
+def build_query(issue_numbers, n_users=20, n_comments=1):
+    """Build query for extracting emoji reactions from the Hut23 repo.
+
+    Parameters
+    ----------
+    issue_numbers : list
+        Issue numbers to query
+    n_users : int, optional
+        Max number of users to query per emoji reaction, by default 20
+    n_comments : int, optional
+        Query this many issue comments, by  default 1 (only main issue body)
+
+    Returns
+    -------
+    str
+        GraphQL query string to send to the GitHub API
+
+    Raises
+    ------
+    ValueError
+        If number of query nodes exceeds 50,000 (GitHub limit), where the number of
+        nodes is 1 + n_issues + n_comments * n_issues + n_users * n_issues  * n_comments
+    """
+    issue_numbers = set(issue_numbers)  # remove any duplicate issue numbers
+    n_issues = len(issue_numbers)
+    n_nodes = 1 + n_issues + n_users * n_issues * n_comments
+    if n_comments > 1:
+        n_nodes += n_comments * n_issues
+    if n_nodes >= 50000:
+        raise ValueError(
+            f"Querying {n_issues} with {n_users} users per emoji reaction will exceed "
+            f"GitHub's API limits of 50,000 nodes (query has {n_nodes})"
+        )
+
+    if n_comments > 1:
+        issue_queries = " ".join([
+            comment_query_template.format(
+                issue_number=isno, n_users=n_users, n_comments=n_comments
+            )
+            for isno in issue_numbers
+        ])
+    else:
+        issue_queries = " ".join([
+            issue_query_template.format(issue_number=isno, n_users=n_users)
+            for isno in issue_numbers
+        ])
+
+    return repo_query_template.format(issue_queries=issue_queries)
 
 
 def run_query(query, token):
@@ -80,48 +130,40 @@ def run_query(query, token):
         )
 
 
-def get_reactions(token, issue, number_of_people=20, number_of_comments=2):
+def unpack_issue_reactions(reactions):
+    """
+    Convert reactions for one issue (aw returned by the GitHub API) into a pandas
+    DataFrame with 1 row per reaction and columns 'name', 'username' and 'emoji' for
+    the persono's name on GitHub, GitHub username and their reaction to the issue
+    respectively.
+    """
+    unpacked = []
+    for emoji in reactions:
+        emoji_name =  emoji["content"]
+        unpacked += [
+            {
+                "name": user["node"]["name"],
+                "username": user["node"]["login"],
+                "emoji": emoji_name
+            } for user in emoji["users"]["edges"]
+        ]
+    return pd.DataFrame(unpacked)
+
+
+def get_reactions(token, issue_numbers, n_users=20):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the
     strutcture specified by the GraphQL queries
     """
 
-    def reactions_count(project_reactions):
-        count = 0
-        for reaction in project_reactions:
-            for edge in reaction["users"]["edges"]:
-                if reaction["content"]:
-                    count += 1
-        return count
-
     # Edit the query string to contain the relevant issue and number of GitHub users
     # This query gets the emojis on the issue itself (i.e. the top comment/ post)
-    modified_query = query.replace("X", str(int(issue))).replace(
-        "Y", str(number_of_people)
-    )
-    result = run_query(modified_query, token)
-    project_reactions = result["data"]["repository"]["issue"]["reactionGroups"]
-    project_reaction_groups_dict = {
-        reactions_count(project_reactions): project_reactions
+    query = build_query(issue_numbers, n_users=n_users, n_comments=1)
+    result = run_query(query, token)
+    return {
+        issue["number"]: unpack_issue_reactions(issue["reactionGroups"])
+        for _, issue in result["data"]["repository"].items()
     }
-
-    # If we don't find any emojis from the first query, this one searches subsequent
-    # comments (set to first 5 by default)
-    modified_query = (
-        alternate_query.replace("X", str(int(issue)))
-        .replace("Y", str(number_of_people))
-        .replace("Z", str(number_of_comments))
-    )
-    result = run_query(modified_query, token)
-    project_comments = result["data"]["repository"]["issue"]["comments"]["edges"]
-    for comment in project_comments:
-        project_reactions = comment["node"]["reactionGroups"]
-        pr_count = reactions_count(project_reactions)
-        if pr_count > 0:
-            project_reaction_groups_dict[pr_count] = project_reactions
-            break
-
-    return project_reaction_groups_dict[max(project_reaction_groups_dict, key=int)]
 
 
 def get_person_availability(wim, person, start_date, end_date):
@@ -183,7 +225,9 @@ def get_preference_data(wim, github_token, emoji_mapping=None):
     names.remove("Giovanni Colavizza")
     names.remove("Miguel Morin")
     preference_data = {"Person": names}
-    issues = wim.projects["github"].dropna()  # Get list of GitHub issues for projects
+
+    # Get list of GitHub issues for projects
+    issues = wim.projects["github"].dropna().astype(int)
     total_people = len(wim.people)
     for issue_num, project_id in zip(issues, issues.index):
         # Get a dict with the emoji reactions for this issue
