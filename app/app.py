@@ -3,7 +3,7 @@ import zipfile
 import traceback
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, send_from_directory, send_file, render_template
 
@@ -117,7 +117,11 @@ def update(update_db=True):
 
         # Generate & save demand vs capacity plot
         print("Demand vs capacity...")
-        capacity_fig = vis.plot_demand_vs_capacity()
+        capacity_fig = vis.plot_demand_vs_capacity(
+            start_date=datetime.now() - timedelta(365),
+            end_date=datetime.now() + timedelta(365),
+            freq="W-MON",
+        )
         capacity_fig.tight_layout()
         capacity_fig.savefig(
             app.config.get("DATA_DIR") + "/figs/demand_vs_capacity.png", dpi=300

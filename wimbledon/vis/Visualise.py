@@ -806,29 +806,25 @@ class Visualise:
         ] == self.wim.get_association_id("REG Director")
         select_perm = select_perm.any(axis=1)
         perm = self.wim.people[select_perm].index
-
+        # Idx for university partners
+        partner = self.wim.people[
+            self.wim.people["association"]
+            == self.wim.get_association_id("University Partner")
+        ].index
         # Merge capacity types into one dataframe
         capacity = pd.DataFrame(index=self.wim.people_capacities.index)
         capacity["REG FTC"] = self.wim.people_capacities[ftc].sum(axis=1)
         capacity["REG Associate"] = self.wim.people_capacities[assoc].sum(axis=1)
         capacity["REG Permanent"] = self.wim.people_capacities[perm].sum(axis=1)
-
+        # use actual allocations rather than capacity for university partners as
+        # they don't have a normal "REG capacity" outside of REG projects
+        capacity["University Partner"] = self.wim.people_totals[partner].sum(axis=1)
         capacity = capacity.resample(freq).mean()
 
         capacity = select_date_range(
             capacity, start_date, end_date, drop_zero_cols=False
         )
 
-        # Load institute capacity from file
-        csv = pd.read_csv(self.script_dir + "/reg_capacity.csv", index_col="Month")
-        csv = csv.T
-        csv.index = pd.to_datetime(csv.index, format="%b-%y")
-
-        # make sure capture the start date month in csv file by going from 1st
-        # of month
-        csv = select_date_range(csv, start_date, end_date, drop_zero_cols=False)
-
-        capacity["University Partner"] = csv["University Partner capacity"]
         # order columns
         capacity = capacity[
             ["REG Permanent", "REG FTC", "University Partner", "REG Associate"]
