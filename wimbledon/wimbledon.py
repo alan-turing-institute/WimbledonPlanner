@@ -27,11 +27,16 @@ def get_business_days(start_date, end_date):
 def select_date_range(df, start_date, end_date, drop_zero_cols=True):
     """Extract a range of dates from a dataframe with a datetime index,
     then remove any columns which are left empty (full of zeros)."""
-    mask = (df.index >= start_date) & (df.index <= end_date)
-    df_slice = df.loc[mask]
+
+    df_slice = df.copy()
+
+    if start_date is not None:
+        df_slice = df_slice[df_slice.index >= start_date]
+    if end_date is not None:
+        df_slice = df_slice[df_slice.index <= end_date]
 
     if drop_zero_cols:
-        nonzero_cols = df_slice.columns[df_slice.sum() != 0]
+        nonzero_cols = df_slice.columns[~(df_slice == 0).all()]
         df_slice = df_slice[nonzero_cols]
 
     return df_slice
@@ -114,7 +119,7 @@ class Wimbledon:
 
         # people_allocations: dict with key person_id, contains df of (date, project_id)
         #  with allocation people_totals: df of (date, person_id) with total allocations
-        self.people_allocations, self.people_totals = self.__get_allocations("person")
+        self.people_allocations, self.people_totals = self._get_allocations("person")
 
         # people required, unconfirmed, deferred allocations
         self.peoplereq_allocations = self.get_person_allocations("PEOPLE REQUIRED")
@@ -152,23 +157,23 @@ class Wimbledon:
         # project_allocations: dict with key project_id, contains df of
         # (date, person_id) with allocation project_confirmed: df of (date, project_id)
         # with total allocations across PEOPLE ONLY
-        self.project_allocations, self.project_confirmed = self.__get_allocations(
+        self.project_allocations, self.project_confirmed = self._get_allocations(
             "project"
         )
 
         # project_unconfirmed: df of (date, project_id) with total allocation to
         # unconfirmed placeholders
-        self.project_unconfirmed = self.__get_project_unconfirmed()
+        self.project_unconfirmed = self._get_project_unconfirmed()
 
         # project_deferred:  df of (date, project_id) with total allocation to deferred
         # placeholders
-        self.project_deferred = self.__get_project_deferred()
+        self.project_deferred = self._get_project_deferred()
 
         # project_peoplereq: people_required allocations to each project
-        self.project_peoplereq = self.__get_project_required()
+        self.project_peoplereq = self._get_project_required()
 
         # project_notfunded allocations to each project
-        self.project_notfunded = self.__get_project_notfunded()
+        self.project_notfunded = self._get_project_notfunded()
 
         # project_confirmed: should not include unconfirmed or deferred totals
         self.project_confirmed = (
@@ -182,22 +187,22 @@ class Wimbledon:
 
         # Time Tracking
         if with_tracked_time:
-            self.tracked_project_tasks = self.__get_tracking("project", "task")
-            self.tracked_project_people = self.__get_tracking("project", "person")
-            self.tracked_person_projects = self.__get_tracking("person", "project")
-            self.tracked_person_tasks = self.__get_tracking("person", "task")
+            self.tracked_project_tasks = self._get_tracking("project", "task")
+            self.tracked_project_people = self._get_tracking("project", "person")
+            self.tracked_person_projects = self._get_tracking("person", "project")
+            self.tracked_person_tasks = self._get_tracking("person", "task")
 
-            self.tracked_project_totals = self.__get_tracking("project", "TOTAL")
-            self.tracked_person_totals = self.__get_tracking("person", "TOTAL")
-            self.tracked_task_totals = self.__get_tracking("task", "TOTAL")
+            self.tracked_project_totals = self._get_tracking("project", "TOTAL")
+            self.tracked_person_totals = self._get_tracking("person", "TOTAL")
+            self.tracked_task_totals = self._get_tracking("task", "TOTAL")
 
             # calculate per-client totals for each person
-            self.tracked_person_clients = self.__client_from_project_tracking(
+            self.tracked_person_clients = self._client_from_project_tracking(
                 self.tracked_person_projects
             )
 
             # calculate overall per-client totals
-            self.tracked_client_totals = self.__client_from_project_tracking(
+            self.tracked_client_totals = self._client_from_project_tracking(
                 self.tracked_project_totals
             )
 
@@ -288,6 +293,24 @@ class Wimbledon:
 
         else:
             raise ValueError("id_type must be person or project")
+
+    def get_active_people(self, start_date, end_date, names=False):
+        """People with capacity (any capacity, not just free capacity) between
+        start_date and end_date
+        """
+        people = select_date_range(self.people_capacities, start_date, end_date)
+        if names:
+            return self.people.loc[people.columns, "name"]
+        else:
+            return people.columns
+
+    def get_active_projects(self, start_date, end_date, names=False):
+        """Projects with requirerments between start_date and end_date"""
+        proj = select_date_range(self.project_confirmed, start_date, end_date)
+        if names:
+            return self.projects.loc[proj.columns, "name"]
+        else:
+            return proj.columns
 
     def whiteboard(self, key_type, start_date, end_date, freq):
         """Create the raw, unstyled, whiteboard visualisation.
@@ -517,7 +540,7 @@ class Wimbledon:
 
         return sheet
 
-    def __get_allocations(self, id_column):
+    def _get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where
         the rows are dates, the columns are projects/people depending on
         id_column, and the values are time allocations for that date.
@@ -598,7 +621,7 @@ class Wimbledon:
 
         return allocations, totals
 
-    def __get_project_unconfirmed(self):
+    def _get_project_unconfirmed(self):
         """Get unconfirmed project requirements"""
 
         unconf_idx = self.get_person_id("UNCONFIRMED")
@@ -614,7 +637,7 @@ class Wimbledon:
 
         return project_unconfirmed
 
-    def __get_project_deferred(self):
+    def _get_project_deferred(self):
         """Get deferred project allocations"""
 
         defer_idx = self.get_person_id("DEFERRED")
@@ -630,7 +653,7 @@ class Wimbledon:
 
         return project_deferred
 
-    def __get_project_notfunded(self):
+    def _get_project_notfunded(self):
         """Get deferred project allocations"""
 
         notfunded_idx = self.get_person_id("NOT FUNDED")
@@ -646,7 +669,7 @@ class Wimbledon:
 
         return project_notfunded
 
-    def __get_project_required(self):
+    def _get_project_required(self):
         """Get people required (i.e. needs someone assigned)
         for all projects."""
 
@@ -663,7 +686,7 @@ class Wimbledon:
 
         return project_peoplereq
 
-    def __get_tracking(self, id_column, ref_column):
+    def _get_tracking(self, id_column, ref_column):
         """For each unique value in id_column, create a dataframe where the rows are dates,
         the columns are projects/people/clients/tasks depending on id_column, and the values are
         tracked time for each project/person/client/task for each date.
@@ -753,7 +776,7 @@ class Wimbledon:
 
         return entries
 
-    def __client_from_project_tracking(self, tracking):
+    def _client_from_project_tracking(self, tracking):
         """Group previously calculated project tracking values by client.
 
         Arguments:
