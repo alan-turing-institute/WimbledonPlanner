@@ -67,6 +67,7 @@ class Wimbledon:
 
         data = query_db.get_data(conn=conn, with_tracked_time=with_tracked_time)
         self.people = data["people"]
+        self.people["capacity"].fillna(0, inplace=True)
         self.projects = data["projects"]
         self.assignments = data["assignments"]
         self.clients = data["clients"]
@@ -294,15 +295,22 @@ class Wimbledon:
         else:
             raise ValueError("id_type must be person or project")
 
-    def get_active_people(self, start_date, end_date, names=False):
+    def get_active_people(self, start_date, end_date, names=False, partners=True):
         """People with capacity (any capacity, not just free capacity) between
         start_date and end_date
         """
-        people = select_date_range(self.people_capacities, start_date, end_date)
+        active = select_date_range(self.people_capacities, start_date, end_date)
+        if not partners:
+            # don't include university partners
+            active = active.loc[
+                :,
+                self.people.loc[active.columns, "association"]
+                != self.get_association_id("University Partner"),
+            ]
         if names:
-            return self.people.loc[people.columns, "name"]
+            return self.people.loc[active.columns, "name"]
         else:
-            return people.columns
+            return active.columns
 
     def get_active_projects(self, start_date, end_date, names=False):
         """Projects with requirerments between start_date and end_date"""

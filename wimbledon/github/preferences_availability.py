@@ -60,7 +60,7 @@ issue{issue_number}: issue(number:{issue_number}) {{
 }}
 """
 
- # People without their full names on github.
+# People without their full names on github.
 default_gid_mapping = {
     "May Yong": "myyong",
     "Nick Barlow": "nbarlowATI",
@@ -293,7 +293,14 @@ def get_person_availability(wim, person, start_date, end_date):
         return 0.0
 
 
-def get_preference_data(wim, github_token, start_date, end_date, emoji_mapping=default_emoji_mapping, gid_mapping=default_gid_mapping):
+def get_preference_data(
+    wim,
+    github_token,
+    start_date,
+    end_date,
+    emoji_mapping=default_emoji_mapping,
+    gid_mapping=default_gid_mapping,
+):
     """
     Get each team members preference emoji for all projects with a GitHub issue.
     Return a pandas df with person against project and their preference emoji.
@@ -304,8 +311,8 @@ def get_preference_data(wim, github_token, start_date, end_date, emoji_mapping=d
     proj_idx = wim.get_active_projects(start_date, end_date, names=False)
     issues = wim.projects.loc[proj_idx, "github"].dropna().astype(int)
     # Get a list of people active in the team
-    names = wim.get_active_people(start_date, end_date, names=True)
-    names = list(wim.people.name)
+    names = wim.get_active_people(start_date, end_date, names=True, partners=False)
+    names = list(names)
     total_people = len(names)
 
     all_reactions = get_reactions(github_token, issues, n_users=total_people)
@@ -315,15 +322,14 @@ def get_preference_data(wim, github_token, start_date, end_date, emoji_mapping=d
     for project_id, issue_num in issues.iteritems():
         # Get a dict with the emoji reactions for this issue
         proj_react = all_reactions[issue_num]
-        if len(proj_react) == 0:
-            continue
         emojis = []
 
         # Get the relevant emoji for each team member for this GitHub issue and
         # associated project
         for name in names:
-            emoji_name = None
-            if name in proj_react["name"].values:
+            if len(proj_react) == 0:
+                emoji_name = "None"
+            elif name in proj_react["name"].values:
                 emoji_name = proj_react[proj_react["name"] == name].iloc[0]["emoji"]
             elif (
                 name in gid_mapping
@@ -341,9 +347,9 @@ def get_preference_data(wim, github_token, start_date, end_date, emoji_mapping=d
 
     preference_data_df = pd.DataFrame(preference_data).set_index("Person")
     # Remove any team members without emoji preferences for any project
-    preference_data_df = preference_data_df.loc[
-        ~(preference_data_df == "❓").all(axis=1)
-    ]
+    # preference_data_df = preference_data_df.loc[
+    #    ~(preference_data_df == "❓").all(axis=1)
+    # ]
     return preference_data_df
 
 
@@ -416,9 +422,7 @@ def make_preferences_table(
 
         issue_num = wim.projects.loc[project_id]["github"]
         if (
-            len(dates_peoplereq) > 0
-            or len(dates_unconf) > 0
-            or len(dates_alloc) > 0
+            len(dates_peoplereq) > 0 or len(dates_unconf) > 0 or len(dates_alloc) > 0
         ) and not math.isnan(issue_num):
             dates_req = totdf.index[totdf[project_id] > 0]
             req_start_date = dates_req[0]
