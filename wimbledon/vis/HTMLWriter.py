@@ -94,7 +94,6 @@ def get_name_style(name, background_color=None, name_type=None, unavail_projects
                           border: 1px solid orange;
                 } """
     elif name in unavail_projects:
-        print("TRUE")
         name_id = get_name_id(name)
         style = """.{name_id} {{
             background-color: white;
