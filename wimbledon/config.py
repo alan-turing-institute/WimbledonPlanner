@@ -70,10 +70,11 @@ def get_harvest_credentials():
     """
     try:
         # check environment variables
-        harvest_credentials = dict()
-        harvest_credentials["harvest_account_id"] = os.environ["HARVEST_ACCOUNT_ID"]
-        harvest_credentials["forecast_account_id"] = os.environ["FORECAST_ACCOUNT_ID"]
-        harvest_credentials["access_token"] = os.environ["HARVEST_ACCESS_TOKEN"]
+        harvest_credentials = {
+            "harvest_account_id": os.environ["HARVEST_ACCOUNT_ID"],
+            "forecast_account_id": os.environ["FORECAST_ACCOUNT_ID"],
+            "access_token": os.environ["HARVEST_ACCESS_TOKEN"],
+        }
 
     except KeyError:
         # check ~/.wimbledon/.harvest_credentials
@@ -147,10 +148,11 @@ def get_sql_config():
 
     try:
         # check environment variables
-        sql_config = dict()
-        sql_config["drivername"] = os.environ["WIMBLEDON_DB_DRIVER"]
-        sql_config["host"] = os.environ["WIMBLEDON_DB_HOST"]
-        sql_config["database"] = os.environ["WIMBLEDON_DB_DATABASE"]
+        sql_config = {
+            "drivername": os.environ["WIMBLEDON_DB_DRIVER"],
+            "host": os.environ["WIMBLEDON_DB_HOST"],
+            "database": os.environ["WIMBLEDON_DB_DATABASE"],
+        }
 
         if sql_config["host"] != "localhost":
             sql_config["port"] = os.environ["WIMBLEDON_DB_PORT"]
@@ -214,9 +216,7 @@ def get_github_credentials():
     """
     try:
         # check environment variables
-        github_credentials = dict()
-        github_credentials["token"] = os.environ["GITHUB_TOKEN"]
-
+        github_credentials = {"token": os.environ["GITHUB_TOKEN"]}
     except KeyError:
         # check ~/.wimbledon/.github_credentials
         try:

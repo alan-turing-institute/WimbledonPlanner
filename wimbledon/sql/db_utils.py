@@ -6,8 +6,7 @@ import wimbledon.config
 
 def get_db_connection():
     engine = get_db_engine()
-    conn = engine.connect()
-    return conn
+    return engine.connect()
 
 
 def get_db_engine():
@@ -20,9 +19,7 @@ def get_db_engine():
         port=db_config["port"],
         database=db_config["database"],
     )
-    engine = sqla.create_engine(url)
-
-    return engine
+    return sqla.create_engine(url)
 
 
 def upsert(table, data, conn, index_elements=["id"], exclude_columns=["id"]):

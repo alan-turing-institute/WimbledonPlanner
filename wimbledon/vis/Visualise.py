@@ -73,10 +73,7 @@ class Visualise:
         else:
             self.END_DATE = end_date
 
-        if freq is None:
-            self.FREQ = "MS"
-        else:
-            self.FREQ = freq
+        self.FREQ = "MS" if freq is None else freq
 
     def get_time_parameters(self, start_date=None, end_date=None, freq=None):
 
@@ -126,15 +123,13 @@ class Visualise:
             self.wim.get_project_name(idx)
             for idx in self.wim.get_client_projects(unavail_client)
         ]
-        html = HTMLWriter.make_whiteboard(
+        return HTMLWriter.make_whiteboard(
             sheet,
             key_type,
             display,
             update_timestamp=update_timestamp,
             unavail_projects=unavail_project_names,
         )
-
-        return html
 
     def all_whiteboards(
         self, start_date=None, end_date=None, freq=None, update_timestamp=None
@@ -164,7 +159,7 @@ class Visualise:
             for idx in self.wim.get_client_projects(unavail_client)
         ]
 
-        whiteboards = dict()
+        whiteboards = {}
 
         # ########
         # PROJECTS
@@ -338,18 +333,17 @@ class Visualise:
 
         # check whether there's anything to plot
         rows, cols = df.shape
-        if rows > 0 and cols > 0:
-            if freq != "D":
-                df = df.resample(freq).mean()
-
-            return df
-
-        else:
+        if rows <= 0 or cols <= 0:
             raise ValueError(
                 "No {:s} data to plot for id {:s} between {:s} and {:s}".format(
                     id_type, str(id_value), str(start_date.date()), str(end_date.date())
                 )
             )
+
+        if freq != "D":
+            df = df.resample(freq).mean()
+
+        return df
 
     def plot_allocations(
         self, id_value, id_type, start_date=None, end_date=None, freq="W-MON"
@@ -883,16 +877,12 @@ class Visualise:
                     fontsize=22,
                 )
 
-            elif q.month == 7:
+            elif q.month in [7, 1]:
                 linestyle = ":"
                 linewidth = "1.5"
 
             elif q.month == 10:
                 linestyle = "--"
-                linewidth = "1.5"
-
-            elif q.month == 1:
-                linestyle = ":"
                 linewidth = "1.5"
 
             ax.plot(
@@ -952,7 +942,7 @@ class Visualise:
 
             if (
                 not np.isnan(client_id)
-                and not self.wim.clients.loc[client_id, "name"] == "UNAVAILABLE"
+                and self.wim.clients.loc[client_id, "name"] != "UNAVAILABLE"
             ):
 
                 clients.append(self.wim.clients.loc[client_id, "name"])

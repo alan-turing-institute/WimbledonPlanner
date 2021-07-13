@@ -96,17 +96,9 @@ class Wimbledon:
         self.date_range_workdays = get_business_days(start_date, end_date)
 
         # 1 FTE hours per day
-        if work_hrs_per_day is None:
-            self.work_hrs_per_day = 8
-        else:
-            self.work_hrs_per_day = work_hrs_per_day
-
+        self.work_hrs_per_day = 8 if work_hrs_per_day is None else work_hrs_per_day
         # hours per day nominally for projects
-        if proj_hrs_per_day is None:
-            self.proj_hrs_per_day = 6.4
-        else:
-            self.proj_hrs_per_day = proj_hrs_per_day
-
+        self.proj_hrs_per_day = 6.4 if proj_hrs_per_day is None else proj_hrs_per_day
         # convert assignments in seconds per day to fractions of 1 FTE
         # (defined by self.work_hrs_per_day)
         self.assignments["allocation"] = self.assignments["allocation"] / (
@@ -390,10 +382,12 @@ class Wimbledon:
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
 
-            if key_type == "person":
-                if df.columns.isin(unavail_project_names).all():
-                    # don't display people who are only assigned as unavailable
-                    continue
+            if (
+                key_type == "person"
+                and df.columns.isin(unavail_project_names).all()
+            ):
+                # don't display people who are only assigned as unavailable
+                continue
 
             # check there are project allocations to display
             if df.shape[0] > 0 and df.shape[1] > 0:
@@ -475,12 +469,7 @@ class Wimbledon:
 
             # Add project client info to index (~programme area)
             sheet["client_name"] = client_name.values
-            sheet.set_index(["client_name", sheet.index], inplace=True)
-            sheet.index.rename("project_name", 1, inplace=True)
-            sheet.index.rename("row", 2, inplace=True)
-
-            sheet.sort_values(by=["client_name", "project_name", "row"], inplace=True)
-
+            self._extracted_from_whiteboard_152(sheet, "client_name", "project_name")
             # Move REG/Turing support projects to end
             clients = client_name.unique()
             reg = [client for client in clients if "REG" in client]
@@ -501,14 +490,13 @@ class Wimbledon:
             proj_gitissue = [self.projects.loc[idx, "github"] for idx in proj_idx]
             git_base_url = "https://github.com/alan-turing-institute/Hut23/issues"
 
-            proj_names_with_url = {}
-            for idx, proj in enumerate(proj_names):
-                if not np.isnan(proj_gitissue[idx]):
-                    proj_names_with_url[
-                        proj
-                    ] = """<a href="{url}/{issue}">{proj}<br>[GitHub: #{issue}]</a>""".format(
-                        url=git_base_url, issue=int(proj_gitissue[idx]), proj=proj
-                    )
+            proj_names_with_url = {
+                proj: """<a href="{url}/{issue}">{proj}<br>[GitHub: #{issue}]</a>""".format(
+                    url=git_base_url, issue=int(proj_gitissue[idx]), proj=proj
+                )
+                for idx, proj in enumerate(proj_names)
+                if not np.isnan(proj_gitissue[idx])
+            }
 
             sheet.rename(proj_names_with_url, axis="index", level=1, inplace=True)
 
@@ -524,12 +512,7 @@ class Wimbledon:
 
             # Add project client info to index (~programme area)
             sheet["group_name"] = group_name
-            sheet.set_index(["group_name", sheet.index], inplace=True)
-            sheet.index.rename("person_name", 1, inplace=True)
-            sheet.index.rename("row", 2, inplace=True)
-
-            sheet.sort_values(by=["group_name", "person_name", "row"], inplace=True)
-
+            self._extracted_from_whiteboard_152(sheet, "group_name", "person_name")
             sheet = sheet.reindex(
                 [
                     "REG Director",
@@ -547,6 +530,13 @@ class Wimbledon:
             sheet.index.rename([None, None, None], inplace=True)
 
         return sheet
+
+    def _extracted_from_whiteboard_152(self, sheet, arg1, arg2):
+        sheet.set_index([arg1, sheet.index], inplace=True)
+        sheet.index.rename(arg2, 1, inplace=True)
+        sheet.index.rename("row", 2, inplace=True)
+
+        sheet.sort_values(by=[arg1, arg2, "row"], inplace=True)
 
     def _get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where
@@ -612,7 +602,7 @@ class Wimbledon:
         totals = pd.DataFrame(index=self.date_range_workdays, columns=id_values)
         unavail_client = self.get_client_id("UNAVAILABLE")
         unavail_projects = self.get_client_projects(unavail_client)
-        for idx in allocations.keys():
+        for idx in allocations:
             if ref_column == "project":
                 # don't include unavailable project in totals
                 alloc_wo_unavil = allocations[idx].drop(
@@ -766,12 +756,10 @@ class Wimbledon:
                     else:
                         id_entry_days.loc[row["date"], row[ref_column]] += row["hours"]
 
+            elif ref_column == "TOTAL":
+                id_entry_days = pd.Series(index=self.date_range_alldays).fillna(0)
             else:
-                # no projects, just make an empty dataframe
-                if ref_column == "TOTAL":
-                    id_entry_days = pd.Series(index=self.date_range_alldays).fillna(0)
-                else:
-                    id_entry_days = pd.DataFrame(index=self.date_range_alldays)
+                id_entry_days = pd.DataFrame(index=self.date_range_alldays)
 
             # Add the person's name as a label - just nice for printing later.
             if ref_column != "TOTAL":
@@ -799,25 +787,21 @@ class Wimbledon:
             now being client ids.
         """
         if isinstance(tracking, pd.DataFrame):
-            grouped_df = tracking.copy(deep=True)
-
-            grouped_df.columns = [
-                self.projects.loc[col, "client"] for col in grouped_df.columns
-            ]
-            grouped_df = grouped_df.groupby(grouped_df.columns, axis=1).sum()
+            grouped_df = self._sum_tracking_by_client(tracking)
             return grouped_df
 
         elif isinstance(tracking, dict):
-            grouped_dict = dict()
+            grouped_dict = {}
             for idx, df in tracking.items():
-                grouped_df = df.copy(deep=True)
-
-                grouped_df.columns = [
-                    self.projects.loc[col, "client"] for col in grouped_df.columns
-                ]
-                grouped_df = grouped_df.groupby(grouped_df.columns, axis=1).sum()
+                grouped_df = self._sum_tracking_by_client(df)
                 grouped_dict[idx] = grouped_df
 
             return grouped_dict
         else:
             raise TypeError("tracking must be dataframe or dict of dataframes")
+
+    def _sum_tracking_by_client(self, df):
+        result = df.copy(deep=True)
+        result.columns = [self.projects.loc[col, "client"] for col in result.columns]
+        result = result.groupby(result.columns, axis=1).sum()
+        return result
