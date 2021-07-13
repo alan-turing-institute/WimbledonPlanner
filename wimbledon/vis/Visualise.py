@@ -421,7 +421,7 @@ class Visualise:
         def highlight_tot(series):
             """function used to apply highlighting to the TOTAL column"""
             is_over = series > 1.21
-            is_marginal = (series > 1.1) & (is_over is False)
+            is_marginal = (series > 1.1) & (is_over != False)
             is_under = series < 0.9
 
             style = []
