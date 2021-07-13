@@ -195,9 +195,12 @@ def build_query(issue_numbers, n_users=20, n_comments=1):
         )
 
     if n_comments > 1:
-        issue_queries = " ".join(comment_query_template.format(
-                    issue_number=isno, n_users=n_users, n_comments=n_comments
-                ) for isno in issue_numbers)
+        issue_queries = " ".join(
+            comment_query_template.format(
+                issue_number=isno, n_users=n_users, n_comments=n_comments
+            )
+            for isno in issue_numbers
+        )
     else:
         issue_queries = " ".join(
             issue_query_template.format(issue_number=isno, n_users=n_users)
@@ -553,9 +556,7 @@ def make_preferences_table(
     # remove unecessary row for "Name" label
     preferences.index.name = None
     emoji_table = preferences.to_html(escape=False)  # Convert to HTML table
-    return (
-        css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
-    )
+    return css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
 
 
 def get_all_preferences_table(wim=None, first_date=datetime.now(), last_date=None):

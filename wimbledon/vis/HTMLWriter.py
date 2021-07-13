@@ -468,11 +468,7 @@ def get_colors(df):
     colors = {"WHITE": (1, 1, 1)}  # avoid white backgrounds
 
     for key in names:
-        if (
-            "PEOPLE REQUIRED" in key
-            or "UNCONFIRMED" in key
-            or "DEFERRED" in key
-        ):
+        if "PEOPLE REQUIRED" in key or "UNCONFIRMED" in key or "DEFERRED" in key:
             continue
         else:
             colors[key] = distinctipy.get_colors(

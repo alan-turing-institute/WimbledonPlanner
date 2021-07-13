@@ -382,10 +382,7 @@ class Wimbledon:
             # extract the date range of interest
             df = select_date_range(df, start_date, end_date)
 
-            if (
-                key_type == "person"
-                and df.columns.isin(unavail_project_names).all()
-            ):
+            if key_type == "person" and df.columns.isin(unavail_project_names).all():
                 # don't display people who are only assigned as unavailable
                 continue
 
