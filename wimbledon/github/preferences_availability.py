@@ -196,19 +196,15 @@ def build_query(issue_numbers, n_users=20, n_comments=1):
 
     if n_comments > 1:
         issue_queries = " ".join(
-            [
-                comment_query_template.format(
-                    issue_number=isno, n_users=n_users, n_comments=n_comments
-                )
-                for isno in issue_numbers
-            ]
+            comment_query_template.format(
+                issue_number=isno, n_users=n_users, n_comments=n_comments
+            )
+            for isno in issue_numbers
         )
     else:
         issue_queries = " ".join(
-            [
-                issue_query_template.format(issue_number=isno, n_users=n_users)
-                for isno in issue_numbers
-            ]
+            issue_query_template.format(issue_number=isno, n_users=n_users)
+            for isno in issue_numbers
         )
 
     return repo_query_template.format(issue_queries=issue_queries)
@@ -345,12 +341,11 @@ def get_preference_data(
 
         preference_data[wim.get_project_name(project_id)] = emojis
 
-    preference_data_df = pd.DataFrame(preference_data).set_index("Person")
     # Remove any team members without emoji preferences for any project
     # preference_data_df = preference_data_df.loc[
     #    ~(preference_data_df == "❓").all(axis=1)
     # ]
-    return preference_data_df
+    return pd.DataFrame(preference_data).set_index("Person")
 
 
 def make_preferences_table(
@@ -389,18 +384,14 @@ def make_preferences_table(
         allocdf = allocdf[allocdf.index <= last_date]
         totdf = totdf[totdf.index <= last_date]
 
-    if person:
-        names = [person]
-    else:
-        names = list(preference_data_df.index)
+    names = [person] if person else list(preference_data_df.index)
     data = {"Person": names}
     # If a project name or project id is provided, only get data for that project
-    if project:
-        if isinstance(project, str):
-            try:
-                project = wim.get_project_id(project)
-            except (IndexError, KeyError):
-                pass
+    if project and isinstance(project, str):
+        try:
+            project = wim.get_project_id(project)
+        except (IndexError, KeyError):
+            pass
 
     # Get projects with some people requirement but filter by those with a GitHub
     # issue
@@ -485,12 +476,8 @@ def make_preferences_table(
                 ].mean()
 
                 if peoplereq >= 0.01:
-                    if len(dates_alloc) > 0:
-                        pre = " + "
-                        post = " R"
-                    else:
-                        pre = ""
-                        post = " R"
+                    pre = " + " if len(dates_alloc) > 0 else ""
+                    post = " R"
                     project_title += pre + "" + str(round(peoplereq, 1)) + post
             else:
                 peoplereq = 0
@@ -517,10 +504,9 @@ def make_preferences_table(
                     # present
                     if len(dates_peoplereq) > 0 or len(dates_alloc) > 0:
                         pre = " + "
-                        post = " U"
                     else:
                         pre = ""
-                        post = " U"
+                    post = " U"
                     project_title += pre + "" + str(round(unconf, 1)) + post
             else:
                 unconf = 0
@@ -570,10 +556,7 @@ def make_preferences_table(
     # remove unecessary row for "Name" label
     preferences.index.name = None
     emoji_table = preferences.to_html(escape=False)  # Convert to HTML table
-    html_table = (
-        css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
-    )  # Add CSS to table
-    return html_table
+    return css + """<div class="tableFixHead">""" + emoji_table + """</div>"""
 
 
 def get_all_preferences_table(wim=None, first_date=datetime.now(), last_date=None):
@@ -588,7 +571,6 @@ def get_all_preferences_table(wim=None, first_date=datetime.now(), last_date=Non
     if not wim:
         wim = Wimbledon(update_db=True, with_tracked_time=False)
     preference_data_df = get_preference_data(wim, token, first_date, last_date)
-    table = make_preferences_table(
+    return make_preferences_table(
         wim, preference_data_df, first_date=first_date, last_date=last_date
     )
-    return table

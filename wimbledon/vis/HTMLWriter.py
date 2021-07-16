@@ -26,31 +26,35 @@ def get_name_id(name):
     """
 
     if "PEOPLE REQUIRED" in name:
-        name_id = "PEOPLE_REQUIRED"
+        return "PEOPLE_REQUIRED"
     elif "UNCONFIRMED" in name:
-        name_id = "UNCONFIRMED"
+        return "UNCONFIRMED"
     elif "DEFERRED" in name:
-        name_id = "DEFERRED"
+        return "DEFERRED"
     elif "NOT FUNDED" in name:
-        name_id = "NOT_FUNDED"
+        return "NOT_FUNDED"
     else:
-        # remove everything between a < and a > (html tags)
-        name = re.sub(r"(?<=\<)(.*?)(?=\>)", "", name)
-        name = name.replace("<", "")
-        name = name.replace(">", "")
+        return _name_to_id(name)
 
-        # remove time allocation of format (x.x)
-        name = re.sub(r"\(\d\.\d\)", "", name)
 
-        # strip punctuation (https://stackoverflow.com/a/266162)
-        name_id = name.translate(str.maketrans("", "", string.punctuation))
-        name_id = name_id.replace(" ", "_")
+def _name_to_id(name):
+    # remove everything between a < and a > (html tags)
+    name = re.sub(r"(?<=\<)(.*?)(?=\>)", "", name)
+    name = name.replace("<", "")
+    name = name.replace(">", "")
 
-        # remove all digits at start of name (CSS class names can't start with
-        # digits)
-        name_id = re.sub(r"^\d*", "", name_id)
+    # remove time allocation of format (x.x)
+    name = re.sub(r"\(\d\.\d\)", "", name)
 
-    return name_id
+    # strip punctuation (https://stackoverflow.com/a/266162)
+    result = name.translate(str.maketrans("", "", string.punctuation))
+    result = result.replace(" ", "_")
+
+    # remove all digits at start of name (CSS class names can't start with
+    # digits)
+    result = re.sub(r"^\d*", "", result)
+
+    return result
 
 
 def get_name_style(name, background_color=None, name_type=None, unavail_projects=[]):
@@ -157,38 +161,37 @@ def write_style(df, display="print", unavail_projects=[]):
     if display == "nostyle":
         return ""
 
-    else:
-        style = """<style  type="text/css" > """
-        style += get_base_style()
+    style = """<style  type="text/css" > """
+    style += get_base_style()
 
-        if display == "screen":
-            style += get_screen_style()
+    if display == "screen":
+        style += get_screen_style()
 
-        colors = get_colors(df)
+    colors = get_colors(df)
 
-        for name, color in colors.items():
-            style += get_name_style(name, color, unavail_projects=unavail_projects)
+    for name, color in colors.items():
+        style += get_name_style(name, color, unavail_projects=unavail_projects)
 
-        style += get_name_style("PEOPLE REQUIRED", unavail_projects=unavail_projects)
-        style += get_name_style("UNCONFIRMED", unavail_projects=unavail_projects)
-        style += get_name_style("DEFERRED", unavail_projects=unavail_projects)
+    style += get_name_style("PEOPLE REQUIRED", unavail_projects=unavail_projects)
+    style += get_name_style("UNCONFIRMED", unavail_projects=unavail_projects)
+    style += get_name_style("DEFERRED", unavail_projects=unavail_projects)
 
-        group_colors = get_group_colors(df)
+    group_colors = get_group_colors(df)
 
-        for client, color in group_colors.items():
-            style += get_name_style(
-                client, color, name_type="client", unavail_projects=unavail_projects
-            )
+    for client, color in group_colors.items():
+        style += get_name_style(
+            client, color, name_type="client", unavail_projects=unavail_projects
+        )
 
-        style += "</style>"
+    style += "</style>"
 
-        return style
+    return style
 
 
 def get_base_style():
     """css used for general table style: fonts, alignments, sizes etc."""
 
-    style = """table {
+    return """table {
           font-size: 13;
           font-family: neue-haas-unica, sans-serif;
           font-style: normal;
@@ -250,8 +253,6 @@ def get_base_style():
           background-color:  white;
         }"""
 
-    return style
-
 
 def get_screen_style():
     """additional css used for screen display mode to:
@@ -260,7 +261,7 @@ def get_screen_style():
     sends to GitHub issue)
     """
 
-    style = """ div.container {
+    return """ div.container {
           overflow: scroll;
           max-height: 100%;
           max-width: 100%;
@@ -282,8 +283,6 @@ def get_screen_style():
         }  .index:hover {
           background-color: #ffff99;
         }"""
-
-    return style
 
 
 def write_header(columns, title="Research Engineering Project Allocations"):
@@ -466,23 +465,10 @@ def get_colors(df):
     # appearing first to name appearing last, which helps with keeping colours distinct
     names = pd.Series(names).drop_duplicates().values
 
-    colors = dict()
-
-    # to avoid white, uncomment this line:
-    colors["WHITE"] = (1, 1, 1)
-
-    # to avoid black/dark colours, uncomment this line:
-    # colors['BLACK'] = (0, 0, 0)
-
-    # to avoid red uncomment this line:
-    # colors['RED'] = (1, 0, 0)
+    colors = {"WHITE": (1, 1, 1)}  # avoid white backgrounds
 
     for key in names:
-        if "PEOPLE REQUIRED" in key:
-            continue
-        elif "UNCONFIRMED" in key:
-            continue
-        elif "DEFERRED" in key:
+        if "PEOPLE REQUIRED" in key or "UNCONFIRMED" in key or "DEFERRED" in key:
             continue
         else:
             colors[key] = distinctipy.get_colors(
@@ -497,8 +483,7 @@ def get_group_colors(df):
     groups = df.index.get_level_values(0).unique()
     colors = distinctipy.get_colors(len(groups))
 
-    group_colors = {groups[idx]: colors[idx] for idx in range(len(groups))}
-    return group_colors
+    return {groups[idx]: colors[idx] for idx in range(len(groups))}
 
 
 def make_whiteboard(df, key_type, display, update_timestamp=None, unavail_projects=[]):

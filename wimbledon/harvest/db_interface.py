@@ -82,7 +82,7 @@ def merge_placeholders(
     # avoid overwriting original df
     placeholders = placeholders.copy(deep=True)
     # dictionary of {old key: new key} for merged keys
-    merged_keys_dict = dict()
+    merged_keys_dict = {}
     for name in names:
         # find rows that contain a case insensitive match to name
         matches = placeholders[

@@ -19,9 +19,7 @@ def get_data(conn=None, with_tracked_time=True):
     if conn is None:
         conn = db_utils.get_db_connection()
 
-    data = dict()
-
-    data["people"] = pd.read_sql_table("people", conn, index_col="id")
+    data = {"people": pd.read_sql_table("people", conn, index_col="id")}
 
     data["associations"] = pd.read_sql_table("associations", conn, index_col="id")
 

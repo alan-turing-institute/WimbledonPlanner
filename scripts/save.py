@@ -27,7 +27,7 @@ import time
 import os.path
 import sys
 import string
-import subprocesse
+import subprocess
 from datetime import datetime
 
 import pandas as pd
@@ -100,30 +100,29 @@ def forecast_summary(vis, display="screen"):
     print("{:.1f}s".format(time.time() - start))
 
 
-def whiteboard():
+def whiteboard(vis):
     print("Saving Whiteboard visualisations...", end="", flush=True)
     start = time.time()
 
-    # make poster pdf sheets
-    sheet = vis.whiteboard("person", display="print")
-    save_sheet(sheet, PEOPLE_DIR, "people")
-
-    sheet = vis.whiteboard("project", display="print")
-    save_sheet(sheet, PROJECTS_DIR, "projects")
-
+    _save_whiteboards(vis, "print")
     try:
         subprocess.call(["sh", "whiteboard_to_pdf.sh"])
     except:
         print("PDF conversion failed.")
 
-    # make screen optimised sheets
-    sheet = vis.whiteboard("person", display="screen")
-    save_sheet(sheet, PEOPLE_DIR, "people")
-
-    sheet = vis.whiteboard("project", display="screen")
-    save_sheet(sheet, PROJECTS_DIR, "projects")
-
+    _save_whiteboards(vis, "screen")
     print("{:.1f}s".format(time.time() - start))
+
+
+def _save_whiteboards(vis, display):
+    # make poster pdf sheets
+    result = vis.whiteboard("person", display=display)
+    save_sheet(result, PEOPLE_DIR, "people")
+
+    result = vis.whiteboard("project", display=display)
+    save_sheet(result, PROJECTS_DIR, "projects")
+
+    return result
 
 
 def harvest_vs_forecast(vis):
@@ -196,16 +195,8 @@ def forecast_individual(vis):
 if __name__ == "__main__":
     args = sys.argv[1:]
 
-    if "harvest" in args:
-        with_tracked_time = True
-    else:
-        with_tracked_time = False
-
-    if "update" in args:
-        update_db = True
-    else:
-        update_db = False
-
+    with_tracked_time = "harvest" in args
+    update_db = "update" in args
     vis = init_vis(with_tracked_time=with_tracked_time, update_db=update_db)
 
     if "forecast" in args and "individual" in args:
@@ -219,7 +210,7 @@ if __name__ == "__main__":
         forecast_summary(vis)
 
     elif "whiteboard" in args:
-        whiteboard()
+        whiteboard(vis)
 
     if "harvest" in args:
         harvest_vs_forecast(vis)
