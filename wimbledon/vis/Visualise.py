@@ -709,7 +709,6 @@ class Visualise:
             linewidth=0,
         )
 
-        cap_colors = ["purple", "red", "blue", "black"]
         cap_colors = [
             (1, 0.5, 0),
             (0, 1, 0),
