@@ -466,7 +466,7 @@ class Wimbledon:
 
             # Add project client info to index (~programme area)
             sheet["client_name"] = client_name.values
-            self._extracted_from_whiteboard_152(sheet, "client_name", "project_name")
+            self._name_whiteboard_index(sheet, "client_name", "project_name")
             # Move REG/Turing support projects to end
             clients = client_name.unique()
             reg = [client for client in clients if "REG" in client]
@@ -509,7 +509,7 @@ class Wimbledon:
 
             # Add project client info to index (~programme area)
             sheet["group_name"] = group_name
-            self._extracted_from_whiteboard_152(sheet, "group_name", "person_name")
+            self._name_whiteboard_index(sheet, "group_name", "person_name")
             sheet = sheet.reindex(
                 [
                     "REG Director",
@@ -528,12 +528,12 @@ class Wimbledon:
 
         return sheet
 
-    def _extracted_from_whiteboard_152(self, sheet, arg1, arg2):
-        sheet.set_index([arg1, sheet.index], inplace=True)
-        sheet.index.rename(arg2, 1, inplace=True)
+    def _name_whiteboard_index(self, sheet, index_col, group_name):
+        sheet.set_index([index_col, sheet.index], inplace=True)
+        sheet.index.rename(group_name, 1, inplace=True)
         sheet.index.rename("row", 2, inplace=True)
 
-        sheet.sort_values(by=[arg1, arg2, "row"], inplace=True)
+        sheet.sort_values(by=[index_col, group_name, "row"], inplace=True)
 
     def _get_allocations(self, id_column):
         """For each unique value in id_column, create a dataframe where
