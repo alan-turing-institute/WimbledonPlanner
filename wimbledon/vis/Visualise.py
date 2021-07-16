@@ -674,186 +674,52 @@ class Visualise:
         start_date, end_date, freq = self.get_time_parameters(
             start_date, end_date, freq
         )
-
         if today is None:
             today = datetime.now()
-
         # move start date to 1st of specified month (fixes some display issues)
         start_date = datetime(start_date.year, start_date.month, 1)
 
-        # ----------
-        # DEMAND
-        # ----------
-        # Get totals for REG management, development and support clients
-        corp_duties_idx = self.wim.get_client_id("Corporate Duties")
-        reg_service_idx = self.wim.get_client_id("REG Service Areas")
-        reg_management_idx = self.wim.get_client_id("REG Management")
-        reg_dev_idx = self.wim.get_client_id("REG Development Work")
-        turing_service_idx = self.wim.get_client_id("Turing Service Areas")
-        turing_prog_idx = self.wim.get_client_id("Turing Programme Support")
-
-        corp_duties_projs = self.wim.projects[
-            self.wim.projects.client == corp_duties_idx
-        ].index
-        reg_service_projs = self.wim.projects[
-            self.wim.projects.client == reg_service_idx
-        ].index
-        reg_management_projs = self.wim.projects[
-            self.wim.projects.client == reg_management_idx
-        ].index
-        reg_dev_projs = self.wim.projects[self.wim.projects.client == reg_dev_idx].index
-        turing_service_projs = self.wim.projects[
-            self.wim.projects.client == turing_service_idx
-        ].index
-        turing_prog_projs = self.wim.projects[
-            self.wim.projects.client == turing_prog_idx
-        ].index
-
-        corp_duties_reqs = self.wim.project_confirmed[corp_duties_projs].sum(axis=1)
-        reg_service_reqs = self.wim.project_confirmed[reg_service_projs].sum(axis=1)
-        reg_management_reqs = self.wim.project_confirmed[reg_management_projs].sum(
-            axis=1
-        )
-        reg_dev_reqs = self.wim.project_confirmed[reg_dev_projs].sum(axis=1)
-        turing_service_reqs = self.wim.project_confirmed[turing_service_projs].sum(
-            axis=1
-        )
-        turing_prog_reqs = self.wim.project_confirmed[turing_prog_projs].sum(axis=1)
-
-        # Get overall totals
-        unavail_client = self.wim.get_client_id("UNAVAILABLE")
-        unavail_project_ids = self.wim.get_client_projects(unavail_client)
-        project_confirmed = self.wim.project_confirmed.drop(
-            [
-                proj
-                for proj in self.wim.project_confirmed.columns
-                if proj in unavail_project_ids
-            ],
-            axis=1,
-        )
-        project_confirmed = project_confirmed.sum(axis=1)
-
-        # project_confirmed = total for all non-research support, REG management or
-        # REG development projects
-        project_confirmed = (
-            project_confirmed
-            - corp_duties_reqs
-            - reg_management_reqs
-            - reg_dev_reqs
-            - reg_service_reqs
-            - turing_service_reqs
-            - turing_prog_reqs
-        )
-
-        # Get totals for unconfirmed and deferred projects
-        unconfirmed = self.wim.project_unconfirmed.sum(axis=1)
-        deferred = self.wim.project_deferred.sum(axis=1)
-        notfunded = self.wim.project_notfunded.sum(axis=1)
-
-        # merge all demand types into one dataframe ready for plotting
-        demand = pd.DataFrame(
-            {
-                "Corporate Duties": corp_duties_reqs,
-                "REG Management": reg_management_reqs,
-                "REG Development": reg_dev_reqs,
-                "REG Service Areas": reg_service_reqs,
-                "Turing Service Areas": turing_service_reqs,
-                "Turing Programme Support": turing_prog_reqs,
-                "Confirmed projects": project_confirmed,
-                "Projects with funder": unconfirmed,
-                "Deferred projects": deferred,
-                "Not Funded projects": notfunded,
-            }
-        )
-
-        demand = select_date_range(demand, start_date, end_date, drop_zero_cols=False)
-
-        demand = demand.resample(freq).mean()
-
-        # ----------
-        # CAPACITY
-        # ----------
-
-        # Idx for people on fixed term contracts
-        ftc = self.wim.people[
-            self.wim.people["association"] == self.wim.get_association_id("REG FTC")
-        ].index
-
-        # Idx for REG associates
-        assoc = self.wim.people[
-            self.wim.people["association"]
-            == self.wim.get_association_id("REG Associate")
-        ].index
-        # Idx for people on permanent contracts
-        select_perm = pd.DataFrame(index=self.wim.people.index)
-        select_perm["perm"] = self.wim.people[
-            "association"
-        ] == self.wim.get_association_id("REG Permanent")
-        select_perm["senior"] = self.wim.people[
-            "association"
-        ] == self.wim.get_association_id("REG Senior")
-        select_perm["princ"] = self.wim.people[
-            "association"
-        ] == self.wim.get_association_id("REG Principal")
-        select_perm["direc"] = self.wim.people[
-            "association"
-        ] == self.wim.get_association_id("REG Director")
-        select_perm = select_perm.any(axis=1)
-        perm = self.wim.people[select_perm].index
-        # Idx for university partners
-        partner = self.wim.people[
-            self.wim.people["association"]
-            == self.wim.get_association_id("University Partner")
-        ].index
-        # Merge capacity types into one dataframe
-        capacity = pd.DataFrame(index=self.wim.people_capacities.index)
-        capacity["REG FTC"] = self.wim.people_capacities[ftc].sum(axis=1)
-        capacity["REG Associate"] = self.wim.people_capacities[assoc].sum(axis=1)
-        capacity["REG Permanent"] = self.wim.people_capacities[perm].sum(axis=1)
-        # use actual allocations rather than capacity for university partners as
-        # they don't have a normal "REG capacity" outside of REG projects
-        capacity["University Partner"] = self.wim.people_totals[partner].sum(axis=1)
-        capacity = capacity.resample(freq).mean()
-
-        capacity = select_date_range(
-            capacity, start_date, end_date, drop_zero_cols=False
-        )
-
-        # order columns
-        capacity = capacity[
-            ["REG Permanent", "REG FTC", "University Partner", "REG Associate"]
-        ]
+        demand = self._get_grouped_demand(start_date, end_date, freq)
+        capacity = self._get_association_capacities(start_date, end_date, freq)
 
         # ----------
         # PLOT
         # ----------
         fig = plt.figure(figsize=figsize)
         ax = fig.gca()
-
+        dem_colors = [
+            "black",
+            "#041165",
+            "#043E65",
+            "#2E86C1",
+            "#ffb0d7",
+            "#c32ff5",
+            "g",
+            "y",
+            "#db7900",
+            "darkred",
+        ]
         demand.plot.area(
             ax=ax,
             x_compat=True,
             rot=90,
             alpha=0.8,
-            color=[
-                "black",
-                "#041165",
-                "#043E65",
-                "#2E86C1",
-                "#ffb0d7",
-                "#c32ff5",
-                "g",
-                "y",
-                "#db7900",
-                "darkred",
-            ],
+            color=dem_colors,
             stacked=True,
             linewidth=0,
         )
 
-        capacity.cumsum(axis=1).plot(
-            ax=ax, rot=90, linewidth=1.5, color=["purple", "red", "blue", "black"]
-        )
+        cap_colors = ["purple", "red", "blue", "black"]
+        cap_colors = [
+            (1, 0.5, 0),
+            (0, 1, 0),
+            (0, 0.5, 1),
+            (1, 0, 1),
+            (0.04692137717691269, 0.9687034856854967, 0.6798223529932635),
+            (0.5803636366592884, 0.3439282699939734, 0.6356372506440048),
+            (0, 0, 0.5),
+        ]
+        capacity.cumsum(axis=1).plot(ax=ax, rot=90, linewidth=1.5, color=cap_colors)
 
         # axis limits
         xlim = ax.get_xlim()
@@ -928,6 +794,114 @@ class Visualise:
         )
 
         return fig
+
+    def _get_grouped_demand(self, start_date, end_date, freq):
+        # Get totals for REG management, development and support clients
+        corp_duties_idx = self.wim.get_client_id("Corporate Duties")
+        reg_service_idx = self.wim.get_client_id("REG Service Areas")
+        reg_management_idx = self.wim.get_client_id("REG Management")
+        reg_dev_idx = self.wim.get_client_id("REG Development Work")
+        turing_service_idx = self.wim.get_client_id("Turing Service Areas")
+        turing_prog_idx = self.wim.get_client_id("Turing Programme Support")
+
+        corp_duties_projs = self.wim.projects[
+            self.wim.projects.client == corp_duties_idx
+        ].index
+        reg_service_projs = self.wim.projects[
+            self.wim.projects.client == reg_service_idx
+        ].index
+        reg_management_projs = self.wim.projects[
+            self.wim.projects.client == reg_management_idx
+        ].index
+        reg_dev_projs = self.wim.projects[self.wim.projects.client == reg_dev_idx].index
+        turing_service_projs = self.wim.projects[
+            self.wim.projects.client == turing_service_idx
+        ].index
+        turing_prog_projs = self.wim.projects[
+            self.wim.projects.client == turing_prog_idx
+        ].index
+
+        corp_duties_reqs = self.wim.project_confirmed[corp_duties_projs].sum(axis=1)
+        reg_service_reqs = self.wim.project_confirmed[reg_service_projs].sum(axis=1)
+        reg_management_reqs = self.wim.project_confirmed[reg_management_projs].sum(
+            axis=1
+        )
+        reg_dev_reqs = self.wim.project_confirmed[reg_dev_projs].sum(axis=1)
+        turing_service_reqs = self.wim.project_confirmed[turing_service_projs].sum(
+            axis=1
+        )
+        turing_prog_reqs = self.wim.project_confirmed[turing_prog_projs].sum(axis=1)
+
+        # Get overall totals
+        unavail_client = self.wim.get_client_id("UNAVAILABLE")
+        unavail_project_ids = self.wim.get_client_projects(unavail_client)
+        project_confirmed = self.wim.project_confirmed.drop(
+            [
+                proj
+                for proj in self.wim.project_confirmed.columns
+                if proj in unavail_project_ids
+            ],
+            axis=1,
+        )
+        project_confirmed = project_confirmed.sum(axis=1)
+
+        # project_confirmed = total for all non-research support, REG management or
+        # REG development projects
+        project_confirmed = (
+            project_confirmed
+            - corp_duties_reqs
+            - reg_management_reqs
+            - reg_dev_reqs
+            - reg_service_reqs
+            - turing_service_reqs
+            - turing_prog_reqs
+        )
+
+        unconfirmed = self.wim.project_unconfirmed.sum(axis=1)
+        deferred = self.wim.project_deferred.sum(axis=1)
+        notfunded = self.wim.project_notfunded.sum(axis=1)
+
+        demand = pd.DataFrame(
+            {
+                "Corporate Duties": corp_duties_reqs,
+                "REG Management": reg_management_reqs,
+                "REG Development": reg_dev_reqs,
+                "REG Service Areas": reg_service_reqs,
+                "Turing Service Areas": turing_service_reqs,
+                "Turing Programme Support": turing_prog_reqs,
+                "Confirmed projects": project_confirmed,
+                "Projects with funder": unconfirmed,
+                "Deferred projects": deferred,
+                "Not Funded projects": notfunded,
+            }
+        )
+        demand = select_date_range(demand, start_date, end_date, drop_zero_cols=False)
+        return demand.resample(freq).mean()
+
+    def _get_association_capacities(self, start_date, end_date, freq):
+        capacity = self.wim.people_capacities.copy()
+        # change name indices to association indices
+        capacity.columns = self.wim.people.association.loc[
+            self.wim.people_capacities.columns
+        ]
+        # groupby association (transpose then revert below so groupby can apply to rows)
+        capacity = capacity.T.groupby("association").sum().T
+        # replace
+        capacity.columns = self.wim.associations.loc[capacity.columns, "name"]
+        # order columns
+        capacity = capacity[
+            [
+                "REG Director",
+                "REG Principal",
+                "REG Senior",
+                "REG Standard",
+                "REG Junior",
+                "REG Associate",
+                "University Partner",
+            ]
+        ]
+        capacity = capacity.resample(freq).mean()
+        return select_date_range(capacity, start_date, end_date, drop_zero_cols=False)
 
     def table_client_demand(self, start_date=None, end_date=None, freq="AS-APR"):
         start_date, end_date, freq = self.get_time_parameters(
