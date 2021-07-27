@@ -2,7 +2,6 @@ import requests
 import pandas as pd
 import math
 from datetime import datetime
-import statistics
 from wimbledon import Wimbledon
 from wimbledon import config
 
@@ -23,11 +22,17 @@ issue{issue_number}: issue(number:{issue_number}) {{
 
     reactionGroups {{
         content
-        users(first:{n_users}) {{
+        reactors(first:{n_users}) {{
+            pageInfo {{
+                hasNextPage
+                endCursor
+            }}
             edges {{
                 node {{
-                    login
-                    name
+                    ... on User {{
+                        login
+                        name
+                    }}
                 }}
             }}
         }}
@@ -160,7 +165,7 @@ default_css = """
 """
 
 
-def build_query(issue_numbers, n_users=20, n_comments=1):
+def build_query(issue_numbers, n_users=30, n_comments=1):
     """Build query for extracting emoji reactions from the Hut23 repo.
 
     Parameters
@@ -241,16 +246,16 @@ def unpack_issue_reactions(reactions):
         emoji_name = emoji["content"]
         unpacked += [
             {
-                "name": user["node"]["name"],
-                "username": user["node"]["login"],
+                "name": reactors["node"]["name"],
+                "username": reactors["node"]["login"],
                 "emoji": emoji_name,
             }
-            for user in emoji["users"]["edges"]
+            for reactors in emoji["reactors"]["edges"]
         ]
     return pd.DataFrame(unpacked)
 
 
-def get_reactions(token, issue_numbers, n_users=20):
+def get_reactions(token, issue_numbers, n_users=30):
     """
     Get a dictionary of the emoji reactions that exist for a GitHub issue in the
     strutcture specified by the GraphQL queries
