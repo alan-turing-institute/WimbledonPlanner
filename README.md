@@ -1,7 +1,6 @@
 # Project Wimbledon
 
-Project Wimbledon is an attempt to fix and possibly automate the REG group's
-planning and billing process.
+Project Wimbledon is an attempt to fix and possibly automate the REG group's planning and billing process.
 
 This repo is used to build the web app hosted at https://wimbledon-planner.azurewebsites.net/, which includes recent versions of:
 
@@ -177,3 +176,4 @@ To run the app locally instead you can run:
 ```
 
 Once the app is running you should see a message like `Running on http://0.0.0.0:8000/ (Press CTRL+C to quit)`. Open the given URL in your browser to use the app.
+
