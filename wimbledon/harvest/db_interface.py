@@ -332,19 +332,25 @@ def update_db(conn=None, with_tracked_time=True):
 
     # extract issue numbers from project codes or tags
     githubs = []
-    for i, row in fc["projects"].iterrows():
+    for i, idx_and_row in enumerate(fc["projects"].iterrows()):
+        row = idx_and_row[1]
         issue_number = None
 
         if row["code"] is not None and "hut23-" in row["code"]:
             # First check project codes for "hut23-xxx" labels
             issue_number = int(row["code"].replace("hut23-", "").strip())
-        else:
-            # Then check for old "GitHub: xxx" tags
-            for string in fc["projects"].tags:
-                tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])", str(string).lower())
-                if len(tags) > 0:
-                    issue_number = int(tags[0])
-                    break  # found an issue number - don't need to check more tags
+        elif len(row["tags"]) > 0:
+            # check for old "GitHub: xxx" tags
+            tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])", str(row["tags"]).lower())
+            if len(tags) > 0:
+                issue_number = int(tags[0])
+                break  # found an issue number - don't need to check more tags
+
+        if issue_number is None and len(names[i]) > 0:
+            # check whether issue number in project name
+            match = re.findall(r"hut23-(\d+)", names[i])
+            if match:
+                issue_number = int(match[0])
 
         githubs.append(issue_number)
 
