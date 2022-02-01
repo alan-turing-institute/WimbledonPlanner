@@ -74,7 +74,14 @@ def convert_index(df):
 
 
 def merge_placeholders(
-    placeholders, names=["people required", "unconfirmed", "deferred", "not funded"]
+    placeholders,
+    names=[
+        "people required",
+        "unconfirmed",
+        "deferred",
+        "not funded",
+        "director's reserve",
+    ],
 ):
     """consolidate names like People Required 1 into single placeholder
     PEOPLE REQUIRED"""
@@ -341,7 +348,9 @@ def update_db(conn=None, with_tracked_time=True):
             issue_number = int(row["code"].replace("hut23-", "").strip())
         elif len(row["tags"]) > 0:
             # check for old "GitHub: xxx" tags
-            tags = re.findall(r"(?<=\'github:)(.*?)(?=[\'\,])", str(row["tags"]).lower())
+            tags = re.findall(
+                r"(?<=\'github:)(.*?)(?=[\'\,])", str(row["tags"]).lower()
+            )
             if len(tags) > 0:
                 issue_number = int(tags[0])
                 break  # found an issue number - don't need to check more tags
