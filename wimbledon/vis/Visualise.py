@@ -214,7 +214,6 @@ class Visualise:
         return whiteboards
 
     def get_allocations(self, id_value, id_type, start_date, end_date, freq):
-
         if id_type == "person":
             if id_value == "ALL":
                 # initialise df
@@ -692,6 +691,7 @@ class Visualise:
             "#041165",
             "#043E65",
             "#2E86C1",
+            "#00CCFF",
             "#ffb0d7",
             "#c32ff5",
             "g",
@@ -802,6 +802,7 @@ class Visualise:
         reg_dev_idx = self.wim.get_client_id("REG Development Work")
         turing_service_idx = self.wim.get_client_id("Turing Service Areas")
         turing_prog_idx = self.wim.get_client_id("Turing Programme Support")
+        reserve_idx = self.wim.get_project_id("REG Reserve")
 
         corp_duties_projs = self.wim.projects[
             self.wim.projects.client == corp_duties_idx
@@ -830,6 +831,7 @@ class Visualise:
             axis=1
         )
         turing_prog_reqs = self.wim.project_confirmed[turing_prog_projs].sum(axis=1)
+        reserve_reqs = self.wim.project_confirmed[reserve_idx]
 
         # Get overall totals
         unavail_client = self.wim.get_client_id("UNAVAILABLE")
@@ -854,6 +856,7 @@ class Visualise:
             - reg_service_reqs
             - turing_service_reqs
             - turing_prog_reqs
+            - reserve_reqs
         )
 
         unconfirmed = self.wim.project_unconfirmed.sum(axis=1)
@@ -866,6 +869,7 @@ class Visualise:
                 "REG Management": reg_management_reqs,
                 "REG Development": reg_dev_reqs,
                 "REG Service Areas": reg_service_reqs,
+                "REG Reserve": reserve_reqs,
                 "Turing Service Areas": turing_service_reqs,
                 "Turing Programme Support": turing_prog_reqs,
                 "Confirmed projects": project_confirmed,

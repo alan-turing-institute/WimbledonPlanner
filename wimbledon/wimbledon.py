@@ -315,10 +315,10 @@ class Wimbledon:
     def whiteboard(self, key_type, start_date, end_date, freq):
         """Create the raw, unstyled, whiteboard visualisation.
 
-                    Dataframe with the rows being key_type (project or person ids), the columns
-                dates and the cell values being either a person or project and their time allocation, sorted by time allocation.
+        Dataframe with the rows being key_type (project or person ids), the columns
+        dates and the cell values being either a person or project and their time
+        allocation, sorted by time allocation.
         ]"""
-        # TODO move this function somewhere else?
         if key_type == "project":
             # copy to prevent overwriting original
             data_dict = deepcopy(self.project_allocations)
@@ -397,9 +397,7 @@ class Wimbledon:
                     df = df.resample(freq).mean()
 
                 # sort columns by magnitude of earliest assignment
-                df = df.sort_values(
-                    by=[idx for idx in df.index], axis=1, ascending=False
-                )
+                df = df.sort_values(by=list(df.index), axis=1, ascending=False)
 
                 # max number items assigned to this key at a time
                 n_columns = (df > 0).sum(axis=1).max()
@@ -473,6 +471,7 @@ class Wimbledon:
             reg.append("Corporate Duties")
             reg.append("Turing Service Areas")
             reg.append("Turing Programme Support")
+            reg.append("Hut23")
             reg = sorted(reg)
 
             others = sorted([client for client in clients if client not in reg])

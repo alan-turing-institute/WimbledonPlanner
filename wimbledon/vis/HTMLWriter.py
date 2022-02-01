@@ -33,6 +33,8 @@ def get_name_id(name):
         return "DEFERRED"
     elif "NOT FUNDED" in name:
         return "NOT_FUNDED"
+    elif "DIRECTOR'S RESERVE" in name:
+        return "DIRECTORS_RESERVE"
     else:
         return _name_to_id(name)
 
@@ -70,13 +72,23 @@ def get_name_style(name, background_color=None, name_type=None, unavail_projects
         }
         """
 
-    elif "NOT FUNDED" in name or "NOT_FUNDED" in name:
+    elif "DIRECTOR'S RESERVE" in name or "DIRECTORS_RESERVE" in name:
         style = """
-        .NOT_FUNDED {
+        .DIRECTORS_RESERVE {
             background-color: white;
             color: green;
             font-weight: 600;
             border: 1px solid green;
+        }
+        """
+
+    elif "NOT FUNDED" in name or "NOT_FUNDED" in name:
+        style = """
+        .NOT_FUNDED {
+            background-color: white;
+            color: black;
+            font-weight: 600;
+            border: 1px solid black;
         }
         """
 
