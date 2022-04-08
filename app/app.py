@@ -6,6 +6,7 @@ import sys
 from datetime import datetime, timedelta
 
 from flask import Flask, send_from_directory, send_file, render_template
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from wimbledon.vis import Visualise
 from wimbledon.github import preferences_availability as pref
@@ -56,8 +57,6 @@ def update(update_db=True):
     """
     try:
         # time update was triggered
-        # TODO: make this timezone robust (e.g. make it UK time not local
-        #  system time?)
         updated_at = datetime.now().strftime("%d %b %Y, %H:%M")
 
         vis = Visualise(with_tracked_time=False, update_db=update_db)
@@ -291,14 +290,20 @@ def demand_vs_capacity():
         return traceback.format_exc()
 
 
+# schedule background updates
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(update, "cron", hour=3)
+
+sched.start()
+
 if __name__ == "__main__":
     # set home directory
     try:
         app.config["HOME_DIR"] = sys.argv[1]
-    except:
-        raise ValueError(
+    except IndexError as e:
+        raise IndexError(
             "app.py must be passed path to home directory as first argument."
-        )
+        ) from e
 
     app.config["DATA_DIR"] = app.config.get("HOME_DIR") + "/data"
 
