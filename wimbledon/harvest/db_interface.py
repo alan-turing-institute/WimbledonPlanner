@@ -345,8 +345,11 @@ def update_db(conn=None, with_tracked_time=True):
 
         if row["code"] is not None and "hut23-" in row["code"]:
             # First check project codes for "hut23-xxx" labels
-            issue_number = int(row["code"].replace("hut23-", "").strip())
-        elif len(row["tags"]) > 0:
+            try:
+                issue_number = int(re.match(r"hut23-(\d+)", row["code"]).groups()[0])
+            except AttributeError:
+                pass
+        if issue_number is None and len(row["tags"]) > 0:
             # check for old "GitHub: xxx" tags
             tags = re.findall(
                 r"(?<=\'github:)(.*?)(?=[\'\,])", str(row["tags"]).lower()

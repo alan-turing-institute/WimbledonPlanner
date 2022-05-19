@@ -1,6 +1,7 @@
 import json
-import os.path
 import os
+import os.path
+
 import wimbledon
 
 CONFIG_DIR = os.path.expanduser("~/.wimbledon")
