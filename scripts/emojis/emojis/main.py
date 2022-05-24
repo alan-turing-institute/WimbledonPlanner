@@ -59,6 +59,5 @@ def main():
 
 
 if __name__ == "__main__":
-    os.environ["GITHUB_TOKEN"] = "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"
     main()
     # print(emoji.emojize('Python is :thumbs_up:'))
