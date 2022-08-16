@@ -69,7 +69,7 @@ class Visualise:
             self.START_DATE = start_date
 
         if end_date is None:
-            self.END_DATE = datetime.now() + pd.Timedelta("365 days")
+            self.END_DATE = datetime.now() + pd.Timedelta("548 days")
         else:
             self.END_DATE = end_date
 
@@ -691,11 +691,11 @@ class Visualise:
             "#041165",
             "#043E65",
             "#2E86C1",
-            "#00CCFF",
             "#ffb0d7",
             "#c32ff5",
             "g",
             "y",
+            "#00CCFF",
             "#db7900",
             "darkred",
         ]
@@ -869,11 +869,11 @@ class Visualise:
                 "REG Management": reg_management_reqs,
                 "REG Development": reg_dev_reqs,
                 "REG Service Areas": reg_service_reqs,
-                "REG Reserve": reserve_reqs,
                 "Turing Service Areas": turing_service_reqs,
                 "Turing Programme Support": turing_prog_reqs,
                 "Confirmed projects": project_confirmed,
                 "Projects with funder": unconfirmed,
+                "REG Reserve": reserve_reqs,
                 "Deferred projects": deferred,
                 "Not Funded projects": notfunded,
             }

@@ -118,7 +118,7 @@ def update(update_db=True):
         print("Demand vs capacity...")
         capacity_fig = vis.plot_demand_vs_capacity(
             start_date=datetime.now() - timedelta(365),
-            end_date=datetime.now() + timedelta(365),
+            end_date=datetime.now() + timedelta(548),
             freq="W-MON",
         )
         capacity_fig.tight_layout()
