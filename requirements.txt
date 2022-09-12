@@ -9,7 +9,7 @@ openpyxl==2.6.1
 git+https://github.com/alan-turing-institute/pyforecast.git
 seaborn==0.9.0
 python-harvest-redux==5.0.0b0
-pdfCropMargins==0.1.4
+pdfCropMargins==1.0.9
 distinctipy==1.1.5
 Flask==1.0.2
 Flask-APScheduler==1.12.3
