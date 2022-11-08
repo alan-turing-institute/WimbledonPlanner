@@ -177,3 +177,6 @@ To run the app locally instead you can run:
 
 Once the app is running you should see a message like `Running on http://0.0.0.0:8000/ (Press CTRL+C to quit)`. Open the given URL in your browser to use the app.
 
+### Updating the app authentication secret
+
+See https://github.com/alan-turing-institute/WimbledonPlanner/issues/44#issuecomment-717846378
