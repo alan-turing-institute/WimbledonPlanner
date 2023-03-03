@@ -1,17 +1,16 @@
 import os
-import numpy as np
-import pandas as pd
-from copy import deepcopy
 import re
+from copy import deepcopy
 from datetime import datetime
 
-from wimbledon import Wimbledon
-from wimbledon import select_date_range
-from wimbledon.vis import HTMLWriter
-
-from distinctipy import colorsets
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+from distinctipy import colorsets
+
+from wimbledon import Wimbledon, select_date_range
+from wimbledon.vis import HTMLWriter
 
 colorsets.set_palette()
 
@@ -796,12 +795,12 @@ class Visualise:
 
     def _get_grouped_demand(self, start_date, end_date, freq):
         # Get totals for REG management, development and support clients
-        corp_duties_idx = self.wim.get_client_id("Corporate Duties")
+        corp_duties_idx = self.wim.get_client_id("REG Strategy and Operations")
         reg_service_idx = self.wim.get_client_id("REG Service Areas")
-        reg_management_idx = self.wim.get_client_id("REG Management")
+        reg_management_idx = self.wim.get_client_id("REG Support to Turing")
         reg_dev_idx = self.wim.get_client_id("REG Development Work")
         turing_service_idx = self.wim.get_client_id("Turing Service Areas")
-        turing_prog_idx = self.wim.get_client_id("Turing Programme Support")
+        rcp_idx = self.wim.get_client_id("Research Computing")
         reserve_idx = self.wim.get_project_id("REG Reserve")
 
         corp_duties_projs = self.wim.projects[
@@ -817,9 +816,7 @@ class Visualise:
         turing_service_projs = self.wim.projects[
             self.wim.projects.client == turing_service_idx
         ].index
-        turing_prog_projs = self.wim.projects[
-            self.wim.projects.client == turing_prog_idx
-        ].index
+        rcp_projs = self.wim.projects[self.wim.projects.client == rcp_idx].index
 
         corp_duties_reqs = self.wim.project_confirmed[corp_duties_projs].sum(axis=1)
         reg_service_reqs = self.wim.project_confirmed[reg_service_projs].sum(axis=1)
@@ -830,7 +827,7 @@ class Visualise:
         turing_service_reqs = self.wim.project_confirmed[turing_service_projs].sum(
             axis=1
         )
-        turing_prog_reqs = self.wim.project_confirmed[turing_prog_projs].sum(axis=1)
+        rcp_reqs = self.wim.project_confirmed[rcp_projs].sum(axis=1)
         reserve_reqs = self.wim.project_confirmed[reserve_idx]
 
         # Get overall totals
@@ -855,7 +852,7 @@ class Visualise:
             - reg_dev_reqs
             - reg_service_reqs
             - turing_service_reqs
-            - turing_prog_reqs
+            - rcp_reqs
             - reserve_reqs
         )
 
@@ -865,12 +862,12 @@ class Visualise:
 
         demand = pd.DataFrame(
             {
-                "Corporate Duties": corp_duties_reqs,
-                "REG Management": reg_management_reqs,
+                "REG Strategy and Operations": corp_duties_reqs,
+                "REG Support to Turing": reg_management_reqs,
                 "REG Development": reg_dev_reqs,
                 "REG Service Areas": reg_service_reqs,
                 "Turing Service Areas": turing_service_reqs,
-                "Turing Programme Support": turing_prog_reqs,
+                "Research Computing": rcp_reqs,
                 "Confirmed projects": project_confirmed,
                 "Projects with funder": unconfirmed,
                 "REG Reserve": reserve_reqs,
