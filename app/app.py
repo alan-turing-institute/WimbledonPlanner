@@ -1,22 +1,21 @@
 import os
-import zipfile
-import traceback
 import subprocess
 import sys
+import traceback
+import zipfile
 from datetime import datetime, timedelta
-
-from flask import Flask, send_from_directory, send_file, render_template
-from apscheduler.schedulers.background import BackgroundScheduler
-
-from wimbledon.vis import Visualise
-from wimbledon.github import preferences_availability as pref
 
 # change matplotlib backend to avoid it trying to pop up figure windows
 import matplotlib as mpl
 
 mpl.use("Agg")
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, render_template, request, send_file, send_from_directory
+
+from wimbledon.github import preferences_availability as pref
+from wimbledon.vis import Visualise
 
 # Initialise Flask App
 app = Flask(__name__)
@@ -245,8 +244,26 @@ def preferences(update_db=False):
 
         return whiteboard
 
-    except:
+    except Exception:
         return traceback.format_exc()
+
+
+@app.route("/whiteboard", methods=["GET"])
+def whiteboard():
+    try:
+        args = request.args
+        view = args.get("view") or "project"
+        vis = Visualise(with_tracked_time=False, update_db=False)
+        html = vis.whiteboard(
+            key_type=view,
+            start_date=args.get("start_date"),
+            end_date=args.get("end_date"),
+            freq=args.get("freq"),
+        )
+    except Exception:
+        return traceback.format_exc()
+
+    return html
 
 
 @app.route("/download")
