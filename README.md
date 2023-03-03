@@ -18,19 +18,21 @@ The app is currently IP restricted to only be accessible at The Alan Turing Inst
 
 ## Redeploying the Web App
 
-The web app at https://wimbledon-planner.azurewebsites.net/ is built from the master branch of this repo. To update and redeploy it:
+The web app at https://wimbledon-planner.azurewebsites.net/ should be built from the master branch of this repo. To update and redeploy it:
 
-1. Commit a change to master (**Only tested changes should be added to master**, as changes on master automatcially trigger rebuilds to start).
-2. The Docker image will automatically start to rebuild. It's hosted on DockerHub as [jack89roberts/WimbledonPlanner](https://hub.docker.com/repository/docker/jack89roberts/wimbledon-planner/builds).
-3. Once the image has rebuilt DockerHub tries to rebuild the app, but the webhook fails as the Web App management is IP restricted to the Turing. Instead you need to trigger it to rebuild in the portal.
-4. Go to https://portal.azure.com/
-5. Browse to Subscriptions -> WimbledonPlanner -> Resource Groups -> wimbledon-planner-production
-6. Select the wimbledon-planner App Service resource.
-7. Click "Stop", and then "Start".
-8. In a new tab go to https://wimbledon-planner.azurewebsites.net/ (it won't load as the app service is starting/rebuilding)
-9. Back in the portal tab, click on "Container Settings" in the lefthand menu of the wimbledon-planner app service.
-10. It may take 5 minutes or so to appear but eventually if you refresh the logs you should see a "Pulling image from Docker hub" entry, and then eventually a "Application started" entry.
-11. To get the forecast data into the web app and create the visualisations, go to https://wimbledon-planner.azurewebsites.net/update and wait for the "DATA UPDATED!" message.
+1. Clone the repo locally and verify you're on the latest version of the master branch.
+2. The Docker image is currently hosted on DockerHub as [jack89roberts/WimbledonPlanner](https://hub.docker.com/repository/docker/jack89roberts/wimbledon-planner/builds).
+3. Build the docker image: `docker build . -t jack89roberts/wimbledon-planner:latest`
+4. Push the docker image: `docker push jack89roberts/wimbledon-planner:latest`
+5. Once the image has rebuilt DockerHub tries to rebuild the app, but the webhook fails as the Web App management is IP restricted to the Turing. Instead you need to trigger it to rebuild in the portal.
+6. Go to https://portal.azure.com/
+7. Browse to Subscriptions -> WimbledonPlanner -> Resource Groups -> wimbledon-planner-production
+8. Select the wimbledon-planner App Service resource.
+9. Click "Stop", and then "Start".
+10. In a new tab go to https://wimbledon-planner.azurewebsites.net/ (it won't load as the app service is starting/rebuilding)
+11. Back in the portal tab, click on "Container Settings" in the lefthand menu of the wimbledon-planner app service.
+12. It may take 5 minutes or so to appear but eventually if you refresh the logs you should see a "Pulling image from Docker hub" entry, and then eventually a "Application started" entry.
+13. To get the forecast data into the web app and create the visualisations, go to https://wimbledon-planner.azurewebsites.net/update and wait for the "DATA UPDATED!" message.
 
 ## Requirements
 
