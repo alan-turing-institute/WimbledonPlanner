@@ -11,7 +11,7 @@ seaborn==0.9.0
 python-harvest-redux==5.0.0b0
 pdfCropMargins==1.0.9
 distinctipy==1.1.5
-Flask==1.0.2
+Flask==2.3.2
 Flask-APScheduler==1.12.3
 itsdangerous==2.0.1
 -e .
