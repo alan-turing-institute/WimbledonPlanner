@@ -1,3 +1,16 @@
+> [!IMPORTANT]
+> Wimbledon has not been maintained since 2023 and is no longer deployed on Azure.
+> You can still run the app locally using the instructions below.
+> The contents of its database have been dumped and are stored in the REG SharePoint folder, in the `REG_Service_Areas/Project_Scheduling` subdirectory.
+> (The database was running PostgresQL 11; the dump was created using `pg_dump` on PostgreSQL 17.)
+> You can still use this data when running the app by creating a local PostgresQL database and loading the data into it.
+> To do this, follow the instructions below to create a local database and specify the path to the dump file when running the `create_localhost.sh` script.
+> There is a note below on how to do this.
+>
+> Note that while the web app itself can be run, the code has not been maintained for a while, and the queries to retrieve data from Forecast no longer work due to changes in its API.
+> Consequently, new graphs cannot be plotted.
+> If you wish to plot the visualisations yourself, you will have to update this code.
+
 # Project Wimbledon
 
 Project Wimbledon is an attempt to fix and possibly automate the REG group's planning and billing process.
@@ -36,7 +49,11 @@ The web app at https://wimbledon-planner.azurewebsites.net/ should be built from
 
 ## Requirements
 
-Wimbledon Planner is designed to run on **Python 3.7**, using Python 3.6 may give errors due to some changes to the subprocess library between the two.
+Wimbledon Planner is designed to run on **Python 3.7**.
+
+> [!IMPORTANT]
+> If you attempt to use a newer version of Python, it is likely that the requirements will fail to install, as they are pinned to old versions.
+> You may have to upgrade some versions (especially `pandas` and `psycopg2-binary`) if you want to use a newer version of Python.
 
 Python package dependencies are listed in requirements.txt and can be installed by running this from the parent directory of the repo:
 ```bash
@@ -113,6 +130,11 @@ However, you will also need to create the database on your system. To do that, r
 > cd wimbledon/sql
 > bash create_localhost.sh
 ```
+
+> [!IMPORTANT]
+> If you wish to initialise the database with the data downloaded from Azure prior to the web app's shutdown, you should pass the SQL dump as an extra argument to the script, i.e. `bash create_localhost.sh /path/to/wimbledon.sql`.
+> The dump is stored in the REG SharePoint folder, in the `REG_Service_Areas/Project_Scheduling` subdirectory.
+
 This creates a postgresql server at `/usr/local/var/postgres` on your system with a `wimbledon` database on it and the schema defined by `wimbledon/sql/schema.py`. If you'd like to check this worked you can connect to the database with the postgres command-line tool:
 ```bash
 > psql wimbledon

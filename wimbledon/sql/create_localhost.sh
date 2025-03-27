@@ -2,15 +2,23 @@
 # makes and starts a postgres server in the directory /usr/local/var/postgres,
 # creates a database called wimbledon on it and runs schema.py to
 # define the schema on that database.
+POSTGRES_DIR="/usr/local/var/postgres"
 
-if [[ ! -d "/usr/local/var/postgres" ]]; then
-    mkdir "/usr/local/var/postgres"
+if [[ ! -d "${POSTGRES_DIR}" ]]; then
+    mkdir -p "${POSTGRES_DIR}"
 fi
 
-pg_ctl -D /usr/local/var/postgres -l logfile start
+initdb -D "${POSTGRES_DIR}"
 
-initdb -D /usr/local/var/postgres
+pg_ctl -D "${POSTGRES_DIR}" -l logfile start
 
 createdb wimbledon
 
-python schema.py
+if [ -z "$1" ]; then
+    # No argument supplied, create a new database
+    SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+    python "${SCRIPT_DIR}/schema.py"
+else
+    # Argument supplied, restore the database from the file
+    psql wimbledon < $1
+fi
